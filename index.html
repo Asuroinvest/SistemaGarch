@@ -23,14 +23,18 @@
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;line-height:1.6;}
-    header{padding:24px;background:var(--primary-gradient);color:white;position:sticky;top:0;z-index:10;box-shadow:var(--shadow-lg);}
-    .title{font-size:24px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:12px;}
-    .title::before{content:"📊";font-size:28px;}
-    .sub{color:rgba(255,255,255,0.9);font-size:14px;margin-top:6px;font-weight:400;}
-    .status-badge{background:rgba(255,255,255,0.2);color:white;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;position:absolute;top:20px;right:24px;}
-    main{padding:32px 24px;max-width:1400px;margin:0 auto}
-    .row{display:grid;grid-template-columns:1fr;gap:24px}
-    @media(min-width:980px){.row{grid-template-columns:1.2fr .8fr}}
+    header{padding:16px 20px;background:var(--primary-gradient);color:white;position:sticky;top:0;z-index:10;box-shadow:var(--shadow-lg);}
+    @media(min-width:768px){header{padding:24px;}}
+    .title{font-size:18px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:8px;}
+    @media(min-width:768px){.title{font-size:24px;gap:12px;}}
+    .sub{color:rgba(255,255,255,0.9);font-size:12px;margin-top:6px;font-weight:400;line-height:1.4;}
+    @media(min-width:768px){.sub{font-size:14px;}}
+    .status-badge{background:rgba(255,255,255,0.2);color:white;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:600;position:absolute;top:12px;right:16px;}
+    @media(min-width:768px){.status-badge{padding:4px 12px;font-size:11px;top:20px;right:24px;}}
+    main{padding:16px;max-width:1400px;margin:0 auto}
+    @media(min-width:768px){main{padding:32px 24px;}}
+    .row{display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:1024px){.row{grid-template-columns:1.2fr .8fr;gap:24px;}}
     .panel{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:var(--shadow);backdrop-filter:blur(10px);}
     h2.section-title{margin:0 0 16px;font-size:18px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
     .muted{color:var(--muted)}
@@ -40,8 +44,10 @@
     .periods{display:flex;gap:8px;margin:8px 0 16px}
     .tab{padding:10px 16px;border:1px solid var(--border);border-radius:12px;cursor:pointer;background:var(--panel-2);font-size:13px;font-weight:600;transition:all 0.3s;box-shadow:var(--shadow);}
     .tab.active{background:var(--accent);color:white;border-color:var(--accent);transform:translateY(-1px);}
-    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-    @media(min-width:680px){.cards{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    .cards{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:16px}
+    @media(min-width:480px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(min-width:768px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(min-width:1024px){.cards{grid-template-columns:repeat(4,minmax(0,1fr))}}
     .card{background:linear-gradient(145deg, #ffffff, #f8fafc);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--shadow);transition:all 0.3s;position:relative;overflow:hidden;}
     .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg, var(--accent), var(--green));opacity:0;transition:opacity 0.3s;}
     .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
@@ -50,7 +56,9 @@
     .card.down-card{background:linear-gradient(145deg, #fef2f2, #fee2e2);border-color:#fecaca;}
     .card.neutral-card{background:linear-gradient(145deg, #f1f5f9, #e2e8f0);border-color:#cbd5e1;}
     .label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
-    .value{font-size:24px;font-weight:900;margin-top:8px;letter-spacing:-.5px}
+    .value{font-size:18px;font-weight:900;margin-top:8px;letter-spacing:-.5px}
+    @media(min-width:480px){.value{font-size:20px;}}
+    @media(min-width:768px){.value{font-size:24px;}}
     .value.up{color:var(--green)}
     .value.down{color:var(--red)}
     .inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 16px;}
@@ -62,6 +70,9 @@
     .sep{height:1px;background:linear-gradient(90deg, transparent, var(--border), transparent);margin:24px 0}
     textarea{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px;resize:vertical;box-shadow:var(--shadow);}
     input[type="file"]{color:var(--text);background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:12px;width:100%;box-shadow:var(--shadow);}
+    .maxmin-grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:12px}
+    @media(min-width:480px){.maxmin-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media(min-width:768px){.maxmin-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}}
     .debug{background:var(--panel-2);border:1px solid var(--border);border-radius:12px;padding:12px;margin:12px 0;font-size:11px;color:var(--muted);font-family:monospace;box-shadow:var(--shadow);}
   </style>
 </head>
@@ -133,7 +144,7 @@
         <div class="sep"></div>
 
         <h2 class="section-title">🔥 Possíveis Máximas e Mínimas</h2>
-        <div class="cards" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+        <div class="cards maxmin-grid">
           <div class="card up-card"><div class="label">Max 9P (Fech*Exp)</div><div class="value up" id="max_9p">--</div></div>
           <div class="card up-card"><div class="label">Max 18P (Fech*Exp)</div><div class="value up" id="max_18p">--</div></div>
           <div class="card up-card"><div class="label">Max 27P (Fech*Exp)</div><div class="value up" id="max_27p">--</div></div>
