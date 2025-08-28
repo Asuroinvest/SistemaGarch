@@ -490,7 +490,7 @@
         <div class="sub">Análise Avançada de Contratos Futuros DOL com Dados em Tempo Real</div>
       </div>
       <div class="user-info">
-        <div class="user-name" id="userName">Deivitti Almir</div>
+        <div class="user-name" id="userName">Carregando...</div>
         <div class="status-badge">CONECTADO</div>
         <button class="logout-btn" id="logoutBtn">Sair</button>
       </div>
@@ -623,10 +623,13 @@
         this.linearReturns = [];
         this.currentForecastP = 9;
         this.currentIntradayP = 9;
+        this.userSession = null;
         this.init();
       }
       
       init() {
+        // Verificar sessão e carregar dados do usuário
+        this.checkSession();
         this.wireEventListeners();
         this.wireExpInputs();
         
@@ -634,6 +637,31 @@
         setTimeout(() => {
           this.fetchData();
         }, 2000);
+      }
+      
+      checkSession() {
+        try {
+          // Tentar obter dados da sessão
+          const sessionData = sessionStorage.getItem('currentUser');
+          if (sessionData) {
+            this.userSession = JSON.parse(sessionData);
+            this.updateUserInterface();
+            return;
+          }
+        } catch (e) {
+          console.log('Erro ao ler dados da sessão:', e);
+        }
+        
+        // Se não encontrou dados válidos, redirecionar para login
+        alert('Sessão inválida ou expirada. Redirecionando para login.');
+        window.location.href = 'index.html';
+      }
+      
+      updateUserInterface() {
+        if (this.userSession && this.userSession.name) {
+          document.getElementById('userName').textContent = this.userSession.name;
+          console.log('Usuário logado:', this.userSession.name);
+        }
       }
       
       wireEventListeners() {
@@ -674,18 +702,14 @@
       }
       
       logout() {
-  if (confirm('Deseja realmente sair do sistema?')) {
-    // Limpa dados da sessão se estiver usando
-    // localStorage.removeItem('userSession');
-    // sessionStorage.clear();
-    
-    // Mostra mensagem de logout
-    //alert('Logout realizado com sucesso!\n\nEm um sistema real, você seria redirecionado para a página de login.');
-    
-    // Redireciona para a página de login
-    window.location.href = 'index.html';
-  }
-}
+        if (confirm('Deseja realmente sair do sistema?')) {
+          // Limpar dados da sessão
+          sessionStorage.removeItem('currentUser');
+          
+          // Redirecionar para a página de login
+          window.location.href = 'index.html';
+        }
+      }
       
       showLoading() {
         document.getElementById('loadingOverlay').style.display = 'flex';

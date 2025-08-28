@@ -353,8 +353,6 @@
     </div>
     
     <div class="login-body">
-      
-      
       <div id="errorMessage" class="error-message"></div>
       <div id="successMessage" class="success-message"></div>
       
@@ -423,13 +421,12 @@
             role: 'admin', 
             status: 'active' 
           },
-          
-           'claudiobeneditod@yahoo.com.br': { 
-             password: '*Piau370', 
-             name: 'Claudio Silva', 
-             role: 'user', 
-             status: 'active' 
-           }
+          'claudiobeneditod@yahoo.com.br': { 
+            password: '*Piau370', 
+            name: 'Claudio Silva', 
+            role: 'admin', 
+            status: 'active' 
+          }
         };
       }
       
@@ -468,7 +465,7 @@
         // Verifica lockout
         if (this.isLockedOut()) {
           const remainingTime = this.getRemainingLockoutTime();
-          this.showError(`Muitas tentativas inv√°lidas. Tente novamente em ${Math.ceil(remainingTime / 60000)} minutos.`);
+          this.showError(`Muitas tentativas inv·lidas. Tente novamente em ${Math.ceil(remainingTime / 60000)} minutos.`);
           return;
         }
         
@@ -481,11 +478,11 @@
           await new Promise(resolve => setTimeout(resolve, 1500));
           
           if (this.validateUser(email, password)) {
-            this.showSuccess('üéâ Login realizado com sucesso! Redirecionando para o sistema...');
+            this.showSuccess('?? Login realizado com sucesso! Redirecionando para o sistema...');
             this.clearAttempts();
             this.setSession(email);
             
-            // Redireciona para dashboard.html ap√≥s 2 segundos
+            // Redireciona para dashboard.html apÛs 2 segundos
             setTimeout(() => {
               window.location.href = 'dashboard.html';
             }, 2000);
@@ -494,14 +491,14 @@
             const remaining = this.maxAttempts - this.failedAttempts;
             
             if (remaining > 0) {
-              this.showError(`‚ùå Email ou senha incorretos. Restam ${remaining} tentativas.`);
+              this.showError(`? Email ou senha incorretos. Restam ${remaining} tentativas.`);
             } else {
               this.setLockout();
-              this.showError('üîí Muitas tentativas inv√°lidas. Acesso bloqueado por 15 minutos.');
+              this.showError('?? Muitas tentativas inv·lidas. Acesso bloqueado por 15 minutos.');
             }
           }
         } catch (error) {
-          this.showError('‚ö†Ô∏è Erro interno. Tente novamente.');
+          this.showError('?? Erro interno. Tente novamente.');
         } finally {
           loginBtn.disabled = false;
           loginBtn.innerHTML = 'Acessar Sistema';
@@ -527,7 +524,15 @@
           expiresAt: Date.now() + this.sessionTimeout
         };
         
-        console.log('Sess√£o criada:', this.sessionData);
+        // Armazenar dados do usu·rio para o dashboard
+        sessionStorage.setItem('currentUser', JSON.stringify({
+          email: email,
+          name: user.name,
+          role: user.role,
+          loginTime: Date.now()
+        }));
+        
+        console.log('Sess„o criada:', this.sessionData);
       }
       
       getSession() {
@@ -604,7 +609,4 @@
     });
   </script>
 </body>
-
 </html>
-
-
