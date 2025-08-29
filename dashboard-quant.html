@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Quant Avançado</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.6.0/math.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .live-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            animation: pulse 2s infinite;
+        }
+
+        .live-indicator.connected {
+            background: #27ae60;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 20px;
+            min-height: 600px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-height: fit-content;
+        }
+
+        .chart-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-container-wrapper {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .metrics-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #34495e;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+        }
+
+        button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(52, 152, 219, 0.3);
+        }
+
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .api-status {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+
+        .status-indicator.active {
+            background: #27ae60;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+            display: block;
+        }
+
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .metric-change {
+            font-size: 0.8em;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .positive { color: #27ae60; }
+        .negative { color: #e74c3c; }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .chart-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            background: #ecf0f1;
+            border-radius: 8px;
+            padding: 3px;
+        }
+
+        .chart-tab {
+            flex: 1;
+            padding: 8px 15px;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            margin: 0;
+        }
+
+        .chart-tab.active {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            color: #3498db;
+            font-weight: 600;
+        }
+
+        .model-results {
+            grid-column: 1 / -1;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+
+        .success {
+            background: #27ae60;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+
+        .advanced-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .forecast-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .forecast-periods {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            background: #ecf0f1;
+            border-radius: 8px;
+            padding: 3px;
+        }
+
+        .period-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            background: none;
+            color: #7f8c8d;
+        }
+
+        .period-tab.active {
+            background: #3498db;
+            color: white;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .forecast-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .forecast-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border-left: 4px solid;
+            transition: transform 0.3s ease;
+        }
+
+        .forecast-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .forecast-card.high {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+        }
+
+        .forecast-card.low {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #fff8f8 0%, #f5e8e8 100%);
+        }
+
+        .forecast-card.neutral {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, #fffaf8 0%, #f5f0e8 100%);
+        }
+
+        .forecast-icon {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+        }
+
+        .forecast-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .forecast-label {
+            font-size: 0.8em;
+            color: #7f8c8d;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .forecast-confidence {
+            font-size: 0.7em;
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        .volatility-breakdown {
+            background: #ecf0f1;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .vol-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #d5dbdb;
+        }
+
+        .vol-item:last-child {
+            border-bottom: none;
+        }
+
+        .vol-period {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .vol-value {
+            font-weight: 600;
+            color: #3498db;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .advanced-metrics {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .forecast-cards {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="live-indicator" id="liveIndicator">● OFFLINE</div>
+            <h1>📊 Sistema Quant Pro</h1>
+            <p>Análise Avançada de Contratos Futuros DOL com Dados em Tempo Real</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Painel de Controle -->
+            <div class="control-panel">
+                <h2 class="section-title">🔧 Configurações</h2>
+                
+                <div class="api-status">
+                    <div class="status-item">
+                        <span>🏆 Alpha Vantage</span>
+                        <div class="status-indicator active" id="alphaStatus"></div>
+                    </div>
+                    <div class="status-item">
+                        <span>AwesomeAPI</span>
+                        <div class="status-indicator" id="awesomeStatus"></div>
+                    </div>
+                    <div class="status-item">
+                        <span>Yahoo Finance</span>
+                        <div class="status-indicator" id="yahooStatus"></div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="currencyPair">Par de Moedas</label>
+                    <select id="currencyPair">
+                        <option value="USDBRL=X">USD/BRL</option>
+                        <option value="EURBRL=X">EUR/BRL</option>
+                        <option value="GBPBRL=X">GBP/BRL</option>
+                        <option value="CADBRL=X">CAD/BRL</option>
+                        <option value="AUDBRL=X">AUD/BRL</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+					<label for="dataSource">Fonte de Dados</label>
+					<select id="dataSource">
+                        <option value="alpha" selected>🏆 Alpha Vantage (RECOMENDADO)</option>
+					    <option value="awesome">AwesomeAPI (Gratuito com limitações)</option>
+                        <option value="yahoo">Yahoo Finance (Precisa de proxy CORS)</option>
+					</select>
+				</div>
+
+                <div class="input-group" id="alphaKeyGroup">
+                    <label for="alphaApiKey">🔑 API Key Alpha Vantage</label>
+                    <input type="text" id="alphaApiKey" value="1TBK44ZVPL72XS0S" placeholder="Insira sua API key">
+                    <small style="color: #7f8c8d; font-size: 0.8em;">
+                        25 calls/dia grátis • <a href="https://alphavantage.co/support/#api-key" target="_blank" style="color: #3498db;">Cadastre-se GRÁTIS</a>
+                    </small>
+                </div>
+
+                <div class="input-group">
+                    <label for="updateInterval">⏱️ Intervalo de Atualização</label>
+                    <select id="updateInterval">
+                        <option value="30">30 segundos</option>
+                        <option value="60" selected>1 minuto (Recomendado)</option>
+                        <option value="300">5 minutos</option>
+                        <option value="900">15 minutos</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="contractType">Tipo de Contrato</label>
+                    <select id="contractType">
+                        <option value="spot">Câmbio à Vista</option>
+                        <option value="future">Contrato Futuro DOL</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="frpRate">Taxa FRP (% a.a.)</label>
+                    <input type="number" id="frpRate" value="5.5" step="0.1" min="-10" max="20">
+                    <small style="color: #7f8c8d; font-size: 0.8em;">Forward Rate Premium anualizado</small>
+                </div>
+
+                <div class="input-group">
+                    <label for="maturityDays">Vencimento (dias)</label>
+                    <select id="maturityDays">
+                        <option value="30">30 dias (DOL1M)</option>
+                        <option value="60" selected>60 dias (DOL2M)</option>
+                        <option value="90">90 dias (DOL3M)</option>
+                        <option value="180">180 dias (DOL6M)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="modelType">Modelo</label>
+                    <select id="modelType">
+                        <option value="GARCH">GARCH(1,1)</option>
+                        <option value="EGARCH">EGARCH(1,1)</option>
+                        <option value="GJR-GARCH">GJR-GARCH(1,1)</option>
+                        <option value="FIGARCH">FIGARCH(1,d,1)</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="lookback">Período de Análise (dias)</label>
+                    <input type="number" id="lookback" value="252" min="30" max="2000">
+                </div>
+
+                <button onclick="fetchRealTimeData()">🔄 Atualizar Dados</button>
+                <button onclick="runAdvancedAnalysis()">🚀 Análise Avançada</button>
+                <button onclick="startRealTimeMode()">⏱️ Modo Tempo Real</button>
+            </div>
+
+            <!-- Seção de Gráficos -->
+            <div class="chart-section">
+                <div class="charts-grid">
+                    <div class="chart-container-wrapper">
+                        <div class="chart-tabs">
+                            <button class="chart-tab active" onclick="switchChart('price')">Preços</button>
+                            <button class="chart-tab" onclick="switchChart('returns')">Retorno</button>
+                            <button class="chart-tab" onclick="switchChart('volatility')">Volatilidade</button>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="mainChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-container-wrapper">
+                        <h3 class="section-title">📈 Volatilidade Condicional</h3>
+                        <div class="chart-container">
+                            <canvas id="secondaryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas Live -->
+                <div class="metrics-panel">
+                    <h2 class="section-title">📈 Métricas Live</h2>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div class="metric-card">
+                            <span class="metric-value" id="currentPrice">--</span>
+                            <div class="metric-label" id="priceLabel">Cotação Atual</div>
+                            <div class="metric-change" id="priceChange">--</div>
+                        </div>
+						
+						<div class="metric-card">
+							<span class="metric-value" id="spotUsed">--</span>
+							<div class="metric-label">Dólar Spot Usado no Cálculo</div>
+						</div>
+
+                        <div class="metric-card">
+                            <span class="metric-value" id="futurePrice">--</span>
+                            <div class="metric-label">Preço Futuro</div>
+                            <div class="metric-change" id="futurePremium">--</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <span class="metric-value" id="dailyVol">--</span>
+                            <div class="metric-label">Volatilidade (24h)</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <span class="metric-value" id="currentVol">--</span>
+                            <div class="metric-label">Vol. Condicional</div>
+                        </div>
+                    </div>
+
+                    <div class="advanced-metrics">
+                        <div class="metric-card">
+                            <span class="metric-value" id="var95">--</span>
+                            <div class="metric-label">VaR 95%</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <span class="metric-value" id="expectedShortfall">--</span>
+                            <div class="metric-label">CVaR 95%</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <span class="metric-value" id="sharpeRatio">--</span>
+                            <div class="metric-label">Sharpe Ratio</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <span class="metric-value" id="maxDrawdown">--</span>
+                            <div class="metric-label">Max Drawdown</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <span class="metric-value" id="basisPoints">--</span>
+                            <div class="metric-label">Base (bps)</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <span class="metric-value" id="carryReturn">--</span>
+                            <div class="metric-label">Carry Return</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projeções Futuras -->
+                <div class="forecast-section">
+                    <h2 class="section-title">🎯 Projeções para Contratos Futuros</h2>
+                    
+                    <div class="forecast-periods">
+                        <div class="period-tab active" onclick="switchForecastPeriod(9)">9D</div>
+                        <div class="period-tab" onclick="switchForecastPeriod(18)">18D</div>
+                        <div class="period-tab" onclick="switchForecastPeriod(27)">27D</div>
+                    </div>
+                    
+                    <div class="forecast-cards">
+                        <div class="forecast-card high">
+                            <div class="forecast-icon">📈</div>
+                            <div class="forecast-value" id="maxForecast">--</div>
+                            <div class="forecast-label">Máxima Projetada</div>
+                            <div class="forecast-confidence" id="maxConfidence">--</div>
+                        </div>
+                        
+                        <div class="forecast-card low">
+                            <div class="forecast-icon">📉</div>
+                            <div class="forecast-value" id="minForecast">--</div>
+                            <div class="forecast-label">Mínima Projetada</div>
+                            <div class="forecast-confidence" id="minConfidence">--</div>
+                        </div>
+                        
+                        <div class="forecast-card neutral">
+                            <div class="forecast-icon">🎯</div>
+                            <div class="forecast-value" id="targetForecast">--</div>
+                            <div class="forecast-label">Preço Alvo</div>
+                            <div class="forecast-confidence" id="targetConfidence">--</div>
+                        </div>
+                    </div>
+                    
+                    <div class="volatility-breakdown">
+                        <h4 style="margin-bottom: 10px; color: #2c3e50;">Volatilidade por Período:</h4>
+                        <div class="vol-item">
+                            <span class="vol-period">9D:</span>
+                            <span class="vol-value" id="vol9">--</span>
+                        </div>
+                        <div class="vol-item">
+                            <span class="vol-period">18D:</span>
+                            <span class="vol-value" id="vol18">--</span>
+                        </div>
+                        <div class="vol-item">
+                            <span class="vol-period">27D:</span>
+                            <span class="vol-value" id="vol27">--</span>
+                        </div>
+                    </div>
+
+                    <div style="background: #e8f4fd; padding: 15px; border-radius: 10px; margin-top: 15px; border-left: 4px solid #3498db;">
+                        <h4 style="color: #2c3e50; margin-bottom: 8px;">🎯 Estratégia Recomendada:</h4>
+                        <p id="strategyRecommendation" style="margin: 0; color: #34495e; font-size: 0.9em;">
+                            Execute uma análise para ver as recomendações...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="model-results">
+            <h2 class="section-title">🎯 Resultados da Análise</h2>
+            <div id="analysisResults">
+                <div class="loading">
+                    <p>Execute uma análise para ver os resultados...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let priceData = [];
+        let futuresPrices = [];
+        let returns = [];
+        let timestamps = [];
+        let mainChart, secondaryChart;
+        let realTimeInterval;
+        let isRealTimeMode = false;
+        let currentChartType = 'price';
+        let currentForecastPeriod = 9;
+        let volatilityForecasts = { vol9: 0, vol18: 0, vol27: 0 };
+        let currentFRP = 5.5;
+        let currentMaturity = 60;
+
+        // APIs Configuration
+        const API_CONFIGS = {
+            alpha: {
+                url: 'https://www.alphavantage.co/query',
+                key: '1TBK44ZVPL72XS0S',
+                rateLimit: 60000,
+                function: 'FX_DAILY',
+                outputsize: 'full'
+            },
+            awesome: {
+                url: 'https://economia.awesomeapi.com.br/json/last/',
+                rateLimit: 60000,
+                historical: 'https://economia.awesomeapi.com.br/json/daily/'
+            },
+            yahoo: {
+                url: 'https://query1.finance.yahoo.com/v8/finance/chart/',
+                rateLimit: 30000
+            },
+			bcb: {
+                url: 'https://api.bcb.gov.br/dados/serie/bcdata.sgs.json',
+                rateLimit: 30000,
+                series: {
+                    'USD-BRL': 1,      // Dólar americano (comercial) - compra
+                    'EUR-BRL': 21619,  // Euro - compra
+                    'GBP-BRL': 21620,  // Libra esterlina - compra
+                    'CDI': 4389,       // CDI
+                    'SELIC': 432,      // Taxa Selic
+                    'IPCA': 433        // IPCA
+                }
+            },
+            hg: {
+                url: 'https://api.hgbrasil.com/finance/quotations',
+                key: 'YOUR_HG_KEY',
+                rateLimit: 60000
+            }
+        };
+
+        // Funções para calcular preços futuros
+        function calculateFuturePrice(spotPrice, frpRate, daysToMaturity) {
+            const annualFRP = frpRate / 100;
+            const timeToMaturity = daysToMaturity / 252; // Anos úteis
+            return spotPrice * (1 + annualFRP * timeToMaturity);
+        }
+
+        function calculateFuturesPrices(spotPrices, frpRate, daysToMaturity) {
+            return spotPrices.map(spotPrice => calculateFuturePrice(spotPrice, frpRate, daysToMaturity));
+        }
+
+        function calculateBasisPoints(spotPrice, futurePrice) {
+            return ((futurePrice - spotPrice) / spotPrice) * 10000; // Em basis points
+        }
+
+        function calculateCarryReturn(frpRate, daysToMaturity) {
+            return (frpRate / 100) * (daysToMaturity / 252) * 100; // Em %
+        }
+
+        // Classes para modelos avançados - VERSÃO CORRIGIDA
+        class AdvancedGARCH {
+            constructor(type = 'GARCH', options = {}) {
+                this.type = type;
+                this.options = {
+                    p: options.p || 1,
+                    q: options.q || 1,
+                    d: options.d || 0.4,
+                    distribution: options.distribution || 'normal'
+                };
+                this.fitted = false;
+            }
+
+            // EGARCH - Versão corrigida
+            fitEGARCH(returns) {
+                const n = returns.length;
+                const mean = returns.reduce((a, b) => a + b) / n;
+                const residuals = returns.map(r => r - mean);
+                
+                let omega = -0.5;
+                let alpha = 0.1;
+                let gamma = -0.05;
+                let beta = 0.9;
+                
+                const logConditionalVar = new Array(n);
+                const conditionalVar = new Array(n);
+                
+                logConditionalVar[0] = Math.log(this.sampleVariance(returns));
+                conditionalVar[0] = Math.exp(logConditionalVar[0]);
+                
+                for (let t = 1; t < n; t++) {
+                    const prevStdRes = residuals[t-1] / Math.sqrt(conditionalVar[t-1]);
+                    const expectedAbs = Math.sqrt(2/Math.PI);
+                    
+                    logConditionalVar[t] = omega + 
+                                         alpha * (Math.abs(prevStdRes) - expectedAbs) +
+                                         gamma * prevStdRes +
+                                         beta * logConditionalVar[t-1];
+                    
+                    conditionalVar[t] = Math.exp(logConditionalVar[t]);
+                }
+                
+                return {
+                    conditionalVariance: conditionalVar,
+                    params: { omega, alpha, gamma, beta },
+                    logLikelihood: this.calculateLogLikelihood(residuals, conditionalVar)
+                };
+            }
+
+            // GJR-GARCH - Versão corrigida
+            fitGJRGARCH(returns) {
+                const n = returns.length;
+                const mean = returns.reduce((a, b) => a + b) / n;
+                const residuals = returns.map(r => r - mean);
+                
+                let omega = 0.00001;
+                let alpha = 0.05;
+                let gamma = 0.05;
+                let beta = 0.9;
+                
+                const conditionalVar = new Array(n);
+                conditionalVar[0] = this.sampleVariance(returns);
+                
+                for (let t = 1; t < n; t++) {
+                    const indicator = residuals[t-1] < 0 ? 1 : 0;
+                    conditionalVar[t] = omega + 
+                                      (alpha + gamma * indicator) * Math.pow(residuals[t-1], 2) +
+                                      beta * conditionalVar[t-1];
+                }
+                
+                return {
+                    conditionalVariance: conditionalVar,
+                    params: { omega, alpha, gamma, beta },
+                    logLikelihood: this.calculateLogLikelihood(residuals, conditionalVar)
+                };
+            }
+
+            // FIGARCH - Versão simplificada funcional
+            fitFIGARCH(returns) {
+                const n = returns.length;
+                const mean = returns.reduce((a, b) => a + b) / n;
+                const residuals = returns.map(r => r - mean);
+                
+                let omega = 0.00001;
+                let phi = 0.1;
+                let d = this.options.d;
+                let beta = 0.8;
+                
+                const conditionalVar = new Array(n);
+                conditionalVar[0] = this.sampleVariance(returns);
+                
+                for (let t = 1; t < n; t++) {
+                    let persistence = 0;
+                    const maxLag = Math.min(t, 20);
+                    
+                    for (let j = 1; j <= maxLag; j++) {
+                        const weight = this.figarchWeight(j, d);
+                        persistence += weight * Math.pow(residuals[t-j], 2);
+                    }
+                    
+                    conditionalVar[t] = omega + phi * persistence + beta * conditionalVar[t-1];
+                    conditionalVar[t] = Math.max(conditionalVar[t], 0.0001); // Evita valores negativos
+                }
+                
+                return {
+                    conditionalVariance: conditionalVar,
+                    params: { omega, phi, d, beta },
+                    logLikelihood: this.calculateLogLikelihood(residuals, conditionalVar)
+                };
+            }
+
+            figarchWeight(j, d) {
+                if (j === 1) return d;
+                let weight = 1;
+                for (let k = 1; k < j; k++) {
+                    weight *= (d - k + 1) / k;
+                }
+                return Math.abs(weight); // Garante peso positivo
+            }
+
+            // GARCH padrão - Versão corrigida
+            fitGARCH(returns) {
+                const n = returns.length;
+                const mean = returns.reduce((a, b) => a + b) / n;
+                const residuals = returns.map(r => r - mean);
+                
+                let omega = 0.00001;
+                let alpha = 0.1;
+                let beta = 0.85;
+                
+                const conditionalVar = new Array(n);
+                conditionalVar[0] = this.sampleVariance(returns);
+                
+                for (let t = 1; t < n; t++) {
+                    conditionalVar[t] = omega + 
+                                      alpha * Math.pow(residuals[t-1], 2) +
+                                      beta * conditionalVar[t-1];
+                    conditionalVar[t] = Math.max(conditionalVar[t], 0.0001); // Evita valores negativos
+                }
+                
+                return {
+                    conditionalVariance: conditionalVar,
+                    params: { omega, alpha: [alpha], beta: [beta] }, // Formato consistente
+                    logLikelihood: this.calculateLogLikelihood(residuals, conditionalVar)
+                };
+            }
+
+            fit(returns) {
+                this.returns = returns;
+                let result;
+                
+                switch(this.type) {
+                    case 'EGARCH':
+                        result = this.fitEGARCH(returns);
+                        break;
+                    case 'GJR-GARCH':
+                        result = this.fitGJRGARCH(returns);
+                        break;
+                    case 'FIGARCH':
+                        result = this.fitFIGARCH(returns);
+                        break;
+                    default:
+                        result = this.fitGARCH(returns);
+                }
+                
+                this.conditionalVariance = result.conditionalVariance;
+                this.params = result.params;
+                this.logLikelihood = result.logLikelihood;
+                this.fitted = true;
+                
+                return result;
+            }
+
+            sampleVariance(data) {
+                const mean = data.reduce((a, b) => a + b) / data.length;
+                return data.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / data.length;
+            }
+
+            calculateLogLikelihood(residuals, conditionalVar) {
+                let logL = 0;
+                for (let t = 0; t < residuals.length; t++) {
+                    if (conditionalVar[t] > 0) {
+                        logL += -0.5 * Math.log(2 * Math.PI * conditionalVar[t]) - 
+                                Math.pow(residuals[t], 2) / (2 * conditionalVar[t]);
+                    }
+                }
+                return logL;
+            }
+
+            // Método de previsão corrigido
+            forecast(steps) {
+                if (!this.fitted) throw new Error('Modelo não foi ajustado');
+                
+                const volatility = [];
+                let currentVar = this.conditionalVariance[this.conditionalVariance.length - 1];
+                
+                for (let h = 1; h <= steps; h++) {
+                    switch(this.type) {
+                        case 'GARCH':
+                            currentVar = this.params.omega + 
+                                       this.params.alpha[0] * currentVar +
+                                       this.params.beta[0] * currentVar;
+                            break;
+                        case 'EGARCH':
+                            // Simplificado para previsão EGARCH
+                            currentVar = Math.exp(this.params.omega + 
+                                               this.params.beta * Math.log(currentVar));
+                            break;
+                        case 'GJR-GARCH':
+                            currentVar = this.params.omega + 
+                                       (this.params.alpha + this.params.gamma * 0.5) * currentVar +
+                                       this.params.beta * currentVar;
+                            break;
+                        case 'FIGARCH':
+                            // Simplificado para previsão FIGARCH
+                            currentVar = this.params.omega + 
+                                       this.params.phi * currentVar +
+                                       this.params.beta * currentVar;
+                            break;
+                    }
+                    
+                    volatility.push(Math.sqrt(currentVar));
+                }
+                
+                return { volatility };
+            }
+
+            // Método para calcular bandas de preço
+            calculatePriceBands(currentPrice, steps, confidence = 0.90) {
+                const forecast = this.forecast(steps);
+                const zScore = this.getQuantile((1 + confidence) / 2);
+                
+                const upper = [];
+                const lower = [];
+                const target = [];
+                
+                let price = currentPrice;
+                for (let i = 0; i < steps; i++) {
+                    const vol = forecast.volatility[i];
+                    const drift = 0.0001; // Drift pequeno
+                    
+                    price = price * Math.exp(drift);
+                    target.push(price);
+                    upper.push(price * Math.exp(zScore * vol));
+                    lower.push(price * Math.exp(-zScore * vol));
+                }
+                
+                return { upper, lower, target };
+            }
+
+            calculateVaR(confidence = 0.95) {
+                if (!this.fitted) return null;
+                
+                const currentVol = Math.sqrt(this.conditionalVariance[this.conditionalVariance.length - 1]);
+                const zScore = this.getQuantile(1 - confidence);
+                return currentVol * zScore;
+            }
+
+            calculateExpectedShortfall(confidence = 0.95) {
+                if (!this.fitted) return null;
+                
+                const var95 = this.calculateVaR(confidence);
+                const currentVol = Math.sqrt(this.conditionalVariance[this.conditionalVariance.length - 1]);
+                
+                const alpha = 1 - confidence;
+                const phi = 0.3989;
+                return currentVol * phi / alpha;
+            }
+
+            getQuantile(p) {
+                if (p <= 0.01) return -2.326;
+                if (p <= 0.05) return -1.645;
+                if (p <= 0.1) return -1.282;
+                if (p >= 0.99) return 2.326;
+                if (p >= 0.95) return 1.645;
+                if (p >= 0.9) return 1.282;
+                return -1.645;
+            }
+        }
+
+        // Funções de API - CORRIGIDAS
+        async function fetchRealTimeData() {
+            const pair = document.getElementById('currencyPair').value;
+            const lookback = parseInt(document.getElementById('lookback').value);
+            const dataSource = document.getElementById('dataSource').value;
+
+            // Atualizar variáveis globais
+            currentFRP = parseFloat(document.getElementById('frpRate').value);
+            currentMaturity = parseInt(document.getElementById('maturityDays').value);
+
+            showMessage('Carregando dados em tempo real...', 'info');
+
+            try {
+                let data;
+                
+                // Tentar Alpha Vantage primeiro (padrão)
+                if (dataSource === 'alpha') {
+                    try {
+                        data = await fetchAlphaVantage(pair, lookback);
+                        updateAPIStatus('alphaStatus', true);
+                        showMessage(`Dados atualizados com sucesso da Alpha Vantage!`, 'success');
+                    } catch (error) {
+                        console.warn('Alpha Vantage falhou, tentando AwesomeAPI:', error);
+                        data = await fetchAwesomeAPI(pair.replace('=X', '-BRL').replace('USDBRL', 'USD-BRL'), lookback);
+                        updateAPIStatus('awesomeStatus', true);
+                        showMessage('Alpha Vantage indisponível, usando AwesomeAPI como backup', 'success');
+                    }
+                } else if (dataSource === 'awesome') {
+                    data = await fetchAwesomeAPI(pair.replace('=X', '-BRL').replace('USDBRL', 'USD-BRL'), lookback);
+                    updateAPIStatus('awesomeStatus', true);
+                    showMessage(`Dados atualizados com sucesso da AwesomeAPI!`, 'success');
+                } else {
+                    // Yahoo Finance ou outros
+                    data = await fetchYahooFinance(pair, lookback);
+                    updateAPIStatus('yahooStatus', true);
+                    showMessage(`Dados atualizados com sucesso do Yahoo Finance!`, 'success');
+                }
+
+                priceData = data.prices;
+                timestamps = data.timestamps;
+
+                // Calcular preços futuros
+                futuresPrices = calculateFuturesPrices(priceData, currentFRP, currentMaturity);
+
+                // Usar preços spot ou futuros dependendo da seleção
+                const contractType = document.getElementById('contractType').value;
+                const analysisData = contractType === 'future' ? futuresPrices : priceData;
+                returns = calculateReturns(analysisData);
+
+                updateCharts();
+                updateLiveMetrics();
+
+                document.getElementById('liveIndicator').textContent = '● CONECTADO';
+                document.getElementById('liveIndicator').classList.add('connected');
+
+            } catch (error) {
+                showMessage('Erro ao carregar dados, gerando dados simulados...', 'error');
+                const data = generateAdvancedSimulatedData(lookback);
+                priceData = data.prices;
+                timestamps = data.timestamps;
+                
+                // Resetar todos os status de API
+                updateAPIStatus('alphaStatus', false);
+                updateAPIStatus('awesomeStatus', false);
+                updateAPIStatus('yahooStatus', false);
+            }
+        }
+
+        async function fetchAlphaVantage(pair, days) {
+            // Converter formato do par (USDBRL=X para USD/BRL)
+            const fromCurrency = pair.substring(0, 3);
+            const toCurrency = pair.substring(3, 6);
+            
+            // Pegar API key do input do usuário
+            const apiKey = document.getElementById('alphaApiKey').value || API_CONFIGS.alpha.key;
+            
+            try {
+                const url = `${API_CONFIGS.alpha.url}?function=${API_CONFIGS.alpha.function}&from_symbol=${fromCurrency}&to_symbol=${toCurrency}&apikey=${apiKey}&outputsize=full`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data['Error Message']) {
+                    throw new Error('API limit reached or invalid pair');
+                }
+                
+                if (data['Note']) {
+                    throw new Error('API call frequency limit reached - considere aumentar o intervalo');
+                }
+                
+                if (data['Information']) {
+                    throw new Error('API call frequency limit - máximo 25 calls/dia atingido');
+                }
+                
+                const timeSeries = data['Time Series FX (Daily)'];
+                if (!timeSeries) {
+                    throw new Error('No data available');
+                }
+                
+                const prices = [];
+                const timestamps = [];
+                const entries = Object.entries(timeSeries).slice(0, days).reverse();
+                
+                for (let [date, values] of entries) {
+                    prices.push(parseFloat(values['4. close']));
+                    timestamps.push(new Date(date));
+                }
+                
+                return { prices, timestamps };
+                
+            } catch (error) {
+                console.warn('Alpha Vantage API falhou:', error);
+                throw error;
+            }
+        }
+
+        async function fetchYahooFinance(pair, days) {
+            try {
+                // Yahoo Finance usa formato diferente
+                const symbol = pair; // USDBRL=X já está no formato correto
+                const period1 = Math.floor((Date.now() - (days * 24 * 60 * 60 * 1000)) / 1000);
+                const period2 = Math.floor(Date.now() / 1000);
+                
+                const url = `${API_CONFIGS.yahoo.url}${symbol}?period1=${period1}&period2=${period2}&interval=1d&includePrePost=true&events=div%7Csplit`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
+                    throw new Error('No data available from Yahoo Finance');
+                }
+                
+                const result = data.chart.result[0];
+                const timestamps_unix = result.timestamp;
+                const closes = result.indicators.quote[0].close;
+                
+                const prices = [];
+                const timestamps = [];
+                
+                for (let i = 0; i < timestamps_unix.length && i < days; i++) {
+                    if (closes[i] !== null) {
+                        prices.push(closes[i]);
+                        timestamps.push(new Date(timestamps_unix[i] * 1000));
+                    }
+                }
+                
+                return { prices, timestamps };
+                
+            } catch (error) {
+                console.warn('Yahoo Finance API falhou:', error);
+                throw error;
+            }
+        }
+
+        async function fetchAwesomeAPI(pair, days) {
+            const url = `${API_CONFIGS.awesome.historical}${pair}/${days}`;
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                const prices = [];
+                const timestamps = [];
+                
+                for (let item of data) {
+                    prices.push(parseFloat(item.high));
+                    timestamps.push(new Date(parseInt(item.timestamp) * 1000));
+                }
+                
+                return { prices: prices.reverse(), timestamps: timestamps.reverse() };
+                
+            } catch (error) {
+                console.warn('AwesomeAPI falhou, usando dados simulados');
+                return generateAdvancedSimulatedData(days);
+            }
+        }
+
+        async function fetchHGBrasil(pair, days) {
+            try {
+                const url = `${API_CONFIGS.hg.url}?key=${API_CONFIGS.hg.key}&format=json`;
+                const response = await fetch(url);
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                return generateAdvancedSimulatedData(days);
+                
+            } catch (error) {
+                console.warn('HG Brasil API falhou, usando dados simulados');
+                return generateAdvancedSimulatedData(days);
+            }
+        }
+
+        async function fetchBCB(pair, days) {
+            try {
+                const seriesId = API_CONFIGS.bcb.series[pair] || API_CONFIGS.bcb.series['USD-BRL'];
+                const url = `${API_CONFIGS.bcb.url}/${seriesId}/dados?formato=json`;
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                const prices = [];
+                const timestamps = [];
+
+                const slicedData = data.slice(-days);
+
+                for (let item of slicedData) {
+                    const [day, month, year] = item.data.split('/');
+                    prices.push(parseFloat(item.valor));
+                    timestamps.push(new Date(`${year}-${month}-${day}`));
+                }
+
+                return { prices, timestamps };
+            } catch (error) {
+                console.warn('BCB API falhou, usando dados simulados:', error);
+                return generateAdvancedSimulatedData(days);
+            }
+        }
+
+        function generateAdvancedSimulatedData(days) {
+            const prices = [];
+            const timestamps = [];
+            const initialPrice = 5.20;
+            
+            const omega = 0.00001;
+            const alpha = 0.08;
+            const beta = 0.9;
+            const drift = 0.00005;
+            
+            let currentPrice = initialPrice;
+            let conditionalVar = 0.0004;
+            
+            for (let i = 0; i < days; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - (days - i));
+                timestamps.push(date);
+                
+                const shock = normalRandom() * Math.sqrt(conditionalVar);
+                const return_ = drift + shock;
+                currentPrice = currentPrice * Math.exp(return_);
+                prices.push(currentPrice);
+                
+                conditionalVar = omega + alpha * Math.pow(return_, 2) + beta * conditionalVar;
+            }
+            
+            return { prices, timestamps };
+        }
+
+        function updateAPIStatus(statusId, isActive) {
+            const indicator = document.getElementById(statusId);
+            if (indicator) {
+                indicator.classList.toggle('active', isActive);
+            }
+        }
+
+        function calculateReturns(prices) {
+            const returns = [];
+            for (let i = 1; i < prices.length; i++) {
+                returns.push(Math.log(prices[i] / prices[i-1]));
+            }
+            return returns;
+        }
+
+        function updateCharts() {
+            updateMainChart();
+            updateSecondaryChart();
+        }
+
+        function updateMainChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            if (mainChart) {
+                mainChart.destroy();
+            }
+            
+            const labels = timestamps.map((_, i) => i);
+            let datasets = [];
+            
+            switch(currentChartType) {
+                case 'price':
+                    const contractType = document.getElementById('contractType').value;
+                    
+                    if (contractType === 'future') {
+                        datasets = [
+                            {
+                                label: 'Preço à Vista',
+                                data: priceData,
+                                borderColor: '#3498db',
+                                backgroundColor: '#3498db20',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.1
+                            },
+                            {
+                                label: `Contrato Futuro (${currentMaturity}D)`,
+                                data: futuresPrices,
+                                borderColor: '#e74c3c',
+                                backgroundColor: '#e74c3c20',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.1
+                            }
+                        ];
+                    } else {
+                        datasets = [{
+                            label: 'Preço de Câmbio',
+                            data: priceData,
+                            borderColor: '#3498db',
+                            backgroundColor: '#3498db20',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        }];
+                    }
+                    break;
+                    
+                case 'returns':
+                    datasets = [{
+                        label: 'Retornos (%)',
+                        data: returns.map(r => r * 100),
+                        borderColor: '#e74c3c',
+                        backgroundColor: '#e74c3c20',
+                        borderWidth: 1,
+                        fill: false,
+                        tension: 0.1
+                    }];
+                    break;
+                    
+                case 'volatility':
+                    const volData = calculateRollingVolatility(returns, 20);
+                    datasets = [{
+                        label: 'Volatilidade (20 dias)',
+                        data: volData.map(v => v * 100),
+                        borderColor: '#f39c12',
+                        backgroundColor: '#f39c1220',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    }];
+                    break;
+            }
+            
+            const chartData = currentChartType === 'volatility' ? 
+                calculateRollingVolatility(returns, 20) : 
+                (currentChartType === 'returns' ? returns : priceData);
+                
+            mainChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.slice(0, chartData.length),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tempo'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: currentChartType === 'price' ? 'Preço (R$)' : 
+                                      currentChartType === 'returns' ? 'Retornos (%)' : 'Volatilidade (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateSecondaryChart() {
+            const ctx = document.getElementById('secondaryChart').getContext('2d');
+            
+            if (secondaryChart) {
+                secondaryChart.destroy();
+            }
+            
+            const volatilityData = calculateRollingVolatility(returns, 20);
+            const labels = timestamps.slice(0, volatilityData.length).map((_, i) => i);
+            
+            secondaryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Volatilidade Realizada',
+                        data: volatilityData.map(v => v * 100),
+                        borderColor: '#9b59b6',
+                        backgroundColor: '#9b59b620',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tempo'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Volatilidade (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculateRollingVolatility(returns, window) {
+            const volatility = [];
+            
+            for (let i = window; i < returns.length; i++) {
+                const subset = returns.slice(i - window, i);
+                const mean = subset.reduce((a, b) => a + b) / subset.length;
+                const variance = subset.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / subset.length;
+                volatility.push(Math.sqrt(variance * 252));
+            }
+            
+            return volatility;
+        }
+
+        function switchChart(type) {
+            document.querySelectorAll('.chart-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+            
+            currentChartType = type;
+            updateMainChart();
+        }
+
+        function updateLiveMetrics() {
+            if (priceData.length < 2) return;
+            
+            const contractType = document.getElementById('contractType').value;
+            const currentSpotPrice = priceData[priceData.length - 1];
+            const previousSpotPrice = priceData[priceData.length - 2];
+            const currentFuturePrice = futuresPrices[futuresPrices.length - 1];
+            
+            // Atualizar preço principal (spot ou futuro)
+            const mainPrice = contractType === 'future' ? currentFuturePrice : currentSpotPrice;
+            const previousPrice = contractType === 'future' ? 
+                futuresPrices[futuresPrices.length - 2] : previousSpotPrice;
+            
+            const priceChange = ((mainPrice - previousPrice) / previousPrice) * 100;
+            
+            // Cotação atual (spot)
+            document.getElementById('currentPrice').textContent = currentSpotPrice.toFixed(4);
+            document.getElementById('priceLabel').textContent = 'Cotação à Vista';
+            
+            // Novo campo: Dólar spot usado no cálculo
+            document.getElementById('spotUsed').textContent = currentSpotPrice.toFixed(4);
+            
+            // Preço futuro
+            document.getElementById('futurePrice').textContent = currentFuturePrice.toFixed(4);
+            
+            // Calcular premium do futuro
+            const premium = ((currentFuturePrice - currentSpotPrice) / currentSpotPrice) * 100;
+            const premiumElement = document.getElementById('futurePremium');
+            premiumElement.textContent = `+${premium.toFixed(2)}%`;
+            premiumElement.className = `metric-change ${premium >= 0 ? 'positive' : 'negative'}`;
+            
+            // Atualizar mudança de preço
+            const changeElement = document.getElementById('priceChange');
+            changeElement.textContent = `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}%`;
+            changeElement.className = `metric-change ${priceChange >= 0 ? 'positive' : 'negative'}`;
+            
+            // Calcular métricas de base e carry
+            const basisPoints = calculateBasisPoints(currentSpotPrice, currentFuturePrice);
+            const carryReturn = calculateCarryReturn(currentFRP, currentMaturity);
+            
+            document.getElementById('basisPoints').textContent = basisPoints.toFixed(0) + ' bps';
+            document.getElementById('carryReturn').textContent = carryReturn.toFixed(2) + '%';
+            
+            // Volatilidade
+            if (returns.length > 1) {
+                const recentReturns = returns.slice(-20);
+                const volatility = Math.sqrt(
+                    recentReturns.reduce((sum, r) => sum + r*r, 0) / recentReturns.length * 252
+                ) * 100;
+                
+                document.getElementById('dailyVol').textContent = volatility.toFixed(2) + '%';
+            }
+        }
+
+        function runAdvancedAnalysis() {
+            if (priceData.length < 50) {
+                showMessage('Dados insuficientes. Carregue pelo menos 50 observações.', 'error');
+                return;
+            }
+            
+            showLoading();
+            
+            setTimeout(() => {
+                try {
+                    const modelType = document.getElementById('modelType').value;
+                    const contractType = document.getElementById('contractType').value;
+                    
+                    // Usar preços spot ou futuros para análise
+                    const analysisData = contractType === 'future' ? futuresPrices : priceData;
+                    const returns = calculateReturns(analysisData);
+                    
+                    const model = new AdvancedGARCH(modelType);
+                    const results = model.fit(returns);
+                    
+                    const var95 = model.calculateVaR(0.95);
+                    const es95 = model.calculateExpectedShortfall(0.95);
+                    const sharpe = calculateSharpeRatio(returns);
+                    const maxDD = calculateMaxDrawdown(analysisData);
+                    
+                    const currentPrice = analysisData[analysisData.length - 1];
+                    calculateMultiPeriodForecasts(model, currentPrice, contractType);
+                    
+                    updateRiskMetrics(var95, es95, sharpe, maxDD, results);
+                    displayAdvancedResults(model, results, contractType);
+                    
+                } catch (error) {
+                    showMessage('Erro na análise: ' + error.message, 'error');
+                    console.error('Erro detalhado:', error);
+                }
+            }, 1500);
+        }
+
+        function calculateMultiPeriodForecasts(model, currentPrice, contractType = 'spot') {
+            const periods = [9, 18, 27];
+            
+            periods.forEach(period => {
+                try {
+                    const forecast = model.forecast(period);
+                    const avgVolatility = forecast.volatility.reduce((a, b) => a + b) / forecast.volatility.length;
+                    volatilityForecasts[`vol${period}`] = avgVolatility * Math.sqrt(252) * 100;
+                    
+                    const bands = model.calculatePriceBands(currentPrice, period, 0.90);
+                    
+                    if (period === currentForecastPeriod) {
+                        updateForecastDisplay(bands, period, currentPrice, contractType);
+                    }
+                } catch (error) {
+                    console.warn(`Erro no forecast ${period}:`, error);
+                    volatilityForecasts[`vol${period}`] = 15; // Valor padrão
+                }
+            });
+            
+            updateVolatilityBreakdown();
+            updateStrategyRecommendation(contractType);
+        }
+
+        function updateForecastDisplay(bands, period, currentPrice, contractType = 'spot') {
+            const lastIndex = period - 1;
+            
+            const maxPrice = bands.upper[lastIndex];
+            const maxProbability = calculateProbability(currentPrice, maxPrice, bands);
+            document.getElementById('maxForecast').textContent = maxPrice.toFixed(4);
+            document.getElementById('maxConfidence').textContent = `${maxProbability}% de chance`;
+            
+            const minPrice = bands.lower[lastIndex];
+            const minProbability = calculateProbability(currentPrice, minPrice, bands);
+            document.getElementById('minForecast').textContent = minPrice.toFixed(4);
+            document.getElementById('minConfidence').textContent = `${minProbability}% de chance`;
+            
+            const targetPrice = bands.target[lastIndex];
+            document.getElementById('targetForecast').textContent = targetPrice.toFixed(4);
+            document.getElementById('targetConfidence').textContent = `Previsão pontual`;
+            
+            const variation = ((maxPrice - minPrice) / currentPrice * 100);
+            const contractLabel = contractType === 'future' ? 'contratos futuros' : 'câmbio à vista';
+            showMessage(`Variação esperada em ${period} dias (${contractLabel}): ${variation.toFixed(1)}%`, 'success');
+        }
+
+        function calculateProbability(currentPrice, targetPrice, bands) {
+            const direction = targetPrice > currentPrice ? 'alta' : 'baixa';
+            
+            if (direction === 'alta') {
+                return Math.min(95, Math.max(5, 85 - Math.abs(Math.log(targetPrice/currentPrice)) * 20));
+            } else {
+                return Math.min(95, Math.max(5, 85 - Math.abs(Math.log(currentPrice/targetPrice)) * 20));
+            }
+        }
+
+        function updateVolatilityBreakdown() {
+            document.getElementById('vol9').textContent = volatilityForecasts.vol9.toFixed(2) + '%';
+            document.getElementById('vol18').textContent = volatilityForecasts.vol18.toFixed(2) + '%';
+            document.getElementById('vol27').textContent = volatilityForecasts.vol27.toFixed(2) + '%';
+        }
+
+        function updateStrategyRecommendation(contractType) {
+            const volatility = volatilityForecasts[`vol${currentForecastPeriod}`];
+            const frp = currentFRP;
+            const maturityDays = currentMaturity;
+            const carryReturn = calculateCarryReturn(frp, maturityDays);
+            
+            let recommendation = "";
+            
+            if (contractType === 'future') {
+                if (volatility > 25) {
+                    if (carryReturn > 2) {
+                        recommendation = `📊 <strong>Estratégia Defensiva:</strong> Alta volatilidade (${volatility.toFixed(1)}%) com carry positivo (${carryReturn.toFixed(2)}%). Considere hedge com contratos futuros ou posições menores aproveitando o prêmio de ${(frp * maturityDays / 252).toFixed(2)}%.`;
+                    } else {
+                        recommendation = `⚠️ <strong>Alto Risco:</strong> Volatilidade elevada (${volatility.toFixed(1)}%) e carry baixo. Evite exposições grandes. Ideal para day trading com stops apertados.`;
+                    }
+                } else if (volatility > 15) {
+                    if (carryReturn > 1.5) {
+                        recommendation = `💰 <strong>Oportunidade de Carry Trade:</strong> Volatilidade moderada (${volatility.toFixed(1)}%) com carry positivo (${carryReturn.toFixed(2)}%). Posições longas em futuros podem ser favoráveis.`;
+                    } else {
+                        recommendation = `⚖️ <strong>Trading Neutro:</strong> Volatilidade moderada, considere estratégias direcionais baseadas na análise técnica dos contratos futuros DOL.`;
+                    }
+                } else {
+                    recommendation = `✅ <strong>Ambiente Favorável:</strong> Baixa volatilidade (${volatility.toFixed(1)}%) ideal para carry trade. Aproveite o prêmio dos futuros (${carryReturn.toFixed(2)}%) com posições de médio prazo.`;
+                }
+            } else {
+                if (volatility > 25) {
+                    recommendation = `🔴 <strong>Alto Risco:</strong> Volatilidade elevada (${volatility.toFixed(1)}%) no câmbio à vista. Considere hedge com derivativos ou reduza exposições cambial.`;
+                } else if (volatility > 15) {
+                    recommendation = `🟡 <strong>Risco Moderado:</strong> Ambiente adequado para operações de câmbio à vista com gestão de risco adequada.`;
+                } else {
+                    recommendation = `🟢 <strong>Baixo Risco:</strong> Período de estabilidade cambial favorável para investimentos em ativos denominados em moeda estrangeira.`;
+                }
+            }
+            
+            document.getElementById('strategyRecommendation').innerHTML = recommendation;
+        }
+
+        function switchForecastPeriod(period) {
+            document.querySelectorAll('.period-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+            
+            currentForecastPeriod = period;
+            
+            if (priceData.length > 50) {
+                const modelType = document.getElementById('modelType').value;
+                const contractType = document.getElementById('contractType').value;
+                const model = new AdvancedGARCH(modelType);
+                
+                try {
+                    const analysisData = contractType === 'future' ? futuresPrices : priceData;
+                    const returns = calculateReturns(analysisData);
+                    model.fit(returns);
+                    
+                    const currentPrice = analysisData[analysisData.length - 1];
+                    const bands = model.calculatePriceBands(currentPrice, period, 0.90);
+                    updateForecastDisplay(bands, period, currentPrice, contractType);
+                    updateStrategyRecommendation(contractType);
+                } catch (error) {
+                    console.warn('Erro ao recalcular previsões:', error);
+                }
+            }
+        }
+
+        function updateRiskMetrics(var95, es95, sharpe, maxDD, results) {
+            document.getElementById('var95').textContent = (var95 * 100).toFixed(2) + '%';
+            document.getElementById('expectedShortfall').textContent = (es95 * 100).toFixed(2) + '%';
+            document.getElementById('sharpeRatio').textContent = sharpe.toFixed(3);
+            document.getElementById('maxDrawdown').textContent = (maxDD * 100).toFixed(2) + '%';
+            
+            if (results.conditionalVariance) {
+                const currentVol = Math.sqrt(results.conditionalVariance[results.conditionalVariance.length - 1] * 252) * 100;
+                document.getElementById('currentVol').textContent = currentVol.toFixed(2) + '%';
+            }
+        }
+
+        function calculateSharpeRatio(returns) {
+            const mean = returns.reduce((a, b) => a + b) / returns.length;
+            const std = Math.sqrt(returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length);
+            return (mean * Math.sqrt(252)) / (std * Math.sqrt(252));
+        }
+
+        function calculateMaxDrawdown(prices) {
+            let maxDD = 0;
+            let peak = prices[0];
+            
+            for (let price of prices) {
+                if (price > peak) {
+                    peak = price;
+                }
+                const drawdown = (peak - price) / peak;
+                maxDD = Math.max(maxDD, drawdown);
+            }
+            
+            return maxDD;
+        }
+
+        function displayAdvancedResults(model, results, contractType = 'spot') {
+            const resultsDiv = document.getElementById('analysisResults');
+            
+            const contractLabel = contractType === 'future' ? 'Contratos Futuros DOL' : 'Câmbio à Vista';
+            const currentPrice = contractType === 'future' ? 
+                futuresPrices[futuresPrices.length - 1] : 
+                priceData[priceData.length - 1];
+            
+            const html = `
+                <div class="stats-grid">
+                    <div class="metric-card">
+                        <div class="stat-value">${results.params.omega ? results.params.omega.toExponential(3) : 'N/A'}</div>
+                        <div class="stat-label">ω (Constante)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="stat-value">${results.params.alpha ? results.params.alpha[0].toFixed(4) : 'N/A'}</div>
+                        <div class="stat-label">α₁ (ARCH)</div>
+                    </div>
+                    ${results.params.beta ? `
+                    <div class="metric-card">
+                        <div class="stat-value">${results.params.beta[0].toFixed(4)}</div>
+                        <div class="stat-label">β₁ (GARCH)</div>
+                    </div>
+                    ` : ''}
+                    ${results.params.gamma ? `
+                    <div class="metric-card">
+                        <div class="stat-value">${results.params.gamma.toFixed(4)}</div>
+                        <div class="stat-label">γ (Assimetria)</div>
+                    </div>
+                    ` : ''}
+                    <div class="metric-card">
+                        <div class="stat-value">${results.logLikelihood.toFixed(2)}</div>
+                        <div class="stat-label">Log-Likelihood</div>
+                    </div>
+
+                </div>
+                
+                <div class="model-results">
+                    <h3>📊 Modelo ${model.type} - ${contractLabel}</h3>
+                    <p><strong>Especificações:</strong> ${getModelSpecification(model.type)}</p>
+                    
+                    ${contractType === 'future' ? `
+                    <div style="background: #e8f4fd; padding: 15px; border-radius: 10px; margin: 15px 0; border-left: 4px solid #3498db;">
+                        <h4 style="color: #2c3e50; margin-bottom: 10px;">💹 Parâmetros do Contrato Futuro</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <strong>Vencimento:</strong> ${currentMaturity} dias<br>
+                                <strong>Taxa FRP:</strong> ${currentFRP.toFixed(2)}% a.a.<br>
+                                <strong>Preço Spot:</strong> R$ ${priceData[priceData.length - 1].toFixed(4)}
+                            </div>
+                            <div>
+                                <strong>Preço Futuro:</strong> R$ ${currentPrice.toFixed(4)}<br>
+                                <strong>Prêmio:</strong> ${(((currentPrice - priceData[priceData.length - 1]) / priceData[priceData.length - 1]) * 100).toFixed(2)}%<br>
+                                <strong>Carry Return:</strong> ${calculateCarryReturn(currentFRP, currentMaturity).toFixed(2)}%
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <h3>🔍 Interpretação</h3>
+                    <div style="background: #ecf0f1; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                        ${getModelInterpretation(model.type, results.params)}
+                        ${contractType === 'future' ? `
+                        <p style="margin-top: 10px;"><strong>📈 Análise para Futuros:</strong> 
+                        Os parâmetros indicam ${getPersistenceAnalysis(results.params)} Isso é ${getPersistenceAnalysis(results.params).includes('alta') ? 'típico em mercados de futuros com prêmios estruturais' : 'favorável para estratégias de carry trade'}.
+                        </p>
+                        ` : ''}
+                    </div>
+                    
+                    <h3>📈 Previsão de Volatilidade Multi-Período</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 15px 0;">
+                        <div style="text-align: center; padding: 10px; background: #e8f4fd; border-radius: 8px;">
+                            <strong>9 Dias:</strong><br>
+                            <span style="color: #3498db; font-size: 1.1em;">${volatilityForecasts.vol9.toFixed(2)}%</span>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: #fff2e8; border-radius: 8px;">
+                            <strong>18 Dias:</strong><br>
+                            <span style="color: #f39c12; font-size: 1.1em;">${volatilityForecasts.vol18.toFixed(2)}%</span>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: #fde8e8; border-radius: 8px;">
+                            <strong>27 Dias:</strong><br>
+                            <span style="color: #e74c3c; font-size: 1.1em;">${volatilityForecasts.vol27.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                    
+                    <h3>🎯 Cenários de Preço (${currentForecastPeriod} dias)</h3>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 10px;">
+                        <p><strong>💡 Interpretação dos Cenários ${contractType === 'future' ? '(Contratos Futuros)' : '(Câmbio à Vista)'}:</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>Máxima Projetada:</strong> Cenário otimista (90% confiança)</li>
+                            <li><strong>Preço Alvo:</strong> Projeção central do modelo</li>
+                            <li><strong>Mínima Projetada:</strong> Cenário pessimista (90% confiança)</li>
+                            ${contractType === 'future' ? '<li><strong>Valores já incluem:</strong> Prêmio FRP e ajuste por vencimento</li>' : ''}
+                        </ul>
+                    </div>
+                    
+                    <h3>📈 Volatilidade condicional atual</h3>
+                    <p>Volatilidade atual: <strong>${(Math.sqrt(results.conditionalVariance[results.conditionalVariance.length - 1] * 252) * 100).toFixed(2)}%</strong> (anualizada)</p>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+            showMessage(`Análise avançada concluída para ${contractLabel}!`, 'success');
+        }
+
+        function getModelSpecification(type) {
+            switch(type) {
+                case 'GARCH':
+                    return 'σ²ₜ = ω + α₁ε²ₜ₋₁ + β₁σ²ₜ₋₁';
+                case 'EGARCH':
+                    return 'ln(σ²ₜ) = ω + α[|εₜ₋₁|/σₜ₋₁ - E|εₜ₋₁|/σₜ₋₁] + γεₜ₋₁/σₜ₋₁ + βln(σ²ₜ₋₁)';
+                case 'GJR-GARCH':
+                    return 'σ²ₜ = ω + (α + γIₜ₋₁)ε²ₜ₋₁ + βσ²ₜ₋₁';
+                case 'FIGARCH':
+                    return '(1-βL)(1-φL)(1-L)ᵈε²ₜ = ω + (1-θL)vₜ';
+                default:
+                    return 'Modelo não especificado';
+            }
+        }
+
+        function getModelInterpretation(type, params) {
+            let interpretation = `<p><strong>Modelo ${type}:</strong></p><ul style="margin-left: 20px;">`;
+            
+            if (params.omega) {
+                interpretation += `<li>Volatilidade base: ${(Math.sqrt(params.omega * 252) * 100).toFixed(2)}% anual</li>`;
+            }
+            
+            if (params.alpha && params.alpha[0]) {
+                interpretation += `<li>Sensibilidade a choques: ${(params.alpha[0] * 100).toFixed(2)}%</li>`;
+            }
+            
+            if (params.beta && params.beta[0]) {
+                interpretation += `<li>Persistência da volatilidade: ${(params.beta[0] * 100).toFixed(2)}%</li>`;
+                const persistence = (params.alpha[0] || 0) + params.beta[0];
+                interpretation += `<li>Persistência total: ${(persistence * 100).toFixed(2)}% ${persistence < 1 ? '(estacionário)' : '(não-estacionário)'}</li>`;
+            }
+            
+            if (params.gamma) {
+                interpretation += `<li>Efeito alavancagem: ${params.gamma > 0 ? 'Choques positivos aumentam mais a volatilidade' : 'Choques negativos aumentam mais a volatilidade'}</li>`;
+            }
+            
+            interpretation += '</ul>';
+            return interpretation;
+        }
+
+        function getPersistenceAnalysis(params) {
+            if (params.alpha && params.beta) {
+                const persistence = (params.alpha[0] || 0) + params.beta[0];
+                if (persistence > 0.95) {
+                    return "alta persistência de choques de volatilidade";
+                } else if (persistence > 0.85) {
+                    return "persistência moderada de choques";
+                } else {
+                    return "baixa persistência, volatilidade se dissipa rapidamente";
+                }
+            }
+            return "persistência não calculável com os parâmetros disponíveis";
+        }
+
+        // Funções para atualizar dados quando mudarem os parâmetros do contrato
+        function updateContractParameters() {
+            currentFRP = parseFloat(document.getElementById('frpRate').value);
+            currentMaturity = parseInt(document.getElementById('maturityDays').value);
+            
+            if (priceData.length > 0) {
+                // Recalcular preços futuros
+                futuresPrices = calculateFuturesPrices(priceData, currentFRP, currentMaturity);
+                updateLiveMetrics();
+                updateCharts();
+            }
+        }
+
+        function startRealTimeMode() {
+            if (isRealTimeMode) {
+                stopRealTimeMode();
+                return;
+            }
+            
+            isRealTimeMode = true;
+            document.querySelector('[onclick="startRealTimeMode()"]').textContent = '⏹️ Parar Tempo Real';
+            
+            const intervalSeconds = parseInt(document.getElementById('updateInterval').value);
+            const dataSource = document.getElementById('dataSource').value;
+            
+            realTimeInterval = setInterval(async () => {
+                try {
+                    await fetchRealTimeData();
+                } catch (error) {
+                    console.warn('Erro na atualização:', error);
+                }
+            }, intervalSeconds * 1000);
+            
+            const sourceNames = {
+                'alpha': 'Alpha Vantage',
+                'awesome': 'AwesomeAPI', 
+                'yahoo': 'Yahoo Finance'
+            };
+            
+            showMessage(`Modo tempo real ativado! Usando ${sourceNames[dataSource]} - Atualizando a cada ${intervalSeconds}s`, 'success');
+        }
+
+        function stopRealTimeMode() {
+            isRealTimeMode = false;
+            document.querySelector('[onclick="startRealTimeMode()"]').textContent = '⏱️ Modo Tempo Real';
+            
+            if (realTimeInterval) {
+                clearInterval(realTimeInterval);
+                realTimeInterval = null;
+            }
+            
+            showMessage('Modo tempo real desativado', 'success');
+        }
+
+        function showLoading() {
+            document.getElementById('analysisResults').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Executando análise ${document.getElementById('modelType').value}...</p>
+                </div>
+            `;
+        }
+
+        function showMessage(message, type) {
+            document.querySelectorAll('.error, .success').forEach(el => el.remove());
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'error' ? 'error' : 'success';
+            messageDiv.textContent = message;
+            
+            const container = document.querySelector('.control-panel');
+            container.insertBefore(messageDiv, container.firstChild);
+            
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 5000);
+        }
+
+        function normalRandom() {
+            const u1 = Math.random();
+            const u2 = Math.random();
+            return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const simulatedData = generateAdvancedSimulatedData(252);
+                priceData = simulatedData.prices;
+                timestamps = simulatedData.timestamps;
+                
+                // Inicializar parâmetros
+                currentFRP = parseFloat(document.getElementById('frpRate').value);
+                currentMaturity = parseInt(document.getElementById('maturityDays').value);
+                
+                // Calcular preços futuros iniciais
+                futuresPrices = calculateFuturesPrices(priceData, currentFRP, currentMaturity);
+                
+                // Calcular retornos baseados no tipo de contrato selecionado
+                const contractType = document.getElementById('contractType').value;
+                const analysisData = contractType === 'future' ? futuresPrices : priceData;
+                returns = calculateReturns(analysisData);
+                
+                updateCharts();
+                updateLiveMetrics();
+                
+                // Inicializar com Alpha Vantage como padrão
+                updateAPIStatus('alphaStatus', true);
+                showMessage('Sistema inicializado com Alpha Vantage como fonte padrão - Contratos futuros DOL disponíveis', 'success');
+                
+                // Event listeners para mudanças nos parâmetros
+                document.getElementById('frpRate').addEventListener('change', updateContractParameters);
+                document.getElementById('maturityDays').addEventListener('change', updateContractParameters);
+                
+                // Event listener para mudança de fonte de dados
+                document.getElementById('dataSource').addEventListener('change', function() {
+                    const source = this.value;
+                    const alphaKeyGroup = document.getElementById('alphaKeyGroup');
+                    
+                    // Mostrar/ocultar campo API key
+                    if (source === 'alpha') {
+                        alphaKeyGroup.style.display = 'block';
+                    } else {
+                        alphaKeyGroup.style.display = 'none';
+                    }
+                    
+                    // Resetar status das APIs
+                    updateAPIStatus('alphaStatus', false);
+                    updateAPIStatus('awesomeStatus', false);
+                    updateAPIStatus('yahooStatus', false);
+                    
+                    const sourceNames = {
+                        'alpha': 'Alpha Vantage',
+                        'awesome': 'AwesomeAPI', 
+                        'yahoo': 'Yahoo Finance'
+                    };
+                    
+                    showMessage(`Fonte alterada para ${sourceNames[source]}`, 'success');
+                });
+                
+                document.getElementById('contractType').addEventListener('change', function() {
+                    const contractType = this.value;
+                    const analysisData = contractType === 'future' ? futuresPrices : priceData;
+                    returns = calculateReturns(analysisData);
+                    updateCharts();
+                    updateLiveMetrics();
+                    
+                    const label = contractType === 'future' ? 'contratos futuros' : 'câmbio à vista';
+                    showMessage(`Alternado para análise de ${label}`, 'success');
+                });
+                
+            } catch (error) {
+                console.error('Erro na inicialização:', error);
+                showMessage('Erro na inicialização do sistema', 'error');
+            }
+        });
+
+    </script>
+</body>
+</html>

@@ -7,6 +7,8 @@
   <style>
     :root{
       --primary-gradient: linear-gradient(135deg, #4f46e5, #7c3aed, #06b6d4);
+      --garch-gradient: linear-gradient(135deg, #059669, #10b981, #34d399);
+      --quant-gradient: linear-gradient(135deg, #4f46e5, #7c3aed, #06b6d4);
       --bg: #f8fafc;
       --panel: #ffffff;
       --panel-2: #f1f5f9;
@@ -50,7 +52,7 @@
       box-shadow: var(--shadow-xl);
       overflow: hidden;
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       backdrop-filter: blur(10px);
       border: 1px solid var(--border);
       animation: slideUp 0.6s ease-out;
@@ -69,11 +71,20 @@
     
     .login-header {
       background: var(--primary-gradient);
-      padding: 40px 32px;
+      padding: 40px 32px 30px;
       text-align: center;
       color: white;
       position: relative;
       overflow: hidden;
+      transition: background 0.4s ease;
+    }
+    
+    .login-header.garch {
+      background: var(--garch-gradient);
+    }
+    
+    .login-header.quant {
+      background: var(--quant-gradient);
     }
     
     .login-header::before {
@@ -111,12 +122,97 @@
       z-index: 1;
     }
     
+    .system-selector {
+      padding: 24px 32px;
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .selector-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+    
+    .system-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    
+    .system-option {
+      position: relative;
+    }
+    
+    .system-radio {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+    }
+    
+    .system-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 12px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: white;
+      text-align: center;
+    }
+    
+    .system-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    
+    .system-radio:checked + .system-card {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.05);
+      box-shadow: var(--shadow);
+    }
+    
+    .system-radio:checked + .system-card.garch {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.05);
+    }
+    
+    .system-radio:checked + .system-card.quant {
+      border-color: #4f46e5;
+      background: rgba(79, 70, 229, 0.05);
+    }
+    
+    .system-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .system-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    
+    .system-desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+    
     .login-body {
-      padding: 40px 32px;
+      padding: 32px 32px 40px;
     }
     
     .form-group {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
     
     .form-label {
@@ -171,6 +267,14 @@
       overflow: hidden;
     }
     
+    .login-btn.garch {
+      background: var(--garch-gradient);
+    }
+    
+    .login-btn.quant {
+      background: var(--quant-gradient);
+    }
+    
     .login-btn::before {
       content: '';
       position: absolute;
@@ -201,20 +305,19 @@
       transform: none;
     }
     
-    .login-btn:disabled:hover::before {
-      left: -100%;
-    }
-    
-    .error-message {
-      background: linear-gradient(145deg, #fef2f2, #fee2e2);
-      border: 1px solid #fecaca;
-      color: var(--error);
+    .error-message, .success-message {
       padding: 12px 16px;
       border-radius: 12px;
       font-size: 14px;
       font-weight: 500;
       margin-bottom: 20px;
       display: none;
+    }
+    
+    .error-message {
+      background: linear-gradient(145deg, #fef2f2, #fee2e2);
+      border: 1px solid #fecaca;
+      color: var(--error);
       animation: shake 0.5s ease-in-out;
     }
     
@@ -222,12 +325,6 @@
       background: linear-gradient(145deg, #f0fdf4, #dcfce7);
       border: 1px solid #bbf7d0;
       color: var(--success);
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 20px;
-      display: none;
       animation: fadeIn 0.5s ease-out;
     }
     
@@ -291,30 +388,6 @@
       50% { opacity: 0.7; }
     }
     
-    .demo-credentials {
-      background: linear-gradient(145deg, #f8fafc, #e2e8f0);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    
-    .demo-credentials h4 {
-      color: var(--text);
-      margin-bottom: 8px;
-      font-size: 13px;
-    }
-    
-    .demo-credentials code {
-      background: rgba(59, 130, 246, 0.1);
-      color: var(--accent);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-    }
-    
     @media (max-width: 480px) {
       .login-container {
         border-radius: 16px;
@@ -322,11 +395,31 @@
       }
       
       .login-header {
-        padding: 32px 24px;
+        padding: 32px 24px 24px;
+      }
+      
+      .system-selector {
+        padding: 20px 24px;
+      }
+      
+      .system-options {
+        gap: 8px;
+      }
+      
+      .system-card {
+        padding: 12px 8px;
+      }
+      
+      .system-name {
+        font-size: 14px;
+      }
+      
+      .system-desc {
+        font-size: 10px;
       }
       
       .login-body {
-        padding: 32px 24px;
+        padding: 24px;
       }
       
       .footer {
@@ -336,20 +429,37 @@
       .company-name {
         font-size: 24px;
       }
-      
-      .security-info {
-        flex-direction: column;
-        gap: 4px;
-      }
     }
   </style>
 </head>
 <body>
   <div class="login-container">
-    <div class="login-header">
+    <div class="login-header" id="loginHeader">
       <div class="logo">📊</div>
       <div class="company-name">Gênesis Trading</div>
-      <div class="tagline">Sistema Quant Pro - Acesso Restrito</div>
+      <div class="tagline" id="headerTagline">Selecione o Sistema de Acesso</div>
+    </div>
+    
+    <div class="system-selector">
+      <label class="selector-label">Escolha o Sistema</label>
+      <div class="system-options">
+        <div class="system-option">
+          <input type="radio" id="garch" name="system" value="garch" class="system-radio" checked>
+          <label for="garch" class="system-card garch">
+            <div class="system-icon">🟢</div>
+            <div class="system-name">GARCH</div>
+            <div class="system-desc">Sistema de Análise<br>de Volatilidade</div>
+          </label>
+        </div>
+        <div class="system-option">
+          <input type="radio" id="quant" name="system" value="quant" class="system-radio">
+          <label for="quant" class="system-card quant">
+            <div class="system-icon">🔵</div>
+            <div class="system-name">QUANT</div>
+            <div class="system-desc">Sistema Quantitativo<br>Avançado</div>
+          </label>
+        </div>
+      </div>
     </div>
     
     <div class="login-body">
@@ -382,7 +492,7 @@
         </div>
         
         <button type="submit" id="loginBtn" class="login-btn">
-          Acessar Sistema
+          Acessar Sistema GARCH
         </button>
       </form>
     </div>
@@ -409,6 +519,7 @@
         this.failedAttempts = 0;
         this.lastAttempt = null;
         this.lockoutUntil = null;
+        this.selectedSystem = 'garch'; // default
         
         this.init();
       }
@@ -419,23 +530,30 @@
             password: 'De130808', 
             name: 'Deivitti Almir', 
             role: 'admin', 
-            status: 'active' 
+            status: 'active',
+            systems: ['garch', 'quant'] // acesso aos dois sistemas
           },
           'claudiobeneditod@yahoo.com.br': { 
             password: '*Piau370', 
             name: 'Claudio Silva', 
             role: 'admin', 
-            status: 'active' 
+            status: 'active',
+            systems: ['garch', 'quant'] // acesso aos dois sistemas
           }
         };
       }
       
       init() {
-        // Auto-fill demo credentials for easier testing
-        document.getElementById('email').value = '';
-        document.getElementById('password').value = '';
+        // Event listeners para seleção de sistema
+        const systemRadios = document.querySelectorAll('input[name="system"]');
+        systemRadios.forEach(radio => {
+          radio.addEventListener('change', (e) => {
+            this.selectedSystem = e.target.value;
+            this.updateUI();
+          });
+        });
         
-        // Event listeners
+        // Event listeners do formulário
         document.getElementById('loginForm').addEventListener('submit', (e) => {
           e.preventDefault();
           this.handleLogin();
@@ -448,8 +566,33 @@
           }
         });
         
-        // Focus first input
+        // Focus primeiro input
         document.getElementById('email').focus();
+        
+        // Atualiza UI inicial
+        this.updateUI();
+      }
+      
+      updateUI() {
+        const header = document.getElementById('loginHeader');
+        const tagline = document.getElementById('headerTagline');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        // Remove classes anteriores
+        header.classList.remove('garch', 'quant');
+        loginBtn.classList.remove('garch', 'quant');
+        
+        if (this.selectedSystem === 'garch') {
+          header.classList.add('garch');
+          loginBtn.classList.add('garch');
+          tagline.textContent = 'Sistema GARCH - Análise de Volatilidade';
+          loginBtn.textContent = 'Acessar Sistema GARCH';
+        } else if (this.selectedSystem === 'quant') {
+          header.classList.add('quant');
+          loginBtn.classList.add('quant');
+          tagline.textContent = 'Sistema QUANT - Análises Quantitativas';
+          loginBtn.textContent = 'Acessar Sistema QUANT';
+        }
       }
       
       async handleLogin() {
@@ -465,12 +608,13 @@
         // Verifica lockout
         if (this.isLockedOut()) {
           const remainingTime = this.getRemainingLockoutTime();
-          this.showError(`Muitas tentativas inv�lidas. Tente novamente em ${Math.ceil(remainingTime / 60000)} minutos.`);
+          this.showError(`Muitas tentativas inválidas. Tente novamente em ${Math.ceil(remainingTime / 60000)} minutos.`);
           return;
         }
         
-        // Disable button and show loading
+        // Disable button e mostra loading
         loginBtn.disabled = true;
+        const originalText = loginBtn.textContent;
         loginBtn.innerHTML = '<span class="loading"></span>Verificando...';
         
         try {
@@ -478,36 +622,46 @@
           await new Promise(resolve => setTimeout(resolve, 1500));
           
           if (this.validateUser(email, password)) {
-            this.showSuccess('?? Login realizado com sucesso! Redirecionando para o sistema...');
+            const systemName = this.selectedSystem.toUpperCase();
+            this.showSuccess(`✅ Login realizado com sucesso! Redirecionando para o Sistema ${systemName}...`);
             this.clearAttempts();
             this.setSession(email);
             
-            // Redireciona para dashboard.html ap�s 2 segundos
+            // Redireciona para o dashboard correto
             setTimeout(() => {
-              window.location.href = 'dashboard.html';
+              if (this.selectedSystem === 'garch') {
+                window.location.href = 'dashboard-garch.html';
+              } else {
+                window.location.href = 'dashboard-quant.html';
+              }
             }, 2000);
           } else {
             this.recordFailedAttempt();
             const remaining = this.maxAttempts - this.failedAttempts;
             
             if (remaining > 0) {
-              this.showError(`? Email ou senha incorretos. Restam ${remaining} tentativas.`);
+              this.showError(`❌ Email ou senha incorretos. Restam ${remaining} tentativas.`);
             } else {
               this.setLockout();
-              this.showError('?? Muitas tentativas inv�lidas. Acesso bloqueado por 15 minutos.');
+              this.showError('🔒 Muitas tentativas inválidas. Acesso bloqueado por 15 minutos.');
             }
           }
         } catch (error) {
-          this.showError('?? Erro interno. Tente novamente.');
+          this.showError('⚠️ Erro interno. Tente novamente.');
         } finally {
           loginBtn.disabled = false;
-          loginBtn.innerHTML = 'Acessar Sistema';
+          loginBtn.textContent = originalText;
         }
       }
       
       validateUser(email, password) {
         const user = this.users[email];
         if (!user || user.status !== 'active') {
+          return false;
+        }
+        
+        // Verifica se o usuário tem acesso ao sistema selecionado
+        if (!user.systems.includes(this.selectedSystem)) {
           return false;
         }
         
@@ -520,29 +674,21 @@
           email: email,
           name: user.name,
           role: user.role,
+          system: this.selectedSystem,
           loginTime: Date.now(),
           expiresAt: Date.now() + this.sessionTimeout
         };
         
-        // Armazenar dados do usu�rio para o dashboard
+        // Armazenar dados do usuário para o dashboard
         sessionStorage.setItem('currentUser', JSON.stringify({
           email: email,
           name: user.name,
           role: user.role,
+          system: this.selectedSystem,
           loginTime: Date.now()
         }));
         
-        console.log('Sess�o criada:', this.sessionData);
-      }
-      
-      getSession() {
-        if (!this.sessionData) return null;
-        
-        if (Date.now() > this.sessionData.expiresAt) {
-          this.sessionData = null;
-          return null;
-        }
-        return this.sessionData;
+        console.log('Sessão criada:', this.sessionData);
       }
       
       // Controle de tentativas
