@@ -481,6 +481,12 @@
             <div class="live-indicator" id="liveIndicator">● OFFLINE</div>
             <h1>📊 Sistema Quant Pro</h1>
             <p>Análise Avançada de Contratos Futuros DOL com Dados em Tempo Real</p>
+			<div class="user-info">
+			<div class="user-name" id="userName">Deivitti Almir</div>
+			<div class="status-badge">CONECTADO</div>
+			<button class="logout-btn" id="logoutBtn">Sair</button>
+      </div>
+    </div>
         </div>
 
         <div class="main-content">
@@ -743,7 +749,18 @@
         </div>
     </div>
 
-    <script>
+   <script>
+   
+   document.addEventListener("DOMContentLoaded", () => {
+    const userData = JSON.parse(sessionStorage.getItem("currentUser"));
+
+    if (userData && userData.name) {
+        document.getElementById("userName").innerText = userData.name;
+    } else {
+        // Se não tiver usuário em sessão, volta para login
+        window.location.href = "index.html";
+    }
+});
         // Variáveis globais
         let priceData = [];
         let futuresPrices = [];
@@ -757,6 +774,8 @@
         let volatilityForecasts = { vol9: 0, vol18: 0, vol27: 0 };
         let currentFRP = 5.5;
         let currentMaturity = 60;
+		
+		
 
         // APIs Configuration
         const API_CONFIGS = {
@@ -794,6 +813,7 @@
                 rateLimit: 60000
             }
         };
+		
 
         // Funções para calcular preços futuros
         function calculateFuturePrice(spotPrice, frpRate, daysToMaturity) {
@@ -814,6 +834,8 @@
             return (frpRate / 100) * (daysToMaturity / 252) * 100; // Em %
         }
 
+
+		
         // Classes para modelos avançados - VERSÃO CORRIGIDA
         class AdvancedGARCH {
             constructor(type = 'GARCH', options = {}) {
@@ -1719,26 +1741,26 @@
             if (contractType === 'future') {
                 if (volatility > 25) {
                     if (carryReturn > 2) {
-                        recommendation = `📊 <strong>Estratégia Defensiva:</strong> Alta volatilidade (${volatility.toFixed(1)}%) com carry positivo (${carryReturn.toFixed(2)}%). Considere hedge com contratos futuros ou posições menores aproveitando o prêmio de ${(frp * maturityDays / 252).toFixed(2)}%.`;
+                        recommendation = `Estratégia Defensiva: Alta volatilidade (${volatility.toFixed(1)}%) com carry positivo (${carryReturn.toFixed(2)}%). Considere hedge com contratos futuros ou posições menores aproveitando o prêmio de ${(frp * maturityDays / 252).toFixed(2)}%.`;
                     } else {
-                        recommendation = `⚠️ <strong>Alto Risco:</strong> Volatilidade elevada (${volatility.toFixed(1)}%) e carry baixo. Evite exposições grandes. Ideal para day trading com stops apertados.`;
+                        recommendation = `Alto Risco: Volatilidade elevada (${volatility.toFixed(1)}%) e carry baixo. Evite exposições grandes. Ideal para day trading com stops apertados.`;
                     }
                 } else if (volatility > 15) {
                     if (carryReturn > 1.5) {
-                        recommendation = `💰 <strong>Oportunidade de Carry Trade:</strong> Volatilidade moderada (${volatility.toFixed(1)}%) com carry positivo (${carryReturn.toFixed(2)}%). Posições longas em futuros podem ser favoráveis.`;
+                        recommendation = `Oportunidade de Carry Trade: Volatilidade moderada (${volatility.toFixed(1)}%) com carry positivo (${carryReturn.toFixed(2)}%). Posições longas em futuros podem ser favoráveis.`;
                     } else {
-                        recommendation = `⚖️ <strong>Trading Neutro:</strong> Volatilidade moderada, considere estratégias direcionais baseadas na análise técnica dos contratos futuros DOL.`;
+                        recommendation = `Trading Neutro: Volatilidade moderada, considere estratégias direcionais baseadas na análise técnica dos contratos futuros DOL.`;
                     }
                 } else {
-                    recommendation = `✅ <strong>Ambiente Favorável:</strong> Baixa volatilidade (${volatility.toFixed(1)}%) ideal para carry trade. Aproveite o prêmio dos futuros (${carryReturn.toFixed(2)}%) com posições de médio prazo.`;
+                    recommendation = `Ambiente Favorável: Baixa volatilidade (${volatility.toFixed(1)}%) ideal para carry trade. Aproveite o prêmio dos futuros (${carryReturn.toFixed(2)}%) com posições de médio prazo.`;
                 }
             } else {
                 if (volatility > 25) {
-                    recommendation = `🔴 <strong>Alto Risco:</strong> Volatilidade elevada (${volatility.toFixed(1)}%) no câmbio à vista. Considere hedge com derivativos ou reduza exposições cambial.`;
+                    recommendation = `Alto Risco: Volatilidade elevada (${volatility.toFixed(1)}%) no câmbio à vista. Considere hedge com derivativos ou reduza exposições cambial.`;
                 } else if (volatility > 15) {
-                    recommendation = `🟡 <strong>Risco Moderado:</strong> Ambiente adequado para operações de câmbio à vista com gestão de risco adequada.`;
+                    recommendation = `Risco Moderado: Ambiente adequado para operações de câmbio à vista com gestão de risco adequada.`;
                 } else {
-                    recommendation = `🟢 <strong>Baixo Risco:</strong> Período de estabilidade cambial favorável para investimentos em ativos denominados em moeda estrangeira.`;
+                    recommendation = `Baixo Risco: Período de estabilidade cambial favorável para investimentos em ativos denominados em moeda estrangeira.`;
                 }
             }
             
@@ -1845,12 +1867,12 @@
                 </div>
                 
                 <div class="model-results">
-                    <h3>📊 Modelo ${model.type} - ${contractLabel}</h3>
+                    <h3>Modelo ${model.type} - ${contractLabel}</h3>
                     <p><strong>Especificações:</strong> ${getModelSpecification(model.type)}</p>
                     
                     ${contractType === 'future' ? `
                     <div style="background: #e8f4fd; padding: 15px; border-radius: 10px; margin: 15px 0; border-left: 4px solid #3498db;">
-                        <h4 style="color: #2c3e50; margin-bottom: 10px;">💹 Parâmetros do Contrato Futuro</h4>
+                        <h4 style="color: #2c3e50; margin-bottom: 10px;">Parâmetros do Contrato Futuro</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <div>
                                 <strong>Vencimento:</strong> ${currentMaturity} dias<br>
@@ -1866,17 +1888,17 @@
                     </div>
                     ` : ''}
                     
-                    <h3>🔍 Interpretação</h3>
+                    <h3>Interpretação</h3>
                     <div style="background: #ecf0f1; padding: 15px; border-radius: 10px; margin-top: 15px;">
                         ${getModelInterpretation(model.type, results.params)}
                         ${contractType === 'future' ? `
-                        <p style="margin-top: 10px;"><strong>📈 Análise para Futuros:</strong> 
+                        <p style="margin-top: 10px;"><strong>Análise para Futuros:</strong> 
                         Os parâmetros indicam ${getPersistenceAnalysis(results.params)} Isso é ${getPersistenceAnalysis(results.params).includes('alta') ? 'típico em mercados de futuros com prêmios estruturais' : 'favorável para estratégias de carry trade'}.
                         </p>
                         ` : ''}
                     </div>
                     
-                    <h3>📈 Previsão de Volatilidade Multi-Período</h3>
+                    <h3>Previsão de Volatilidade Multi-Período</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 15px 0;">
                         <div style="text-align: center; padding: 10px; background: #e8f4fd; border-radius: 8px;">
                             <strong>9 Dias:</strong><br>
@@ -1892,9 +1914,9 @@
                         </div>
                     </div>
                     
-                    <h3>🎯 Cenários de Preço (${currentForecastPeriod} dias)</h3>
+                    <h3>Cenários de Preço (${currentForecastPeriod} dias)</h3>
                     <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 10px;">
-                        <p><strong>💡 Interpretação dos Cenários ${contractType === 'future' ? '(Contratos Futuros)' : '(Câmbio à Vista)'}:</strong></p>
+                        <p><strong>Interpretação dos Cenários ${contractType === 'future' ? '(Contratos Futuros)' : '(Câmbio à Vista)'}:</strong></p>
                         <ul style="margin-left: 20px; margin-top: 10px;">
                             <li><strong>Máxima Projetada:</strong> Cenário otimista (90% confiança)</li>
                             <li><strong>Preço Alvo:</strong> Projeção central do modelo</li>
@@ -1903,7 +1925,7 @@
                         </ul>
                     </div>
                     
-                    <h3>📈 Volatilidade condicional atual</h3>
+                    <h3>Volatilidade condicional atual</h3>
                     <p>Volatilidade atual: <strong>${(Math.sqrt(results.conditionalVariance[results.conditionalVariance.length - 1] * 252) * 100).toFixed(2)}%</strong> (anualizada)</p>
                 </div>
             `;
@@ -1911,6 +1933,7 @@
             resultsDiv.innerHTML = html;
             showMessage(`Análise avançada concluída para ${contractLabel}!`, 'success');
         }
+		
 
         function getModelSpecification(type) {
             switch(type) {
@@ -1986,7 +2009,7 @@
             }
             
             isRealTimeMode = true;
-            document.querySelector('[onclick="startRealTimeMode()"]').textContent = '⏹️ Parar Tempo Real';
+            document.querySelector('[onclick="startRealTimeMode()"]').textContent = 'Parar Tempo Real';
             
             const intervalSeconds = parseInt(document.getElementById('updateInterval').value);
             const dataSource = document.getElementById('dataSource').value;
@@ -2010,7 +2033,7 @@
 
         function stopRealTimeMode() {
             isRealTimeMode = false;
-            document.querySelector('[onclick="startRealTimeMode()"]').textContent = '⏱️ Modo Tempo Real';
+            document.querySelector('[onclick="startRealTimeMode()"]').textContent = 'Modo Tempo Real';
             
             if (realTimeInterval) {
                 clearInterval(realTimeInterval);
@@ -2052,6 +2075,69 @@
             return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
         }
 
+        // FUNÇÃO DE LOGOUT ADICIONADA
+        function logout() {
+            if (confirm('Deseja realmente sair do sistema? Todos os dados da sessão serão perdidos.')) {
+                try {
+                    // Parar modo tempo real se ativo
+                    if (isRealTimeMode) {
+                        stopRealTimeMode();
+                        showMessage('Modo tempo real interrompido para logout', 'info');
+                    }
+                    
+                    // Limpar todos os intervalos ativos
+                    if (realTimeInterval) {
+                        clearInterval(realTimeInterval);
+                        realTimeInterval = null;
+                    }
+                    
+                    // Destruir gráficos se existirem
+                    if (mainChart) {
+                        mainChart.destroy();
+                        mainChart = null;
+                    }
+                    
+                    if (secondaryChart) {
+                        secondaryChart.destroy();
+                        secondaryChart = null;
+                    }
+                    
+                    // Limpar dados sensíveis da memória
+                    priceData = [];
+                    futuresPrices = [];
+                    returns = [];
+                    timestamps = [];
+                    volatilityForecasts = { vol9: 0, vol18: 0, vol27: 0 };
+                    
+                    // Resetar variáveis de estado
+                    isRealTimeMode = false;
+                    currentChartType = 'price';
+                    currentForecastPeriod = 9;
+                    currentFRP = 5.5;
+                    currentMaturity = 60;
+                    
+                    // Limpar sessionStorage se houver dados salvos
+                    if (typeof(Storage) !== "undefined") {
+                        sessionStorage.removeItem('tradingSystemData');
+                        sessionStorage.removeItem('apiConfigs');
+                    }
+                    
+                    // Mostrar mensagem de logout
+                    showMessage('Logout realizado com sucesso. Redirecionando...', 'success');
+                    
+                    // Redirecionar após 1.5 segundos
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                    
+                } catch (error) {
+                    console.error('Erro durante logout:', error);
+                    // Mesmo com erro, fazer o redirect
+                    window.location.href = 'index.html';
+                }
+            }
+        }
+
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             try {
@@ -2081,6 +2167,15 @@
                 // Event listeners para mudanças nos parâmetros
                 document.getElementById('frpRate').addEventListener('change', updateContractParameters);
                 document.getElementById('maturityDays').addEventListener('change', updateContractParameters);
+                
+                // Event listener para o botão logout - ADICIONADO
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', logout);
+                    console.log('Event listener do logout adicionado com sucesso');
+                } else {
+                    console.warn('Botão de logout não encontrado no DOM');
+                }
                 
                 // Event listener para mudança de fonte de dados
                 document.getElementById('dataSource').addEventListener('change', function() {
@@ -2117,6 +2212,23 @@
                     
                     const label = contractType === 'future' ? 'contratos futuros' : 'câmbio à vista';
                     showMessage(`Alternado para análise de ${label}`, 'success');
+                });
+                
+                // Event listener para detectar quando o usuário tenta fechar a página
+                window.addEventListener('beforeunload', function(event) {
+                    if (isRealTimeMode || priceData.length > 0) {
+                        const message = 'Você tem dados não salvos. Tem certeza que deseja sair?';
+                        event.returnValue = message;
+                        return message;
+                    }
+                });
+                
+                // Event listener para Ctrl+Alt+L (atalho para logout)
+                document.addEventListener('keydown', function(event) {
+                    if (event.ctrlKey && event.altKey && event.key.toLowerCase() === 'l') {
+                        event.preventDefault();
+                        logout();
+                    }
                 });
                 
             } catch (error) {
