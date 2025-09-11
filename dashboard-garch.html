@@ -729,6 +729,20 @@
 
         <h2 class="section-title">Preço Justo e Justíssimo do Dólar</h2>
         
+		        <div class="fair-price-cards">
+          <div class="card up-card"><div class="label">Preço Justo PPP</div><div class="value" id="fair_ppp">--</div></div>
+          <div class="card up-card"><div class="label">Preço Justo UIP</div><div class="value" id="fair_uip">--</div></div>
+          <div class="card neutral-card"><div class="label">Preço Justíssimo</div><div class="value" id="fair_combined">--</div></div>
+          <div class="card down-card"><div class="label">Desvio do Justo (%)</div><div class="value" id="deviation_fair">--</div></div>
+        </div>
+
+        <div class="fair-price-cards">
+          <div class="card neutral-card"><div class="label">Diferencial Juros</div><div class="value" id="interest_diff">--</div></div>
+          <div class="card neutral-card"><div class="label">Diferencial Inflação</div><div class="value" id="inflation_diff">--</div></div>
+          <div class="card neutral-card"><div class="label">Fator Risco Ajustado</div><div class="value" id="risk_factor">--</div></div>
+          <div class="card neutral-card"><div class="label">Tendência 30D</div><div class="value" id="trend_30d">--</div></div>
+        </div>
+
         <div class="inputs">
           <div class="input">
             <label for="ppp_rate">Taxa PPP Base (R$)</label>
@@ -763,19 +777,6 @@
           </div>
         </div>
 
-        <div class="fair-price-cards">
-          <div class="card up-card"><div class="label">Preço Justo PPP</div><div class="value" id="fair_ppp">--</div></div>
-          <div class="card up-card"><div class="label">Preço Justo UIP</div><div class="value" id="fair_uip">--</div></div>
-          <div class="card neutral-card"><div class="label">Preço Justíssimo</div><div class="value" id="fair_combined">--</div></div>
-          <div class="card down-card"><div class="label">Desvio do Justo (%)</div><div class="value" id="deviation_fair">--</div></div>
-        </div>
-
-        <div class="fair-price-cards">
-          <div class="card neutral-card"><div class="label">Diferencial Juros</div><div class="value" id="interest_diff">--</div></div>
-          <div class="card neutral-card"><div class="label">Diferencial Inflação</div><div class="value" id="inflation_diff">--</div></div>
-          <div class="card neutral-card"><div class="label">Fator Risco Ajustado</div><div class="value" id="risk_factor">--</div></div>
-          <div class="card neutral-card"><div class="label">Tendência 30D</div><div class="value" id="trend_30d">--</div></div>
-        </div>
 
         <div class="sep"></div>
 
@@ -1774,57 +1775,89 @@
         this.calculateIntradayExtremes(period);
       }
       
-      // Fair Price Calculations
-      calculateFairPrices() {
-        const currentPrice = this.lastClose();
-        if (!isFinite(currentPrice) || currentPrice <= 0) {
-          this.resetFairPriceDisplay();
-          return;
-        }
-        
-        // Get input values
-        const pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 3.20);
-        const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
-        const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
-        const selicRate = parseFloat(document.getElementById('selic_rate')?.value || 13.75) / 100;
-        const fedRate = parseFloat(document.getElementById('fed_rate')?.value || 5.50) / 100;
-        const riskPremium = parseFloat(document.getElementById('risk_premium')?.value || 2.5) / 100;
-        
-        // PPP Fair Price (Purchasing Power Parity)
-        const inflationDifferential = inflationBr - inflationUs;
-        const fairPricePPP = pppRate * (1 + inflationDifferential);
-        
-        // UIP Fair Price (Uncovered Interest Parity)
-        const interestDifferential = selicRate - fedRate;
-        const adjustedInterestDiff = interestDifferential - riskPremium;
-        const fairPriceUIP = currentPrice * (1 + adjustedInterestDiff * 0.1);
-        
-        // Combined Fair Price (Justíssimo) - Weighted average
-        const weightPPP = 0.4;
-        const weightUIP = 0.6;
-        const fairPriceCombined = (fairPricePPP * weightPPP) + (fairPriceUIP * weightUIP);
-        
-        // Deviation from fair price
-        const deviationFair = ((currentPrice - fairPriceCombined) / fairPriceCombined) * 100;
-        
-        // Additional indicators
-        const riskFactor = 1 + (riskPremium + (Math.abs(inflationDifferential) * 0.5));
-        const trend30d = this.calculateTrend30Days();
-        
-        // Update display
-        document.getElementById('fair_ppp').innerText = this.fmt(fairPricePPP);
-        document.getElementById('fair_uip').innerText = this.fmt(fairPriceUIP);
-        document.getElementById('fair_combined').innerText = this.fmt(fairPriceCombined);
-        document.getElementById('deviation_fair').innerText = deviationFair.toFixed(2) + '%';
-        document.getElementById('interest_diff').innerText = (interestDifferential * 100).toFixed(2) + '%';
-        document.getElementById('inflation_diff').innerText = (inflationDifferential * 100).toFixed(2) + '%';
-        document.getElementById('risk_factor').innerText = riskFactor.toFixed(4);
-        document.getElementById('trend_30d').innerText = trend30d;
-        
-        // Update card colors based on deviation
-        this.updateFairPriceCardColors(deviationFair);
-      }
-      
+// Fair Price Calculations
+calculateFairPrices() {
+  const currentPrice = this.lastClose();
+  if (!isFinite(currentPrice) || currentPrice <= 0) {
+    this.resetFairPriceDisplay();
+    return;
+  }
+  
+  // Get input values
+  let pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 5.30);
+  const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
+  const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
+  const selicRate = parseFloat(document.getElementById('selic_rate')?.value || 15.50) / 100;
+  const fedRate = parseFloat(document.getElementById('fed_rate')?.value || 5.50) / 100;
+  const riskPremium = parseFloat(document.getElementById('risk_premium')?.value || 2.5) / 100;
+
+  // --- Correção de escala ---
+  // Se o preço atual do contrato está em pontos (>100), ajustar PPP para mesma unidade
+  if (currentPrice > 100) {
+    pppRate = pppRate * 1000;
+  }
+
+  // PPP Fair Price (Purchasing Power Parity)
+  const inflationDifferential = inflationBr - inflationUs;
+  const fairPricePPP = pppRate * ((1 + inflationBr) / (1 + inflationUs));
+
+  // UIP Fair Price (Uncovered Interest Parity)
+  const interestDifferential = selicRate - fedRate;
+  const netInterestDifferential = interestDifferential - riskPremium;
+  const uipAdjustmentFactor = 1 + (netInterestDifferential * 0.15);
+  const fairPriceUIP = currentPrice * uipAdjustmentFactor;
+
+  // Bound UIP para evitar distorções
+  const maxUIPDeviation = 0.20;
+  const upperBoundUIP = currentPrice * (1 + maxUIPDeviation);
+  const lowerBoundUIP = currentPrice * (1 - maxUIPDeviation);
+  const boundedFairPriceUIP = Math.max(lowerBoundUIP, Math.min(upperBoundUIP, fairPriceUIP));
+
+  // Combined Fair Price (Justíssimo) - pesos ajustáveis
+  const weightPPP = 0.4;
+  const weightUIP = 0.6;
+  const fairPriceCombined = (fairPricePPP * weightPPP) + (boundedFairPriceUIP * weightUIP);
+
+  // Validação final: justíssimo não pode estar muito distante
+  const maxTotalDeviation = 0.25;
+  const upperBound = currentPrice * (1 + maxTotalDeviation);
+  const lowerBound = currentPrice * (1 - maxTotalDeviation);
+  const finalFairPrice = Math.max(lowerBound, Math.min(upperBound, fairPriceCombined));
+
+  // Desvio percentual
+  const deviationFair = ((currentPrice - finalFairPrice) / finalFairPrice) * 100;
+
+  // Indicadores adicionais
+  const riskFactor = 1 + riskPremium;
+  const trend30d = this.calculateTrend30Days();
+
+  // Update display
+  document.getElementById('fair_ppp').innerText = this.fmt(fairPricePPP);
+  document.getElementById('fair_uip').innerText = this.fmt(boundedFairPriceUIP);
+  document.getElementById('fair_combined').innerText = this.fmt(finalFairPrice);
+  document.getElementById('deviation_fair').innerText = deviationFair.toFixed(2) + '%';
+  document.getElementById('interest_diff').innerText = (interestDifferential * 100).toFixed(2) + 'p.p.';
+  document.getElementById('inflation_diff').innerText = (inflationDifferential * 100).toFixed(2) + 'p.p.';
+  document.getElementById('risk_factor').innerText = riskFactor.toFixed(4);
+  document.getElementById('trend_30d').innerText = trend30d;
+
+  // Update card colors
+  this.updateFairPriceCardColors(deviationFair);
+
+  // Debug
+  console.log('Fair Price Calculation (Fixed):', {
+    currentPrice: currentPrice.toFixed(4),
+    pppRate,
+    fairPricePPP: fairPricePPP.toFixed(4),
+    fairPriceUIP_raw: fairPriceUIP.toFixed(4),
+    fairPriceUIP_bounded: boundedFairPriceUIP.toFixed(4),
+    fairPriceCombined_raw: fairPriceCombined.toFixed(4),
+    finalFairPrice: finalFairPrice.toFixed(4),
+    deviationFair: deviationFair.toFixed(2) + '%',
+    uipAdjustmentFactor: uipAdjustmentFactor.toFixed(4)
+  });
+}
+
       calculateTrend30Days() {
         if (this.priceData.length < 30) {
           return 'Dados insuficientes';
