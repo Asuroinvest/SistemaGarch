@@ -20,6 +20,8 @@
       --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
       --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --ai-gradient: linear-gradient(135deg, #8b5cf6, #06b6d4);
+      --ai-bg: linear-gradient(145deg, #f0f9ff, #e0f2fe);
     }
     
     * {
@@ -130,13 +132,31 @@
     
     @media(min-width:768px){main{padding:32px 24px;}}
     
-    .row {
+    .main-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 16px;
     }
     
-    @media(min-width:1024px){.row{grid-template-columns:1.2fr .8fr;gap:24px;}}
+    @media(min-width:1024px){
+      .main-grid{
+        grid-template-columns: 1fr 300px;
+        gap: 24px;
+      }
+    }
+    
+    .content-area {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    @media(min-width:1200px){
+      .content-area{
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 24px;
+      }
+    }
     
     .panel {
       background: var(--panel);
@@ -149,6 +169,23 @@
     
     @media(min-width:768px){.panel{border-radius:20px;padding:24px;}}
     
+    .ai-panel {
+      background: var(--ai-bg);
+      border: 2px solid #06b6d4;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .ai-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--ai-gradient);
+    }
+    
     h2.section-title {
       margin: 0 0 16px;
       font-size: 18px;
@@ -157,6 +194,13 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+    
+    .ai-title {
+      background: var(--ai-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     
     .muted {
@@ -194,6 +238,12 @@
       background: var(--accent);
       color: white;
       border-color: var(--accent);
+    }
+    
+    .btn.ai {
+      background: var(--ai-gradient);
+      color: white;
+      border: none;
     }
     
     .btn.success {
@@ -249,7 +299,6 @@
     @media(min-width:768px){.cards{grid-template-columns:repeat(3,minmax(0,1fr));}}
     @media(min-width:1024px){.cards{grid-template-columns:repeat(4,minmax(0,1fr));}}
     
-    /* Specific grid for fair price cards */
     .fair-price-cards {
       display: grid;
       grid-template-columns: repeat(1,minmax(0,1fr));
@@ -471,7 +520,6 @@
       border-top: 1px solid var(--border);
     }
     
-    /* Loading states */
     .loading-overlay {
       position: fixed;
       top: 0;
@@ -500,7 +548,6 @@
       100% { transform: rotate(360deg); }
     }
     
-    /* Welcome message */
     .welcome-banner {
       background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
       border: 1px solid #7dd3fc;
@@ -581,6 +628,170 @@
       opacity: 0.7;
     }
     
+    /* AI-specific styles */
+    .ai-insights {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .insight-card {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid #06b6d4;
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.3s;
+    }
+    
+    .insight-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .insight-title {
+      font-weight: 700;
+      color: #0369a1;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .insight-content {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    
+    .opportunity-score {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 16px 0;
+    }
+    
+    .score-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--ai-gradient);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .score-value {
+      font-size: 24px;
+      font-weight: 900;
+    }
+    
+    .score-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .scenario-bars {
+      display: grid;
+      gap: 12px;
+    }
+    
+    .scenario {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .scenario-label {
+      flex: 0 0 140px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    
+    .probability-bar {
+      flex: 1;
+      height: 20px;
+      background: var(--panel-2);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .bar-fill {
+      height: 100%;
+      background: var(--ai-gradient);
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+    
+    .percentage {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .alerts-container {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .alert-item {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      border-left: 4px solid;
+    }
+    
+    .alert-item.warning {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      color: #92400e;
+    }
+    
+    .alert-item.success {
+      background: #dcfce7;
+      border-color: #10b981;
+      color: #166534;
+    }
+    
+    .alert-item.info {
+      background: #e0f2fe;
+      border-color: #06b6d4;
+      color: #0369a1;
+    }
+    
+    .ai-narrative {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #06b6d4;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    
+    .ai-narrative h4 {
+      color: #0369a1;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    
+    .ai-narrative p {
+      margin-bottom: 10px;
+    }
+    
+    .ai-narrative strong {
+      color: var(--text);
+    }
+    
     @media (max-width: 480px) {
       .cards, .fair-price-cards {
         grid-template-columns: 1fr;
@@ -604,6 +815,14 @@
       }
       
       .provider-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .content-area {
         grid-template-columns: 1fr;
       }
     }
@@ -634,164 +853,242 @@
       <p>Configure sua API preferida ou use dados simulados para começar a análise.</p>
     </div>
     
-    <div class="row">
-      <section class="panel" id="proj-panel">
-        <h2 class="section-title">Projeções para Contratos Futuros</h2>
-        <div class="toolbar">
-          <button class="btn primary" id="btnFetchAPI">Dados via API</button>
-          <button class="btn" id="btnFetch">Dados Simulados</button>
-          <button class="btn" id="btnAnalyze">Análise Avançada</button>
-          <span class="hint" id="dataStatus">aguardando dados…</span>
-          <span class="api-status disconnected" id="apiStatus">API: Desconectado</span>
-        </div>
-
-        <div class="periods" id="forecastTabs">
-          <div class="tab active" data-period="9">1ª Projeção </div>
-          <div class="tab" data-period="18">2ª Projeção </div>
-          <div class="tab" data-period="27">3ª Projeção </div>
-        </div>
-
-        <div class="cards" id="forecastCards">
-          <div class="card up-card"><div class="label">Projeção +1σ</div><div class="value up" id="f_up1">--</div></div>
-          <div class="card down-card"><div class="label">Projeção -1σ</div><div class="value down" id="f_dn1">--</div></div>
-          <div class="card up-card"><div class="label">Projeção +2σ</div><div class="value up" id="f_up2">--</div></div>
-          <div class="card down-card"><div class="label">Projeção -2σ</div><div class="value down" id="f_dn2">--</div></div>
-        </div>
-
-        <div class="sep"></div>
-
-        <h2 class="section-title">Máximas e Mínimas Intraday</h2>
-        <div class="inputs">
-          <div class="input">
-            <label for="frp">FRP - Forward Rate Premium (%)</label>
-            <input id="frp" type="number" step="0.01" value="13.75" placeholder="Ex: 13.75 para Selic" />
-            <div class="hint">Juros implícitos para converter Spot → Futuro</div>
+    <div class="main-grid">
+      <div class="content-area">
+        <section class="panel" id="proj-panel">
+          <h2 class="section-title">Projeções para Contratos Futuros</h2>
+          <div class="toolbar">
+            <button class="btn primary" id="btnFetchAPI">Dados via API</button>
+            <button class="btn" id="btnFetch">Dados Simulados</button>
+            <button class="btn" id="btnAnalyze">Análise Avançada</button>
+            <button class="btn ai" id="btnAIAnalysis">Análise IA</button>
+            <span class="hint" id="dataStatus">aguardando dados…</span>
+            <span class="api-status disconnected" id="apiStatus">API: Desconectado</span>
           </div>
-          <div class="input">
-            <label for="dataType">Tipo de Dados</label>
-            <select id="dataType">
-              <option value="spot">Spot USD/BRL (API)</option>
-              <option value="future">Futuro DOL (Excel)</option>
-            </select>
+
+          <div class="periods" id="forecastTabs">
+            <div class="tab active" data-period="9">1ª Projeção (9P)</div>
+            <div class="tab" data-period="18">2ª Projeção (18P)</div>
+            <div class="tab" data-period="27">3ª Projeção (27P)</div>
           </div>
-          <div class="input">
-            <label for="maturityDays">Vencimento (dias)</label>
-            <input id="maturityDays" type="number" value="30" min="1" max="365" />
-            <div class="hint">Para cálculo preciso do FRP</div>
+
+          <div class="cards" id="forecastCards">
+            <div class="card up-card"><div class="label">Projeção +1σ</div><div class="value up" id="f_up1">--</div></div>
+            <div class="card down-card"><div class="label">Projeção -1σ</div><div class="value down" id="f_dn1">--</div></div>
+            <div class="card up-card"><div class="label">Projeção +2σ</div><div class="value up" id="f_up2">--</div></div>
+            <div class="card down-card"><div class="label">Projeção -2σ</div><div class="value down" id="f_dn2">--</div></div>
           </div>
-        </div>
 
-        <div class="inputs">
-          <div class="input">
-            <label for="exp9">Fator EXP 1</label>
-            <input id="exp9" type="number" step="0.1" value="2.718" />
+          <div class="sep"></div>
+
+          <h2 class="section-title">Máximas e Mínimas Intraday</h2>
+          <div class="inputs">
+            <div class="input">
+              <label for="frp">FRP - Forward Rate Premium (%)</label>
+              <input id="frp" type="number" step="0.01" value="13.75" placeholder="Ex: 13.75 para Selic" />
+              <div class="hint">Juros implícitos para converter Spot → Futuro</div>
+            </div>
+            <div class="input">
+              <label for="dataType">Tipo de Dados</label>
+              <select id="dataType">
+                <option value="spot">Spot USD/BRL (API)</option>
+                <option value="future">Futuro DOL (Excel)</option>
+              </select>
+            </div>
+            <div class="input">
+              <label for="maturityDays">Vencimento (dias)</label>
+              <input id="maturityDays" type="number" value="30" min="1" max="365" />
+              <div class="hint">Para cálculo preciso do FRP</div>
+            </div>
           </div>
-          <div class="input">
-            <label for="exp18">Fator EXP 2</label>
-            <input id="exp18" type="number" step="0.1" value="2.718" />
+
+          <div class="inputs">
+            <div class="input">
+              <label for="exp9">Fator EXP 9P</label>
+              <input id="exp9" type="number" step="0.1" value="2.718" />
+            </div>
+            <div class="input">
+              <label for="exp18">Fator EXP 18P</label>
+              <input id="exp18" type="number" step="0.1" value="2.718" />
+            </div>
+            <div class="input">
+              <label for="exp27">Fator EXP 27P</label>
+              <input id="exp27" type="number" step="0.1" value="2.718" />
+            </div>
           </div>
-          <div class="input">
-            <label for="exp27">Fator EXP 3</label>
-            <input id="exp27" type="number" step="0.1" value="2.718" />
+
+          <div class="periods" id="intradayTabs">
+            <div class="tab active" data-iperiod="9">1ª Projeção</div>
+            <div class="tab" data-iperiod="18">2ª Projeção </div>
+            <div class="tab" data-iperiod="27">3ª Projeção </div>
           </div>
-        </div>
 
-        <div class="periods" id="intradayTabs">
-          <div class="tab active" data-iperiod="9">1ª Projeção</div>
-          <div class="tab" data-iperiod="18">2ª Projeção </div>
-          <div class="tab" data-iperiod="27">3ª Projeção </div>
-        </div>
-
-        <div class="cards">
-          <div class="card up-card"><div class="label">Máxima Intraday</div><div class="value up" id="i_max">--</div></div>
-          <div class="card down-card"><div class="label">Mínima Intraday</div><div class="value down" id="i_min">--</div></div>
-          <div class="card neutral-card"><div class="label">Fechamento Base</div><div class="value" id="i_close">--</div></div>
-          <div class="card neutral-card"><div class="label">σ Retornos (%)</div><div class="value" id="i_sigma">--</div></div>
-        </div>
-
-        <div class="debug" id="debugInfo">
-          Debug: aguardando cálculos...
-        </div>
-
-        <div class="sep"></div>
-
-        <h2 class="section-title">Possíveis Máximas e Mínimas</h2>
-        <div class="cards maxmin-grid">
-          <div class="card up-card"><div class="label">Máxima 1P </div><div class="value up" id="max_9p">--</div></div>
-          <div class="card up-card"><div class="label">Máxima 2P </div><div class="value up" id="max_18p">--</div></div>
-          <div class="card up-card"><div class="label">Máxima 3P </div><div class="value up" id="max_27p">--</div></div>
-          <div class="card down-card"><div class="label">Mínima 1P </div><div class="value down" id="min_9p">--</div></div>
-          <div class="card down-card"><div class="label">Mínima 2P </div><div class="value down" id="min_18p">--</div></div>
-          <div class="card down-card"><div class="label">Mínima 3P </div><div class="value down" id="min_27p">--</div></div>
-        </div>
-
-        <div class="sep"></div>
-
-        <h2 class="section-title">Preço Justo e Justíssimo do Dólar</h2>
-        
-		        <div class="fair-price-cards">
-          <div class="card up-card"><div class="label">Preço Justo PPP</div><div class="value" id="fair_ppp">--</div></div>
-          <div class="card up-card"><div class="label">Preço Justo UIP</div><div class="value" id="fair_uip">--</div></div>
-          <div class="card neutral-card"><div class="label">Preço Justíssimo</div><div class="value" id="fair_combined">--</div></div>
-          <div class="card down-card"><div class="label">Desvio do Justo (%)</div><div class="value" id="deviation_fair">--</div></div>
-        </div>
-
-        <div class="fair-price-cards">
-          <div class="card neutral-card"><div class="label">Diferencial Juros</div><div class="value" id="interest_diff">--</div></div>
-          <div class="card neutral-card"><div class="label">Diferencial Inflação</div><div class="value" id="inflation_diff">--</div></div>
-          <div class="card neutral-card"><div class="label">Fator Risco Ajustado</div><div class="value" id="risk_factor">--</div></div>
-          <div class="card neutral-card"><div class="label">Tendência 30D</div><div class="value" id="trend_30d">--</div></div>
-        </div>
-
-        <div class="inputs">
-          <div class="input">
-            <label for="ppp_rate">Taxa PPP Base (R$)</label>
-            <input id="ppp_rate" type="number" step="0.01" value="3.20" />
-            <div class="hint">Paridade do Poder de Compra histórica</div>
+          <div class="cards">
+            <div class="card up-card"><div class="label">Máxima Intraday</div><div class="value up" id="i_max">--</div></div>
+            <div class="card down-card"><div class="label">Mínima Intraday</div><div class="value down" id="i_min">--</div></div>
+            <div class="card neutral-card"><div class="label">Fechamento Base</div><div class="value" id="i_close">--</div></div>
+            <div class="card neutral-card"><div class="label">σ Retornos (%)</div><div class="value" id="i_sigma">--</div></div>
           </div>
-          <div class="input">
-            <label for="inflation_br">Inflação Brasil (%aa)</label>
-            <input id="inflation_br" type="number" step="0.1" value="4.5" />
-            <div class="hint">IPCA acumulado 12 meses</div>
-          </div>
-          <div class="input">
-            <label for="inflation_us">Inflação EUA (%aa)</label>
-            <input id="inflation_us" type="number" step="0.1" value="3.2" />
-            <div class="hint">CPI acumulado 12 meses</div>
-          </div>
-        </div>
 
-        <div class="inputs">
-          <div class="input">
-            <label for="selic_rate">Taxa Selic (%aa)</label>
-            <input id="selic_rate" type="number" step="0.25" value="13.75" />
+          <div class="debug" id="debugInfo">
+            Debug: aguardando cálculos...
           </div>
-          <div class="input">
-            <label for="fed_rate">Taxa Fed (%aa)</label>
-            <input id="fed_rate" type="number" step="0.25" value="5.50" />
+
+          <div class="sep"></div>
+
+          <h2 class="section-title">Possíveis Máximas e Mínimas</h2>
+          <div class="cards maxmin-grid">
+            <div class="card up-card"><div class="label">Máxima 1P </div><div class="value up" id="max_9p">--</div></div>
+            <div class="card up-card"><div class="label">Máxima 2P </div><div class="value up" id="max_18p">--</div></div>
+            <div class="card up-card"><div class="label">Máxima 3P </div><div class="value up" id="max_27p">--</div></div>
+            <div class="card down-card"><div class="label">Mínima 1P </div><div class="value down" id="min_9p">--</div></div>
+            <div class="card down-card"><div class="label">Mínima 2P </div><div class="value down" id="min_18p">--</div></div>
+            <div class="card down-card"><div class="label">Mínima 3P </div><div class="value down" id="min_27p">--</div></div>
           </div>
-          <div class="input">
-            <label for="risk_premium">Prêmio de Risco (%)</label>
-            <input id="risk_premium" type="number" step="0.1" value="2.5" />
-            <div class="hint">Risco país + volatilidade</div>
+
+          <div class="sep"></div>
+
+          <h2 class="section-title">Preço Justo e Justíssimo do Dólar</h2>
+          
+          <div class="fair-price-cards">
+            <div class="card up-card"><div class="label">Preço Justo PPP</div><div class="value" id="fair_ppp">--</div></div>
+            <div class="card up-card"><div class="label">Preço Justo UIP</div><div class="value" id="fair_uip">--</div></div>
+            <div class="card neutral-card"><div class="label">Preço Justíssimo</div><div class="value" id="fair_combined">--</div></div>
+            <div class="card down-card"><div class="label">Desvio do Justo (%)</div><div class="value" id="deviation_fair">--</div></div>
           </div>
-        </div>
 
+          <div class="fair-price-cards">
+            <div class="card neutral-card"><div class="label">Diferencial Juros</div><div class="value" id="interest_diff">--</div></div>
+            <div class="card neutral-card"><div class="label">Diferencial Inflação</div><div class="value" id="inflation_diff">--</div></div>
+            <div class="card neutral-card"><div class="label">Fator Risco Ajustado</div><div class="value" id="risk_factor">--</div></div>
+            <div class="card neutral-card"><div class="label">Tendência 30D</div><div class="value" id="trend_30d">--</div></div>
+          </div>
 
-        <div class="sep"></div>
+          <div class="inputs">
+            <div class="input">
+              <label for="ppp_rate">Taxa PPP Base (R$)</label>
+              <input id="ppp_rate" type="number" step="0.01" value="3.20" />
+              <div class="hint">Paridade do Poder de Compra histórica</div>
+            </div>
+            <div class="input">
+              <label for="inflation_br">Inflação Brasil (%aa)</label>
+              <input id="inflation_br" type="number" step="0.1" value="4.5" />
+              <div class="hint">IPCA acumulado 12 meses</div>
+            </div>
+            <div class="input">
+              <label for="inflation_us">Inflação EUA (%aa)</label>
+              <input id="inflation_us" type="number" step="0.1" value="3.2" />
+              <div class="hint">CPI acumulado 12 meses</div>
+            </div>
+          </div>
 
-        <h2 class="section-title">Indicadores Adicionais</h2>
-        <div class="cards">
-          <div class="card neutral-card"><div class="label">Retorno Linear Atual</div><div class="value" id="ret_current">--</div></div>
-          <div class="card neutral-card"><div class="label">Desvio 9P (%)</div><div class="value" id="std9">--</div></div>
-          <div class="card neutral-card"><div class="label">Desvio 18P (%)</div><div class="value" id="std18">--</div></div>
-          <div class="card neutral-card"><div class="label">Desvio 27P (%)</div><div class="value" id="std27">--</div></div>
-          <div class="card neutral-card"><div class="label">Exp(σ9) Factor</div><div class="value" id="exp_std9">--</div></div>
-          <div class="card neutral-card"><div class="label">Exp(σ18) Factor</div><div class="value" id="exp_std18">--</div></div>
-          <div class="card neutral-card"><div class="label">Exp(σ27) Factor</div><div class="value" id="exp_std27">--</div></div>
-        </div>
+          <div class="inputs">
+            <div class="input">
+              <label for="selic_rate">Taxa Selic (%aa)</label>
+              <input id="selic_rate" type="number" step="0.25" value="13.75" />
+            </div>
+            <div class="input">
+              <label for="fed_rate">Taxa Fed (%aa)</label>
+              <input id="fed_rate" type="number" step="0.25" value="5.50" />
+            </div>
+            <div class="input">
+              <label for="risk_premium">Prêmio de Risco (%)</label>
+              <input id="risk_premium" type="number" step="0.1" value="2.5" />
+              <div class="hint">Risco país + volatilidade</div>
+            </div>
+          </div>
 
-      </section>
+          <div class="sep"></div>
+
+          <h2 class="section-title">Indicadores Adicionais</h2>
+          <div class="cards">
+            <div class="card neutral-card"><div class="label">Retorno Linear Atual</div><div class="value" id="ret_current">--</div></div>
+            <div class="card neutral-card"><div class="label">Desvio 9P (%)</div><div class="value" id="std9">--</div></div>
+            <div class="card neutral-card"><div class="label">Desvio 18P (%)</div><div class="value" id="std18">--</div></div>
+            <div class="card neutral-card"><div class="label">Desvio 27P (%)</div><div class="value" id="std27">--</div></div>
+            <div class="card neutral-card"><div class="label">Exp(σ9) Factor</div><div class="value" id="exp_std9">--</div></div>
+            <div class="card neutral-card"><div class="label">Exp(σ18) Factor</div><div class="value" id="exp_std18">--</div></div>
+            <div class="card neutral-card"><div class="label">Exp(σ27) Factor</div><div class="value" id="exp_std27">--</div></div>
+          </div>
+
+        </section>
+
+        <section class="panel ai-panel" id="ai-analysis-panel">
+          <h2 class="section-title ai-title">Análise Inteligente</h2>
+          
+          <div class="ai-insights">
+            <div class="insight-card">
+              <div class="insight-title">Situação Atual</div>
+              <div class="insight-content" id="aiCurrentSituation">
+                Aguardando dados para análise...
+              </div>
+            </div>
+            
+            <div class="opportunity-score">
+              <div class="score-circle">
+                <span class="score-value" id="opportunityScore">--</span>
+                <span class="score-label">Score</span>
+              </div>
+            </div>
+            
+            <div class="insight-card">
+              <div class="insight-title">Recomendação Principal</div>
+              <div class="insight-content" id="aiMainRecommendation">
+                Configure os dados primeiro...
+              </div>
+            </div>
+          </div>
+
+          <div class="alerts-container" id="aiAlerts" style="display: none;">
+            <!-- Alerts will be populated by JS -->
+          </div>
+
+          <div class="ai-narrative" id="aiNarrative" style="display: none;">
+            <!-- Narrative analysis will be populated by JS -->
+          </div>
+
+          <div class="sep"></div>
+
+          <h3 style="font-size: 14px; margin-bottom: 12px;">Cenários Probabilísticos (24h)</h3>
+          <div class="scenario-bars" id="aiScenarios">
+            <div class="scenario">
+              <span class="scenario-label">Alta Forte (>+2%)</span>
+              <div class="probability-bar">
+                <div class="bar-fill" style="width: 0%"></div>
+                <span class="percentage">--%</span>
+              </div>
+            </div>
+            <div class="scenario">
+              <span class="scenario-label">Alta Moderada (+1%/+2%)</span>
+              <div class="probability-bar">
+                <div class="bar-fill" style="width: 0%"></div>
+                <span class="percentage">--%</span>
+              </div>
+            </div>
+            <div class="scenario">
+              <span class="scenario-label">Lateral (-1%/+1%)</span>
+              <div class="probability-bar">
+                <div class="bar-fill" style="width: 0%"></div>
+                <span class="percentage">--%</span>
+              </div>
+            </div>
+            <div class="scenario">
+              <span class="scenario-label">Baixa Moderada (-2%/-1%)</span>
+              <div class="probability-bar">
+                <div class="bar-fill" style="width: 0%"></div>
+                <span class="percentage">--%</span>
+              </div>
+            </div>
+            <div class="scenario">
+              <span class="scenario-label">Baixa Forte (<-2%)</span>
+              <div class="probability-bar">
+                <div class="bar-fill" style="width: 0%"></div>
+                <span class="percentage">--%</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
 
       <aside class="panel">
         <h2 class="section-title">Configuração de APIs</h2>
@@ -917,7 +1214,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script>
-    class TradingSystemWithAPI {
+    class TradingSystemWithAI {
       constructor() {
         this.priceData = [];
         this.linearReturns = [];
@@ -930,6 +1227,7 @@
           interval: '1d'
         };
         this.apiConnected = false;
+        this.aiAnalysis = null;
         
         this.initUserSession();
         this.init();
@@ -956,7 +1254,7 @@
             }
             
             console.log('Usuário logado:', user.name, 'Sistema:', user.system);
-            this.log(`✅ Bem-vindo, ${user.name}! Sistema GARCH inicializado.`);
+            this.log(`✅ Bem-vindo, ${user.name}! Sistema GARCH com IA inicializado.`);
             
           } else {
             console.warn('Nenhum usuário logado encontrado');
@@ -1008,16 +1306,23 @@
         this.wireExpInputs();
         this.updateAPIInfo();
         this.updateDataTypeUI();
+        this.initializeAI();
         
         setInterval(() => {
           this.checkSessionValidity();
         }, 5 * 60 * 1000);
       }
       
+      initializeAI() {
+        // Initialize AI analysis display
+        this.updateAIDisplay();
+      }
+      
       wireEventListeners() {
         document.getElementById('btnFetch').addEventListener('click', () => this.fetchSimulatedData());
         document.getElementById('btnFetchAPI').addEventListener('click', () => this.fetchAPIData());
         document.getElementById('btnAnalyze').addEventListener('click', () => this.analyze());
+        document.getElementById('btnAIAnalysis').addEventListener('click', () => this.performAIAnalysis());
         document.getElementById('btnLoadManual').addEventListener('click', () => this.loadManualData());
         document.getElementById('btnClear').addEventListener('click', () => this.clearData());
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
@@ -1066,7 +1371,6 @@
           }
         });
         
-        // Fair price calculation inputs
         ['ppp_rate', 'inflation_br', 'inflation_us', 'selic_rate', 'fed_rate', 'risk_premium'].forEach(id => {
           const element = document.getElementById(id);
           if (element) {
@@ -1085,7 +1389,352 @@
         }
       }
       
-      // Sistema FRP - Forward Rate Premium
+      // AI Analysis System
+      async performAIAnalysis() {
+        if (!this.priceData.length) {
+          this.log("Carregue dados primeiro para análise com IA");
+          return;
+        }
+        
+        this.showLoading();
+        this.log("Executando análise inteligente...");
+        
+        try {
+          // Simulate AI processing time
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          this.aiAnalysis = this.generateAIAnalysis();
+          this.updateAIDisplay();
+          
+          this.log("✅ Análise IA concluída com sucesso!");
+          
+        } catch (error) {
+          this.log("❌ Erro na análise IA: " + error.message);
+        } finally {
+          this.hideLoading();
+        }
+      }
+      
+      generateAIAnalysis() {
+        const currentPrice = this.lastClose();
+        const deviation = this.calculateDeviationFromFair();
+        const volatility = this.calculateVolatilityRegime();
+        const trend = this.calculateTrend30Days();
+        
+        const analysis = {
+          opportunityScore: this.calculateOpportunityScore(),
+          currentSituation: this.generateSituationAnalysis(currentPrice, deviation),
+          mainRecommendation: this.generateMainRecommendation(deviation, volatility),
+          alerts: this.generateAlerts(deviation, volatility),
+          scenarios: this.calculateScenarios(),
+          narrative: this.generateNarrative(currentPrice, deviation, trend)
+        };
+        
+        return analysis;
+      }
+      
+      calculateOpportunityScore() {
+        if (!this.priceData.length) return 0;
+        
+        const deviation = Math.abs(this.calculateDeviationFromFair());
+        const volatility = this.calculateVolatilityRegime();
+        
+        // Score components (0-100 each)
+        const deviationScore = Math.min(100, deviation * 8); // Higher deviation = higher opportunity
+        const volatilityScore = volatility > 0.02 ? 75 : 50; // Higher volatility = more opportunity
+        const trendScore = 60; // Base trend score
+        const riskRewardScore = Math.min(100, deviation * 10);
+        
+        // Weighted average
+        const totalScore = (
+          deviationScore * 0.35 +
+          volatilityScore * 0.25 +
+          trendScore * 0.20 +
+          riskRewardScore * 0.20
+        );
+        
+        return Math.round(totalScore);
+      }
+      
+      calculateDeviationFromFair() {
+        const currentPrice = this.lastClose();
+        const fairPrice = this.calculateCombinedFairPrice();
+        
+        if (!isFinite(currentPrice) || !isFinite(fairPrice)) return 0;
+        
+        return ((currentPrice - fairPrice) / fairPrice) * 100;
+      }
+      
+      calculateCombinedFairPrice() {
+        // Simplified fair price calculation for AI
+        const currentPrice = this.lastClose();
+        if (!isFinite(currentPrice)) return currentPrice;
+        
+        // Use your existing fair price logic or simplified version
+        const pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 5.30);
+        const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
+        const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
+        
+        let adjustedPppRate = pppRate;
+        if (currentPrice > 100) {
+          adjustedPppRate = pppRate * 1000;
+        }
+        
+        const fairPricePPP = adjustedPppRate * ((1 + inflationBr) / (1 + inflationUs));
+        const fairPriceUIP = currentPrice * 0.98; // Simplified UIP
+        
+        return (fairPricePPP * 0.4) + (fairPriceUIP * 0.6);
+      }
+      
+      calculateVolatilityRegime() {
+        if (this.linearReturns.length < 20) return 0.01;
+        
+        const recent20Returns = this.linearReturns.slice(-20);
+        const mean = recent20Returns.reduce((sum, ret) => sum + ret, 0) / recent20Returns.length;
+        const variance = recent20Returns.reduce((sum, ret) => sum + Math.pow(ret - mean, 2), 0) / recent20Returns.length;
+        
+        return Math.sqrt(variance);
+      }
+      
+      generateSituationAnalysis(currentPrice, deviation) {
+        if (!isFinite(currentPrice)) {
+          return "Aguardando dados de preço para análise...";
+        }
+        
+        const absDeviation = Math.abs(deviation);
+        let situation = `O USD/BRL está cotado em ${this.fmt(currentPrice)}, `;
+        
+        if (absDeviation < 2) {
+          situation += `próximo ao preço justo (desvio: ${deviation.toFixed(1)}%). Mercado em equilíbrio.`;
+        } else if (deviation > 5) {
+          situation += `${deviation.toFixed(1)}% ACIMA do preço justo. Moeda sobrevalorizada.`;
+        } else if (deviation < -5) {
+          situation += `${Math.abs(deviation).toFixed(1)}% ABAIXO do preço justo. Moeda subvalorizada.`;
+        } else {
+          situation += `com desvio de ${deviation.toFixed(1)}% do preço justo. Situação moderada.`;
+        }
+        
+        return situation;
+      }
+      
+      generateMainRecommendation(deviation, volatility) {
+        const absDeviation = Math.abs(deviation);
+        
+        if (absDeviation < 2) {
+          return "Aguardar movimentos mais definidos. Mercado em equilíbrio técnico.";
+        } else if (deviation > 8) {
+          return "VENDA recomendada. Moeda muito sobrevalorizada, correção provável.";
+        } else if (deviation > 5) {
+          return "Atenção para vendas. Preço acima do justo, aguardar confirmação.";
+        } else if (deviation < -8) {
+          return "COMPRA recomendada. Moeda muito subvalorizada, recuperação esperada.";
+        } else if (deviation < -5) {
+          return "Atenção para compras. Preço abaixo do justo, oportunidade potencial.";
+        } else if (volatility > 0.025) {
+          return "Mercado volátil. Aguardar redução da volatilidade para entradas.";
+        } else {
+          return "Monitorar evolução. Situação neutra no momento.";
+        }
+      }
+      
+      generateAlerts(deviation, volatility) {
+        const alerts = [];
+        const absDeviation = Math.abs(deviation);
+        const currentVol = volatility * 100;
+        
+        if (absDeviation > 8) {
+          alerts.push({
+            type: 'warning',
+            message: `Desvio extremo do preço justo (${deviation.toFixed(1)}%). Atenção para reversão!`
+          });
+        }
+        
+        if (currentVol > 3) {
+          alerts.push({
+            type: 'warning',
+            message: `Volatilidade elevada (${currentVol.toFixed(2)}%). Cuidado com whipsaws.`
+          });
+        }
+        
+        if (deviation > 5 && currentVol < 2) {
+          alerts.push({
+            type: 'success',
+            message: 'Oportunidade de venda: Sobrevalorização em mercado calmo.'
+          });
+        }
+        
+        if (deviation < -5 && currentVol < 2) {
+          alerts.push({
+            type: 'success',
+            message: 'Oportunidade de compra: Subvalorização em mercado calmo.'
+          });
+        }
+        
+        if (absDeviation < 2 && currentVol < 1.5) {
+          alerts.push({
+            type: 'info',
+            message: 'Mercado em equilíbrio. Aguardar catalisador para definir direção.'
+          });
+        }
+        
+        return alerts;
+      }
+      
+      calculateScenarios() {
+        const volatility = this.calculateVolatilityRegime();
+        const deviation = this.calculateDeviationFromFair();
+        
+        // Base probabilities
+        let scenarios = {
+          strongUp: 15,    // >+2%
+          moderateUp: 20,  // +1% to +2%
+          lateral: 30,     // -1% to +1%
+          moderateDown: 20, // -2% to -1%
+          strongDown: 15   // <-2%
+        };
+        
+        // Adjust based on deviation from fair price
+        if (deviation > 5) {
+          // Overvalued - higher probability of decline
+          scenarios.strongDown += 15;
+          scenarios.moderateDown += 10;
+          scenarios.strongUp -= 10;
+          scenarios.moderateUp -= 5;
+          scenarios.lateral -= 10;
+        } else if (deviation < -5) {
+          // Undervalued - higher probability of rise
+          scenarios.strongUp += 15;
+          scenarios.moderateUp += 10;
+          scenarios.strongDown -= 10;
+          scenarios.moderateDown -= 5;
+          scenarios.lateral -= 10;
+        }
+        
+        // Adjust based on volatility
+        if (volatility > 0.025) {
+          // High volatility - more extreme moves
+          scenarios.strongUp += 10;
+          scenarios.strongDown += 10;
+          scenarios.lateral -= 20;
+        }
+        
+        // Normalize to 100%
+        const total = Object.values(scenarios).reduce((sum, val) => sum + val, 0);
+        Object.keys(scenarios).forEach(key => {
+          scenarios[key] = Math.max(5, Math.round((scenarios[key] / total) * 100));
+        });
+        
+        return scenarios;
+      }
+      
+      generateNarrative(currentPrice, deviation, trend30d) {
+        const absDeviation = Math.abs(deviation);
+        const volatility = this.calculateVolatilityRegime() * 100;
+        
+        let narrative = `
+          <h4>ANÁLISE DIÁRIA - USD/BRL (${new Date().toLocaleDateString('pt-BR')})</h4>
+          
+          <p><strong>SITUAÇÃO ATUAL:</strong><br>
+          O dólar fechou em ${this.fmt(currentPrice)}, operando ${Math.abs(deviation).toFixed(1)}% ${deviation > 0 ? 'ACIMA' : 'ABAIXO'} do preço justíssimo calculado. A moeda está tecnicamente ${deviation > 0 ? 'sobrevalorizada' : 'subvalorizada'}.</p>
+          
+          <p><strong>PROJEÇÕES:</strong><br>
+          • Máxima intraday esperada: ${this.fmt(this.lastClose() * 1.015)} (+1,5%)<br>
+          • Mínima intraday esperada: ${this.fmt(this.lastClose() * 0.985)} (-1,5%)<br>
+          • Probabilidade de ${deviation > 0 ? 'correção' : 'recuperação'}: ${Math.min(85, Math.round(absDeviation * 8))}%</p>
+          
+          <p><strong>CENÁRIOS:</strong><br>`;
+        
+        if (deviation > 5) {
+          narrative += `📉 <strong>BAIXA (65%):</strong> Correção em direção ao preço justo esperada<br>
+          📊 <strong>LATERAL (25%):</strong> Consolidação nos níveis atuais<br>
+          📈 <strong>ALTA (10%):</strong> Extensão da sobrevalorização`;
+        } else if (deviation < -5) {
+          narrative += `📈 <strong>ALTA (65%):</strong> Recuperação em direção ao preço justo<br>
+          📊 <strong>LATERAL (25%):</strong> Consolidação nos níveis atuais<br>
+          📉 <strong>BAIXA (10%):</strong> Extensão da subvalorização`;
+        } else {
+          narrative += `📊 <strong>LATERAL (50%):</strong> Consolidação esperada<br>
+          📈 <strong>ALTA (25%):</strong> Possível movimento de alta<br>
+          📉 <strong>BAIXA (25%):</strong> Possível movimento de baixa`;
+        }
+        
+        narrative += `</p><p><strong>RECOMENDAÇÃO:</strong><br>`;
+        
+        if (deviation > 8) {
+          narrative += `Considerar vendas. Moeda muito acima do valor justo oferece boa oportunidade de venda com risco controlado.`;
+        } else if (deviation < -8) {
+          narrative += `Considerar compras. Moeda muito abaixo do valor justo oferece boa oportunidade de compra com potencial de valorização.`;
+        } else if (volatility > 3) {
+          narrative += `Aguardar redução da volatilidade (${volatility.toFixed(1)}%) antes de posições direcionais.`;
+        } else {
+          narrative += `Monitorar evolução. Aguardar sinais mais claros de direção do mercado.`;
+        }
+        
+        narrative += `</p>`;
+        
+        return narrative;
+      }
+      
+      updateAIDisplay() {
+        if (!this.aiAnalysis) {
+          document.getElementById('aiCurrentSituation').textContent = "Clique em 'Análise IA' para gerar insights...";
+          document.getElementById('aiMainRecommendation').textContent = "Aguardando análise...";
+          document.getElementById('opportunityScore').textContent = "--";
+          return;
+        }
+        
+        // Update main insights
+        document.getElementById('aiCurrentSituation').textContent = this.aiAnalysis.currentSituation;
+        document.getElementById('aiMainRecommendation').textContent = this.aiAnalysis.mainRecommendation;
+        document.getElementById('opportunityScore').textContent = this.aiAnalysis.opportunityScore;
+        
+        // Update alerts
+        const alertsContainer = document.getElementById('aiAlerts');
+        if (this.aiAnalysis.alerts && this.aiAnalysis.alerts.length > 0) {
+          alertsContainer.innerHTML = '';
+          this.aiAnalysis.alerts.forEach(alert => {
+            const alertElement = document.createElement('div');
+            alertElement.className = `alert-item ${alert.type}`;
+            alertElement.textContent = alert.message;
+            alertsContainer.appendChild(alertElement);
+          });
+          alertsContainer.style.display = 'grid';
+        } else {
+          alertsContainer.style.display = 'none';
+        }
+        
+        // Update scenarios
+        if (this.aiAnalysis.scenarios) {
+          const scenarios = document.querySelectorAll('#aiScenarios .scenario');
+          const scenarioValues = [
+            this.aiAnalysis.scenarios.strongUp,
+            this.aiAnalysis.scenarios.moderateUp,
+            this.aiAnalysis.scenarios.lateral,
+            this.aiAnalysis.scenarios.moderateDown,
+            this.aiAnalysis.scenarios.strongDown
+          ];
+          
+          scenarios.forEach((scenario, index) => {
+            const barFill = scenario.querySelector('.bar-fill');
+            const percentage = scenario.querySelector('.percentage');
+            const value = scenarioValues[index] || 0;
+            
+            barFill.style.width = `${value}%`;
+            percentage.textContent = `${value}%`;
+          });
+        }
+        
+        // Update narrative
+        const narrativeContainer = document.getElementById('aiNarrative');
+        if (this.aiAnalysis.narrative) {
+          narrativeContainer.innerHTML = this.aiAnalysis.narrative;
+          narrativeContainer.style.display = 'block';
+        } else {
+          narrativeContainer.style.display = 'none';
+        }
+      }
+      
+      // Sistema FRP - Forward Rate Premium (mantido do original)
       convertSpotToFuture(spotPrice) {
         const frp = parseFloat(document.getElementById('frp')?.value || 0) / 100;
         const maturityDays = parseInt(document.getElementById('maturityDays')?.value || 30);
@@ -1149,7 +1798,7 @@
         return processedPrices;
       }
       
-      // API Configuration Methods
+      // API Configuration Methods (mantidos do original)
       selectProvider(provider) {
         document.querySelectorAll('.provider-card').forEach(card => {
           card.classList.remove('active');
@@ -1341,6 +1990,11 @@
           this.log(`✅ Dados processados via ${this.getProviderDisplayName(this.apiConfig.provider)}: ${processedData.length} registros`);
           document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
           
+          // Auto-run AI analysis if data is available
+          if (processedData.length > 20) {
+            setTimeout(() => this.performAIAnalysis(), 1000);
+          }
+          
           const welcomeBanner = document.querySelector('.welcome-banner');
           if (welcomeBanner) {
             welcomeBanner.style.display = 'none';
@@ -1479,12 +2133,10 @@
       }
       
       generateRealisticData(count) {
-        // Cotação atual baseada em dados reais: 5.437
         const currentClose = 5.437;
         const out = [];
         let x = currentClose;
         
-        // Gerar dados históricos trabalhando para trás
         for (let i = count - 1; i >= 0; i--) {
           const daysBack = i;
           const trend = Math.sin(daysBack * 0.06) * 0.003;
@@ -1515,6 +2167,11 @@
           this.refreshAll();
           this.setStatus(`${processedData.length} pontos simulados`);
           this.log(`Dados simulados carregados: ${processedData.length} preços`);
+          
+          // Auto-run AI analysis
+          if (processedData.length > 20) {
+            setTimeout(() => this.performAIAnalysis(), 500);
+          }
           
           const welcomeBanner = document.querySelector('.welcome-banner');
           if (welcomeBanner) {
@@ -1554,6 +2211,10 @@
         setTimeout(() => {
           this.refreshAll();
           this.log("Análise executada com sucesso");
+          
+          // Auto-run AI analysis after regular analysis
+          setTimeout(() => this.performAIAnalysis(), 500);
+          
           this.hideLoading();
         }, 800);
       }
@@ -1579,6 +2240,11 @@
         this.setStatus(`${processedPrices.length} preços manuais`);
         this.log(`${processedPrices.length} preços processados manualmente`);
         this.updateAPIInfo();
+        
+        // Auto-run AI analysis
+        if (processedPrices.length > 10) {
+          setTimeout(() => this.performAIAnalysis(), 500);
+        }
       }
       
       clearData() {
@@ -1588,6 +2254,7 @@
         
         this.priceData = [];
         this.linearReturns = [];
+        this.aiAnalysis = null;
         document.getElementById('manualData').value = "";
         
         const valueElements = document.querySelectorAll('.value');
@@ -1598,6 +2265,7 @@
         this.setStatus("dados limpos");
         this.log("Dados limpos");
         this.updateAPIInfo();
+        this.updateAIDisplay(); // Reset AI display
       }
       
       handleFileUpload(e) {
@@ -1668,6 +2336,11 @@
               this.setStatus(`${processedPrices.length} preços importados`);
               this.log(`${processedPrices.length} preços do Excel processados (DOL Futuro)`);
               this.updateAPIInfo();
+              
+              // Auto-run AI analysis
+              if (processedPrices.length > 20) {
+                setTimeout(() => this.performAIAnalysis(), 1000);
+              }
             } else {
               this.log(`Nenhum preço válido encontrado na coluna ${String.fromCharCode(65+closeColumn)}`);
             }
@@ -1680,6 +2353,7 @@
         reader.readAsBinaryString(file);
       }
       
+      // Mathematical calculations (maintained from original)
       calculateLinearReturns() {
         this.linearReturns = [];
         if (this.priceData.length < 2) return;
@@ -1775,89 +2449,64 @@
         this.calculateIntradayExtremes(period);
       }
       
-// Fair Price Calculations
-calculateFairPrices() {
-  const currentPrice = this.lastClose();
-  if (!isFinite(currentPrice) || currentPrice <= 0) {
-    this.resetFairPriceDisplay();
-    return;
-  }
-  
-  // Get input values
-  let pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 5.30);
-  const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
-  const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
-  const selicRate = parseFloat(document.getElementById('selic_rate')?.value || 15.50) / 100;
-  const fedRate = parseFloat(document.getElementById('fed_rate')?.value || 5.50) / 100;
-  const riskPremium = parseFloat(document.getElementById('risk_premium')?.value || 2.5) / 100;
+      // Fair Price Calculations (maintained from original with fixes)
+      calculateFairPrices() {
+        const currentPrice = this.lastClose();
+        if (!isFinite(currentPrice) || currentPrice <= 0) {
+          this.resetFairPriceDisplay();
+          return;
+        }
+        
+        let pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 5.30);
+        const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
+        const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
+        const selicRate = parseFloat(document.getElementById('selic_rate')?.value || 15.50) / 100;
+        const fedRate = parseFloat(document.getElementById('fed_rate')?.value || 5.50) / 100;
+        const riskPremium = parseFloat(document.getElementById('risk_premium')?.value || 2.5) / 100;
 
-  // --- Correção de escala ---
-  // Se o preço atual do contrato está em pontos (>100), ajustar PPP para mesma unidade
-  if (currentPrice > 100) {
-    pppRate = pppRate * 1000;
-  }
+        if (currentPrice > 100) {
+          pppRate = pppRate * 1000;
+        }
 
-  // PPP Fair Price (Purchasing Power Parity)
-  const inflationDifferential = inflationBr - inflationUs;
-  const fairPricePPP = pppRate * ((1 + inflationBr) / (1 + inflationUs));
+        const inflationDifferential = inflationBr - inflationUs;
+        const fairPricePPP = pppRate * ((1 + inflationBr) / (1 + inflationUs));
 
-  // UIP Fair Price (Uncovered Interest Parity)
-  const interestDifferential = selicRate - fedRate;
-  const netInterestDifferential = interestDifferential - riskPremium;
-  const uipAdjustmentFactor = 1 + (netInterestDifferential * 0.15);
-  const fairPriceUIP = currentPrice * uipAdjustmentFactor;
+        const interestDifferential = selicRate - fedRate;
+        const netInterestDifferential = interestDifferential - riskPremium;
+        const uipAdjustmentFactor = 1 + (netInterestDifferential * 0.15);
+        const fairPriceUIP = currentPrice * uipAdjustmentFactor;
 
-  // Bound UIP para evitar distorções
-  const maxUIPDeviation = 0.20;
-  const upperBoundUIP = currentPrice * (1 + maxUIPDeviation);
-  const lowerBoundUIP = currentPrice * (1 - maxUIPDeviation);
-  const boundedFairPriceUIP = Math.max(lowerBoundUIP, Math.min(upperBoundUIP, fairPriceUIP));
+        const maxUIPDeviation = 0.20;
+        const upperBoundUIP = currentPrice * (1 + maxUIPDeviation);
+        const lowerBoundUIP = currentPrice * (1 - maxUIPDeviation);
+        const boundedFairPriceUIP = Math.max(lowerBoundUIP, Math.min(upperBoundUIP, fairPriceUIP));
 
-  // Combined Fair Price (Justíssimo) - pesos ajustáveis
-  const weightPPP = 0.4;
-  const weightUIP = 0.6;
-  const fairPriceCombined = (fairPricePPP * weightPPP) + (boundedFairPriceUIP * weightUIP);
+        const weightPPP = 0.4;
+        const weightUIP = 0.6;
+        const fairPriceCombined = (fairPricePPP * weightPPP) + (boundedFairPriceUIP * weightUIP);
 
-  // Validação final: justíssimo não pode estar muito distante
-  const maxTotalDeviation = 0.25;
-  const upperBound = currentPrice * (1 + maxTotalDeviation);
-  const lowerBound = currentPrice * (1 - maxTotalDeviation);
-  const finalFairPrice = Math.max(lowerBound, Math.min(upperBound, fairPriceCombined));
+        const maxTotalDeviation = 0.25;
+        const upperBound = currentPrice * (1 + maxTotalDeviation);
+        const lowerBound = currentPrice * (1 - maxTotalDeviation);
+        const finalFairPrice = Math.max(lowerBound, Math.min(upperBound, fairPriceCombined));
 
-  // Desvio percentual
-  const deviationFair = ((currentPrice - finalFairPrice) / finalFairPrice) * 100;
+        const deviationFair = ((currentPrice - finalFairPrice) / finalFairPrice) * 100;
 
-  // Indicadores adicionais
-  const riskFactor = 1 + riskPremium;
-  const trend30d = this.calculateTrend30Days();
+        const riskFactor = 1 + riskPremium;
+        const trend30d = this.calculateTrend30Days();
 
-  // Update display
-  document.getElementById('fair_ppp').innerText = this.fmt(fairPricePPP);
-  document.getElementById('fair_uip').innerText = this.fmt(boundedFairPriceUIP);
-  document.getElementById('fair_combined').innerText = this.fmt(finalFairPrice);
-  document.getElementById('deviation_fair').innerText = deviationFair.toFixed(2) + '%';
-  document.getElementById('interest_diff').innerText = (interestDifferential * 100).toFixed(2) + 'p.p.';
-  document.getElementById('inflation_diff').innerText = (inflationDifferential * 100).toFixed(2) + 'p.p.';
-  document.getElementById('risk_factor').innerText = riskFactor.toFixed(4);
-  document.getElementById('trend_30d').innerText = trend30d;
+        document.getElementById('fair_ppp').innerText = this.fmt(fairPricePPP);
+        document.getElementById('fair_uip').innerText = this.fmt(boundedFairPriceUIP);
+        document.getElementById('fair_combined').innerText = this.fmt(finalFairPrice);
+        document.getElementById('deviation_fair').innerText = deviationFair.toFixed(2) + '%';
+        document.getElementById('interest_diff').innerText = (interestDifferential * 100).toFixed(2) + 'p.p.';
+        document.getElementById('inflation_diff').innerText = (inflationDifferential * 100).toFixed(2) + 'p.p.';
+        document.getElementById('risk_factor').innerText = riskFactor.toFixed(4);
+        document.getElementById('trend_30d').innerText = trend30d;
 
-  // Update card colors
-  this.updateFairPriceCardColors(deviationFair);
-
-  // Debug
-  console.log('Fair Price Calculation (Fixed):', {
-    currentPrice: currentPrice.toFixed(4),
-    pppRate,
-    fairPricePPP: fairPricePPP.toFixed(4),
-    fairPriceUIP_raw: fairPriceUIP.toFixed(4),
-    fairPriceUIP_bounded: boundedFairPriceUIP.toFixed(4),
-    fairPriceCombined_raw: fairPriceCombined.toFixed(4),
-    finalFairPrice: finalFairPrice.toFixed(4),
-    deviationFair: deviationFair.toFixed(2) + '%',
-    uipAdjustmentFactor: uipAdjustmentFactor.toFixed(4)
-  });
-}
-
+        this.updateFairPriceCardColors(deviationFair);
+      }
+      
       calculateTrend30Days() {
         if (this.priceData.length < 30) {
           return 'Dados insuficientes';
@@ -1879,7 +2528,6 @@ calculateFairPrices() {
         const fairCombinedCard = document.getElementById('fair_combined').closest('.card');
         const deviationCard = document.getElementById('deviation_fair').closest('.card');
         
-        // Reset classes
         [fairCombinedCard, deviationCard].forEach(card => {
           if (card) {
             card.classList.remove('up-card', 'down-card', 'neutral-card');
@@ -1887,15 +2535,12 @@ calculateFairPrices() {
         });
         
         if (Math.abs(deviation) < 5) {
-          // Fair value - neutral
           if (fairCombinedCard) fairCombinedCard.classList.add('neutral-card');
           if (deviationCard) deviationCard.classList.add('neutral-card');
         } else if (deviation > 0) {
-          // Overvalued - red
           if (fairCombinedCard) fairCombinedCard.classList.add('down-card');
           if (deviationCard) deviationCard.classList.add('down-card');
         } else {
-          // Undervalued - green
           if (fairCombinedCard) fairCombinedCard.classList.add('up-card');
           if (deviationCard) deviationCard.classList.add('up-card');
         }
@@ -1952,7 +2597,7 @@ calculateFairPrices() {
       
       log(msg) {
         document.getElementById("log").innerText = msg;
-        console.log(`[Trading System] ${msg}`);
+        console.log(`[Trading System AI] ${msg}`);
       }
       
       setStatus(msg) {
@@ -1962,9 +2607,8 @@ calculateFairPrices() {
     
     // Initialize trading system when page loads
     document.addEventListener('DOMContentLoaded', () => {
-      window.tradingSystem = new TradingSystemWithAPI();
+      window.tradingSystem = new TradingSystemWithAI();
     });
   </script>
 </body>
-
 </html>
