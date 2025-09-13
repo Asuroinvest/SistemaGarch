@@ -1415,265 +1415,567 @@
         }
       }
       
-      generateAIAnalysis() {
-        const currentPrice = this.lastClose();
-        const deviation = this.calculateDeviationFromFair();
-        const volatility = this.calculateVolatilityRegime();
-        const trend = this.calculateTrend30Days();
-        
-        const analysis = {
-          opportunityScore: this.calculateOpportunityScore(),
-          currentSituation: this.generateSituationAnalysis(currentPrice, deviation),
-          mainRecommendation: this.generateMainRecommendation(deviation, volatility),
-          alerts: this.generateAlerts(deviation, volatility),
-          scenarios: this.calculateScenarios(),
-          narrative: this.generateNarrative(currentPrice, deviation, trend)
-        };
-        
-        return analysis;
+      // SUBSTITUA APENAS ESTAS FUNÇÕES NO SEU SISTEMA ORIGINAL
+// Mantenha todo o resto igual, apenas cole estas funções sobre as existentes
+
+// Nova análise de IA que usa os cálculos reais do seu sistema
+generateAIAnalysis() {
+  const currentPrice = this.lastClose();
+  const garchAnalysis = this.analyzeSystemGARCH();
+  const intradayAnalysis = this.analyzeSystemIntraday();
+  const fairPriceAnalysis = this.analyzeSystemFairPrice();
+  const volatilityAnalysis = this.analyzeSystemVolatility();
+  
+  const analysis = {
+    opportunityScore: this.calculateEnhancedOpportunityScore(garchAnalysis, fairPriceAnalysis, volatilityAnalysis),
+    currentSituation: this.generateEnhancedSituation(currentPrice, garchAnalysis, fairPriceAnalysis),
+    mainRecommendation: this.generateEnhancedRecommendation(garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis),
+    alerts: this.generateEnhancedAlerts(garchAnalysis, fairPriceAnalysis, volatilityAnalysis),
+    scenarios: this.calculateEnhancedScenarios(garchAnalysis, fairPriceAnalysis),
+    narrative: this.generateEnhancedNarrative(currentPrice, garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis)
+  };
+  
+  return analysis;
+}
+
+// Análise GARCH usando os cálculos reais do sistema
+analyzeSystemGARCH() {
+  const currentPrice = this.lastClose();
+  const periods = [9, 18, 27];
+  const results = {};
+  
+  periods.forEach(period => {
+    const stdDev = this.calculateStdDevReturns(period);
+    if (isNaN(stdDev)) return;
+    
+    results[`p${period}`] = {
+      stdDev: stdDev,
+      stdDevPercent: stdDev * 100,
+      up1sigma: currentPrice * (1 + stdDev),
+      down1sigma: currentPrice * (1 - stdDev),
+      up2sigma: currentPrice * (1 + 2 * stdDev),
+      down2sigma: currentPrice * (1 - 2 * stdDev),
+      currentInRange1: currentPrice >= (currentPrice * (1 - stdDev)) && currentPrice <= (currentPrice * (1 + stdDev)),
+      distanceFromMean: Math.abs((currentPrice - currentPrice) / (currentPrice * stdDev))
+    };
+  });
+  
+  return results;
+}
+
+// Análise Intraday usando fatores EXP do sistema
+analyzeSystemIntraday() {
+  const currentPrice = this.lastClose();
+  const periods = [9, 18, 27];
+  const results = {};
+  
+  periods.forEach(period => {
+    const stdDev = this.calculateStdDevReturns(period);
+    const expFactor = this.getExpFor(period);
+    
+    if (isNaN(stdDev)) return;
+    
+    const expStdDev = Math.pow(expFactor, stdDev);
+    const maxIntraday = currentPrice * expStdDev;
+    const minIntraday = currentPrice / expStdDev;
+    
+    results[`p${period}`] = {
+      expFactor: expFactor,
+      expStdDev: expStdDev,
+      maxIntraday: maxIntraday,
+      minIntraday: minIntraday,
+      range: maxIntraday - minIntraday,
+      rangePercent: ((maxIntraday - minIntraday) / currentPrice) * 100,
+      potentialGain: ((maxIntraday - currentPrice) / currentPrice) * 100,
+      potentialLoss: ((currentPrice - minIntraday) / currentPrice) * 100
+    };
+  });
+  
+  return results;
+}
+
+// Análise de Preço Justo usando fórmulas PPP/UIP do sistema
+analyzeSystemFairPrice() {
+  const currentPrice = this.lastClose();
+  if (!isFinite(currentPrice) || currentPrice <= 0) {
+    return { valid: false };
+  }
+  
+  // Usar os valores dos inputs do sistema
+  let pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 5.30);
+  const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
+  const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
+  const selicRate = parseFloat(document.getElementById('selic_rate')?.value || 13.75) / 100;
+  const fedRate = parseFloat(document.getElementById('fed_rate')?.value || 5.50) / 100;
+  const riskPremium = parseFloat(document.getElementById('risk_premium')?.value || 2.5) / 100;
+
+  // Ajuste de escala (igual ao sistema original)
+  if (currentPrice > 100) {
+    pppRate = pppRate * 1000;
+  }
+
+  // Cálculos PPP e UIP (igual ao sistema original)
+  const inflationDifferential = inflationBr - inflationUs;
+  const fairPricePPP = pppRate * ((1 + inflationBr) / (1 + inflationUs));
+
+  const interestDifferential = selicRate - fedRate;
+  const netInterestDifferential = interestDifferential - riskPremium;
+  const uipAdjustmentFactor = 1 + (netInterestDifferential * 0.15);
+  const fairPriceUIP = currentPrice * uipAdjustmentFactor;
+
+  // Limites UIP (igual ao sistema original)
+  const maxUIPDeviation = 0.20;
+  const upperBoundUIP = currentPrice * (1 + maxUIPDeviation);
+  const lowerBoundUIP = currentPrice * (1 - maxUIPDeviation);
+  const boundedFairPriceUIP = Math.max(lowerBoundUIP, Math.min(upperBoundUIP, fairPriceUIP));
+
+  // Preço combinado (igual ao sistema original)
+  const weightPPP = 0.4;
+  const weightUIP = 0.6;
+  const fairPriceCombined = (fairPricePPP * weightPPP) + (boundedFairPriceUIP * weightUIP);
+
+  // Limite total (igual ao sistema original)
+  const maxTotalDeviation = 0.25;
+  const upperBound = currentPrice * (1 + maxTotalDeviation);
+  const lowerBound = currentPrice * (1 - maxTotalDeviation);
+  const finalFairPrice = Math.max(lowerBound, Math.min(upperBound, fairPriceCombined));
+
+  const deviationPercent = ((currentPrice - finalFairPrice) / finalFairPrice) * 100;
+  
+  return {
+    valid: true,
+    currentPrice: currentPrice,
+    fairPricePPP: fairPricePPP,
+    fairPriceUIP: boundedFairPriceUIP,
+    fairPriceCombined: finalFairPrice,
+    deviationPercent: deviationPercent,
+    deviationAbs: Math.abs(deviationPercent),
+    isOvervalued: deviationPercent > 5,
+    isUndervalued: deviationPercent < -5,
+    severityLevel: Math.abs(deviationPercent) > 10 ? 'EXTREMA' : 
+                 Math.abs(deviationPercent) > 5 ? 'ALTA' : 'MODERADA',
+    interestDifferential: interestDifferential,
+    inflationDifferential: inflationDifferential,
+    riskPremium: riskPremium
+  };
+}
+
+// Análise de volatilidade por período
+analyzeSystemVolatility() {
+  const periods = [9, 18, 27];
+  const results = {};
+  
+  periods.forEach(period => {
+    const stdDev = this.calculateStdDevReturns(period);
+    if (isNaN(stdDev)) return;
+    
+    const volPercent = stdDev * 100;
+    let regime, riskLevel, tradingAdvice;
+    
+    if (volPercent > 3.0) {
+      regime = 'ALTA';
+      riskLevel = 'EXTREMO';
+      tradingAdvice = 'Evitar trades direcionais';
+    } else if (volPercent > 2.0) {
+      regime = 'MODERADA-ALTA';
+      riskLevel = 'ALTO';
+      tradingAdvice = 'Reduzir tamanho de posição';
+    } else if (volPercent > 1.0) {
+      regime = 'MODERADA';
+      riskLevel = 'MÉDIO';
+      tradingAdvice = 'Condições normais de trading';
+    } else {
+      regime = 'BAIXA';
+      riskLevel = 'BAIXO';
+      tradingAdvice = 'Ideal para trades direcionais';
+    }
+    
+    results[`p${period}`] = {
+      period: period,
+      volatilityPercent: volPercent,
+      regime: regime,
+      riskLevel: riskLevel,
+      tradingAdvice: tradingAdvice,
+      isLowVol: volPercent < 1.5,
+      isHighVol: volPercent > 3.0
+    };
+  });
+  
+  return results;
+}
+
+// Score de oportunidade melhorado usando todos os cálculos do sistema
+calculateEnhancedOpportunityScore(garchAnalysis, fairPriceAnalysis, volatilityAnalysis) {
+  if (!fairPriceAnalysis.valid) return 30;
+  
+  let score = 50; // Base score
+  
+  // Componente: Desvio do preço justo (0-40 pontos)
+  const deviation = fairPriceAnalysis.deviationAbs;
+  const deviationScore = Math.min(40, deviation * 3);
+  score += deviationScore;
+  
+  // Componente: Volatilidade (penaliza alta volatilidade)
+  const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
+  if (vol18 < 1.5) {
+    score += 15; // Baixa volatilidade é boa
+  } else if (vol18 > 3.0) {
+    score -= 20; // Alta volatilidade penaliza
+  }
+  
+  // Componente: Consistência entre períodos GARCH
+  const periods = [9, 18, 27];
+  let consistentDirection = 0;
+  const referencePrice = this.lastClose();
+  
+  periods.forEach(p => {
+    const garch = garchAnalysis[`p${p}`];
+    if (garch) {
+      if (fairPriceAnalysis.deviationPercent > 5 && referencePrice > garch.up1sigma) {
+        consistentDirection++; // Preço alto + acima de +1σ
+      } else if (fairPriceAnalysis.deviationPercent < -5 && referencePrice < garch.down1sigma) {
+        consistentDirection++; // Preço baixo + abaixo de -1σ
+      }
+    }
+  });
+  
+  score += consistentDirection * 5;
+  
+  // Limitar entre 0-100
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+// Situação atual melhorada
+generateEnhancedSituation(currentPrice, garchAnalysis, fairPriceAnalysis) {
+  if (!fairPriceAnalysis.valid) {
+    return "Configure os parâmetros de preço justo para análise completa.";
+  }
+  
+  const deviation = fairPriceAnalysis.deviationPercent;
+  const garch18 = garchAnalysis.p18;
+  
+  let situation = `USD/BRL em ${this.fmt(currentPrice)}, `;
+  
+  // Análise de preço justo
+  if (Math.abs(deviation) < 2) {
+    situation += `próximo ao justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
+  } else if (deviation > 0) {
+    situation += `${deviation.toFixed(1)}% ACIMA do justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
+  } else {
+    situation += `${Math.abs(deviation).toFixed(1)}% ABAIXO do justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
+  }
+  
+  // Análise GARCH 18P
+  if (garch18) {
+    if (currentPrice > garch18.up1sigma) {
+      situation += `Acima da banda +1σ GARCH (${this.fmt(garch18.up1sigma)}).`;
+    } else if (currentPrice < garch18.down1sigma) {
+      situation += `Abaixo da banda -1σ GARCH (${this.fmt(garch18.down1sigma)}).`;
+    } else {
+      situation += `Dentro das bandas GARCH ±1σ.`;
+    }
+  }
+  
+  return situation;
+}
+
+// Recomendação principal melhorada
+generateEnhancedRecommendation(garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis) {
+  if (!fairPriceAnalysis.valid) {
+    return "Configure os parâmetros do sistema para recomendações precisas.";
+  }
+  
+  const deviation = fairPriceAnalysis.deviationPercent;
+  const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
+  const garch18 = garchAnalysis.p18;
+  const intraday18 = intradayAnalysis.p18;
+  const currentPrice = this.lastClose();
+  
+  let recommendation = "";
+  
+  // Lógica principal baseada nos cálculos reais do sistema
+  if (Math.abs(deviation) > 8 && vol18 < 2.5) {
+    // Desvio extremo + baixa volatilidade = alta confiança
+    if (deviation > 8) {
+      recommendation = `FORTE RECOMENDAÇÃO DE VENDA: Moeda ${deviation.toFixed(1)}% sobrevalorizada com volatilidade controlada (${vol18.toFixed(2)}%). `;
+      
+      if (garch18 && currentPrice > garch18.up1sigma) {
+        recommendation += `GARCH confirma: preço acima de +1σ (${this.fmt(garch18.up1sigma)}). `;
       }
       
-      calculateOpportunityScore() {
-        if (!this.priceData.length) return 0;
-        
-        const deviation = Math.abs(this.calculateDeviationFromFair());
-        const volatility = this.calculateVolatilityRegime();
-        
-        // Score components (0-100 each)
-        const deviationScore = Math.min(100, deviation * 8); // Higher deviation = higher opportunity
-        const volatilityScore = volatility > 0.02 ? 75 : 50; // Higher volatility = more opportunity
-        const trendScore = 60; // Base trend score
-        const riskRewardScore = Math.min(100, deviation * 10);
-        
-        // Weighted average
-        const totalScore = (
-          deviationScore * 0.35 +
-          volatilityScore * 0.25 +
-          trendScore * 0.20 +
-          riskRewardScore * 0.20
-        );
-        
-        return Math.round(totalScore);
+      if (intraday18) {
+        recommendation += `Meta máxima intraday: ${this.fmt(intraday18.maxIntraday)}.`;
+      }
+    } else {
+      recommendation = `FORTE RECOMENDAÇÃO DE COMPRA: Moeda ${Math.abs(deviation).toFixed(1)}% subvalorizada com volatilidade controlada (${vol18.toFixed(2)}%). `;
+      
+      if (garch18 && currentPrice < garch18.down1sigma) {
+        recommendation += `GARCH confirma: preço abaixo de -1σ (${this.fmt(garch18.down1sigma)}). `;
       }
       
-      calculateDeviationFromFair() {
-        const currentPrice = this.lastClose();
-        const fairPrice = this.calculateCombinedFairPrice();
-        
-        if (!isFinite(currentPrice) || !isFinite(fairPrice)) return 0;
-        
-        return ((currentPrice - fairPrice) / fairPrice) * 100;
+      if (intraday18) {
+        recommendation += `Meta mínima intraday: ${this.fmt(intraday18.minIntraday)}.`;
       }
-      
-      calculateCombinedFairPrice() {
-        // Simplified fair price calculation for AI
-        const currentPrice = this.lastClose();
-        if (!isFinite(currentPrice)) return currentPrice;
-        
-        // Use your existing fair price logic or simplified version
-        const pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 5.30);
-        const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
-        const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
-        
-        let adjustedPppRate = pppRate;
-        if (currentPrice > 100) {
-          adjustedPppRate = pppRate * 1000;
-        }
-        
-        const fairPricePPP = adjustedPppRate * ((1 + inflationBr) / (1 + inflationUs));
-        const fairPriceUIP = currentPrice * 0.98; // Simplified UIP
-        
-        return (fairPricePPP * 0.4) + (fairPriceUIP * 0.6);
-      }
-      
-      calculateVolatilityRegime() {
-        if (this.linearReturns.length < 20) return 0.01;
-        
-        const recent20Returns = this.linearReturns.slice(-20);
-        const mean = recent20Returns.reduce((sum, ret) => sum + ret, 0) / recent20Returns.length;
-        const variance = recent20Returns.reduce((sum, ret) => sum + Math.pow(ret - mean, 2), 0) / recent20Returns.length;
-        
-        return Math.sqrt(variance);
-      }
-      
-      generateSituationAnalysis(currentPrice, deviation) {
-        if (!isFinite(currentPrice)) {
-          return "Aguardando dados de preço para análise...";
-        }
-        
-        const absDeviation = Math.abs(deviation);
-        let situation = `O USD/BRL está cotado em ${this.fmt(currentPrice)}, `;
-        
-        if (absDeviation < 2) {
-          situation += `próximo ao preço justo (desvio: ${deviation.toFixed(1)}%). Mercado em equilíbrio.`;
-        } else if (deviation > 5) {
-          situation += `${deviation.toFixed(1)}% ACIMA do preço justo. Moeda sobrevalorizada.`;
-        } else if (deviation < -5) {
-          situation += `${Math.abs(deviation).toFixed(1)}% ABAIXO do preço justo. Moeda subvalorizada.`;
-        } else {
-          situation += `com desvio de ${deviation.toFixed(1)}% do preço justo. Situação moderada.`;
-        }
-        
-        return situation;
-      }
-      
-      generateMainRecommendation(deviation, volatility) {
-        const absDeviation = Math.abs(deviation);
-        
-        if (absDeviation < 2) {
-          return "Aguardar movimentos mais definidos. Mercado em equilíbrio técnico.";
-        } else if (deviation > 8) {
-          return "VENDA recomendada. Moeda muito sobrevalorizada, correção provável.";
-        } else if (deviation > 5) {
-          return "Atenção para vendas. Preço acima do justo, aguardar confirmação.";
-        } else if (deviation < -8) {
-          return "COMPRA recomendada. Moeda muito subvalorizada, recuperação esperada.";
-        } else if (deviation < -5) {
-          return "Atenção para compras. Preço abaixo do justo, oportunidade potencial.";
-        } else if (volatility > 0.025) {
-          return "Mercado volátil. Aguardar redução da volatilidade para entradas.";
-        } else {
-          return "Monitorar evolução. Situação neutra no momento.";
-        }
-      }
-      
-      generateAlerts(deviation, volatility) {
-        const alerts = [];
-        const absDeviation = Math.abs(deviation);
-        const currentVol = volatility * 100;
-        
-        if (absDeviation > 8) {
-          alerts.push({
-            type: 'warning',
-            message: `Desvio extremo do preço justo (${deviation.toFixed(1)}%). Atenção para reversão!`
-          });
-        }
-        
-        if (currentVol > 3) {
-          alerts.push({
-            type: 'warning',
-            message: `Volatilidade elevada (${currentVol.toFixed(2)}%). Cuidado com whipsaws.`
-          });
-        }
-        
-        if (deviation > 5 && currentVol < 2) {
-          alerts.push({
-            type: 'success',
-            message: 'Oportunidade de venda: Sobrevalorização em mercado calmo.'
-          });
-        }
-        
-        if (deviation < -5 && currentVol < 2) {
-          alerts.push({
-            type: 'success',
-            message: 'Oportunidade de compra: Subvalorização em mercado calmo.'
-          });
-        }
-        
-        if (absDeviation < 2 && currentVol < 1.5) {
-          alerts.push({
-            type: 'info',
-            message: 'Mercado em equilíbrio. Aguardar catalisador para definir direção.'
-          });
-        }
-        
-        return alerts;
-      }
-      
-      calculateScenarios() {
-        const volatility = this.calculateVolatilityRegime();
-        const deviation = this.calculateDeviationFromFair();
-        
-        // Base probabilities
-        let scenarios = {
-          strongUp: 15,    // >+2%
-          moderateUp: 20,  // +1% to +2%
-          lateral: 30,     // -1% to +1%
-          moderateDown: 20, // -2% to -1%
-          strongDown: 15   // <-2%
-        };
-        
-        // Adjust based on deviation from fair price
-        if (deviation > 5) {
-          // Overvalued - higher probability of decline
-          scenarios.strongDown += 15;
-          scenarios.moderateDown += 10;
-          scenarios.strongUp -= 10;
-          scenarios.moderateUp -= 5;
-          scenarios.lateral -= 10;
-        } else if (deviation < -5) {
-          // Undervalued - higher probability of rise
-          scenarios.strongUp += 15;
-          scenarios.moderateUp += 10;
-          scenarios.strongDown -= 10;
-          scenarios.moderateDown -= 5;
-          scenarios.lateral -= 10;
-        }
-        
-        // Adjust based on volatility
-        if (volatility > 0.025) {
-          // High volatility - more extreme moves
-          scenarios.strongUp += 10;
-          scenarios.strongDown += 10;
-          scenarios.lateral -= 20;
-        }
-        
-        // Normalize to 100%
-        const total = Object.values(scenarios).reduce((sum, val) => sum + val, 0);
-        Object.keys(scenarios).forEach(key => {
-          scenarios[key] = Math.max(5, Math.round((scenarios[key] / total) * 100));
-        });
-        
-        return scenarios;
-      }
-      
-      generateNarrative(currentPrice, deviation, trend30d) {
-        const absDeviation = Math.abs(deviation);
-        const volatility = this.calculateVolatilityRegime() * 100;
-        
-        let narrative = `
-          <h4>ANÁLISE DIÁRIA - USD/BRL (${new Date().toLocaleDateString('pt-BR')})</h4>
-          
-          <p><strong>SITUAÇÃO ATUAL:</strong><br>
-          O dólar fechou em ${this.fmt(currentPrice)}, operando ${Math.abs(deviation).toFixed(1)}% ${deviation > 0 ? 'ACIMA' : 'ABAIXO'} do preço justíssimo calculado. A moeda está tecnicamente ${deviation > 0 ? 'sobrevalorizada' : 'subvalorizada'}.</p>
-          
-          <p><strong>PROJEÇÕES:</strong><br>
-          • Máxima intraday esperada: ${this.fmt(this.lastClose() * 1.015)} (+1,5%)<br>
-          • Mínima intraday esperada: ${this.fmt(this.lastClose() * 0.985)} (-1,5%)<br>
-          • Probabilidade de ${deviation > 0 ? 'correção' : 'recuperação'}: ${Math.min(85, Math.round(absDeviation * 8))}%</p>
-          
-          <p><strong>CENÁRIOS:</strong><br>`;
-        
-        if (deviation > 5) {
-          narrative += `📉 <strong>BAIXA (65%):</strong> Correção em direção ao preço justo esperada<br>
-          📊 <strong>LATERAL (25%):</strong> Consolidação nos níveis atuais<br>
-          📈 <strong>ALTA (10%):</strong> Extensão da sobrevalorização`;
-        } else if (deviation < -5) {
-          narrative += `📈 <strong>ALTA (65%):</strong> Recuperação em direção ao preço justo<br>
-          📊 <strong>LATERAL (25%):</strong> Consolidação nos níveis atuais<br>
-          📉 <strong>BAIXA (10%):</strong> Extensão da subvalorização`;
-        } else {
-          narrative += `📊 <strong>LATERAL (50%):</strong> Consolidação esperada<br>
-          📈 <strong>ALTA (25%):</strong> Possível movimento de alta<br>
-          📉 <strong>BAIXA (25%):</strong> Possível movimento de baixa`;
-        }
-        
-        narrative += `</p><p><strong>RECOMENDAÇÃO:</strong><br>`;
-        
-        if (deviation > 8) {
-          narrative += `Considerar vendas. Moeda muito acima do valor justo oferece boa oportunidade de venda com risco controlado.`;
-        } else if (deviation < -8) {
-          narrative += `Considerar compras. Moeda muito abaixo do valor justo oferece boa oportunidade de compra com potencial de valorização.`;
-        } else if (volatility > 3) {
-          narrative += `Aguardar redução da volatilidade (${volatility.toFixed(1)}%) antes de posições direcionais.`;
-        } else {
-          narrative += `Monitorar evolução. Aguardar sinais mais claros de direção do mercado.`;
-        }
-        
-        narrative += `</p>`;
-        
-        return narrative;
-      }
+    }
+  } else if (Math.abs(deviation) > 5) {
+    // Desvio moderado
+    if (deviation > 5) {
+      recommendation = `ATENÇÃO PARA VENDAS: ${deviation.toFixed(1)}% sobrevalorizada. `;
+    } else {
+      recommendation = `ATENÇÃO PARA COMPRAS: ${Math.abs(deviation).toFixed(1)}% subvalorizada. `;
+    }
+    
+    if (vol18 > 3.0) {
+      recommendation += `CUIDADO: Volatilidade alta (${vol18.toFixed(2)}%) pode causar falsos sinais. `;
+    }
+  } else if (vol18 > 4.0) {
+    recommendation = `AGUARDAR: Volatilidade extrema (${vol18.toFixed(2)}%) domina. Aguardar normalização. `;
+  } else {
+    recommendation = `MONITORAR: Situação equilibrada. Desvio: ${deviation.toFixed(1)}%, Vol: ${vol18.toFixed(2)}%. `;
+    
+    if (intraday18) {
+      recommendation += `Range intraday esperado: ${this.fmt(intraday18.minIntraday)} - ${this.fmt(intraday18.maxIntraday)}.`;
+    }
+  }
+  
+  return recommendation;
+}
+
+// Alertas melhorados baseados nos cálculos do sistema
+generateEnhancedAlerts(garchAnalysis, fairPriceAnalysis, volatilityAnalysis) {
+  const alerts = [];
+  
+  if (!fairPriceAnalysis.valid) {
+    alerts.push({
+      type: 'info',
+      message: 'Configure parâmetros PPP/UIP para análise completa do preço justo.'
+    });
+    return alerts;
+  }
+  
+  const deviation = fairPriceAnalysis.deviationPercent;
+  const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
+  const garch18 = garchAnalysis.p18;
+  const currentPrice = this.lastClose();
+  
+  // Alertas de desvio extremo
+  if (Math.abs(deviation) > 10) {
+    alerts.push({
+      type: 'warning',
+      message: `DESVIO EXTREMO: ${Math.abs(deviation).toFixed(1)}% do preço justíssimo! Reversão altamente provável.`
+    });
+  }
+  
+  // Alertas GARCH
+  if (garch18) {
+    if (currentPrice > garch18.up2sigma) {
+      alerts.push({
+        type: 'warning',
+        message: `Preço acima de +2σ GARCH (${this.fmt(garch18.up2sigma)}). Zona de sobrecompra estatística.`
+      });
+    } else if (currentPrice < garch18.down2sigma) {
+      alerts.push({
+        type: 'warning',
+        message: `Preço abaixo de -2σ GARCH (${this.fmt(garch18.down2sigma)}). Zona de sobrevenda estatística.`
+      });
+    }
+  }
+  
+  // Alertas de volatilidade
+  if (vol18 > 4.0) {
+    alerts.push({
+      type: 'warning',
+      message: `VOLATILIDADE EXTREMA: ${vol18.toFixed(2)}%! Mercado imprevisível, evitar trades direcionais.`
+    });
+  } else if (vol18 < 1.0 && Math.abs(deviation) > 5) {
+    alerts.push({
+      type: 'success',
+      message: `OPORTUNIDADE: Baixa volatilidade (${vol18.toFixed(2)}%) + desvio significativo = alta probabilidade de acerto.`
+    });
+  }
+  
+  // Alertas de confluência
+  if (Math.abs(deviation) > 5 && garch18) {
+    const garchConfirms = (deviation > 0 && currentPrice > garch18.up1sigma) || 
+                         (deviation < 0 && currentPrice < garch18.down1sigma);
+    
+    if (garchConfirms) {
+      alerts.push({
+        type: 'success',
+        message: 'CONFLUÊNCIA: Preço justo e GARCH apontam mesma direção. Alta confiabilidade.'
+      });
+    } else {
+      alerts.push({
+        type: 'info',
+        message: 'DIVERGÊNCIA: Preço justo e GARCH em conflito. Aguardar confirmação.'
+      });
+    }
+  }
+  
+  return alerts;
+}
+
+// Cenários melhorados usando GARCH e preço justo
+calculateEnhancedScenarios(garchAnalysis, fairPriceAnalysis) {
+  if (!fairPriceAnalysis.valid) {
+    return {
+      strongUp: 20, moderateUp: 20, lateral: 20, moderateDown: 20, strongDown: 20
+    };
+  }
+  
+  const deviation = fairPriceAnalysis.deviationPercent;
+  const garch18 = garchAnalysis.p18;
+  
+  // Base probabilities
+  let scenarios = {
+    strongUp: 15,    // >+2%
+    moderateUp: 20,  // +1% to +2%
+    lateral: 30,     // -1% to +1%
+    moderateDown: 20, // -2% to -1%
+    strongDown: 15   // <-2%
+  };
+  
+  // Ajuste baseado no desvio do preço justo
+  if (deviation > 8) {
+    // Muito sobrevalorizado - alta probabilidade de queda
+    scenarios.strongDown += 25;
+    scenarios.moderateDown += 15;
+    scenarios.strongUp -= 15;
+    scenarios.moderateUp -= 10;
+    scenarios.lateral -= 15;
+  } else if (deviation > 5) {
+    // Moderadamente sobrevalorizado
+    scenarios.strongDown += 15;
+    scenarios.moderateDown += 10;
+    scenarios.strongUp -= 10;
+    scenarios.lateral -= 15;
+  } else if (deviation < -8) {
+    // Muito subvalorizado - alta probabilidade de alta
+    scenarios.strongUp += 25;
+    scenarios.moderateUp += 15;
+    scenarios.strongDown -= 15;
+    scenarios.moderateDown -= 10;
+    scenarios.lateral -= 15;
+  } else if (deviation < -5) {
+    // Moderadamente subvalorizado
+    scenarios.strongUp += 15;
+    scenarios.moderateUp += 10;
+    scenarios.strongDown -= 10;
+    scenarios.lateral -= 15;
+  }
+  
+  // Ajuste baseado no GARCH
+  if (garch18) {
+    const currentPrice = this.lastClose();
+    
+    if (currentPrice > garch18.up1sigma) {
+      // Acima de +1σ - maior probabilidade de correção
+      scenarios.moderateDown += 10;
+      scenarios.strongDown += 5;
+      scenarios.strongUp -= 10;
+      scenarios.lateral -= 5;
+    } else if (currentPrice < garch18.down1sigma) {
+      // Abaixo de -1σ - maior probabilidade de recuperação
+      scenarios.moderateUp += 10;
+      scenarios.strongUp += 5;
+      scenarios.strongDown -= 10;
+      scenarios.lateral -= 5;
+    }
+  }
+  
+  // Normalizar para 100%
+  const total = Object.values(scenarios).reduce((sum, val) => sum + val, 0);
+  Object.keys(scenarios).forEach(key => {
+    scenarios[key] = Math.max(5, Math.round((scenarios[key] / total) * 100));
+  });
+  
+  return scenarios;
+}
+
+// Narrativa melhorada com todos os cálculos do sistema
+generateEnhancedNarrative(currentPrice, garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis) {
+  if (!fairPriceAnalysis.valid) {
+    return `
+      <h4>ANÁLISE DIÁRIA - USD/BRL (${new Date().toLocaleDateString('pt-BR')})</h4>
+      <p>Configure os parâmetros de preço justo (PPP, UIP, juros) para análise narrativa completa.</p>
+    `;
+  }
+  
+  const deviation = fairPriceAnalysis.deviationPercent;
+  const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
+  const garch18 = garchAnalysis.p18;
+  const intraday18 = intradayAnalysis.p18;
+  
+  let narrative = `
+    <h4>ANÁLISE GARCH COM IA - USD/BRL (${new Date().toLocaleDateString('pt-BR')})</h4>
+    
+    <p><strong>SITUAÇÃO ATUAL:</strong><br>
+    O dólar fechou em ${this.fmt(currentPrice)}, operando ${Math.abs(deviation).toFixed(1)}% ${deviation > 0 ? 'ACIMA' : 'ABAIXO'} do preço justíssimo de ${this.fmt(fairPriceAnalysis.fairPriceCombined)}. 
+    Volatilidade 18P em ${vol18.toFixed(2)}% (${volatilityAnalysis.p18?.regime || 'MODERADA'}).</p>
+    
+    <p><strong>ANÁLISE GARCH MULTI-PERÍODO:</strong><br>`;
+  
+  if (garch18) {
+    narrative += `Bandas GARCH 18P: ${this.fmt(garch18.down1sigma)} (-1σ) | ${this.fmt(garch18.up1sigma)} (+1σ)<br>`;
+    
+    if (currentPrice > garch18.up1sigma) {
+      narrative += `⚠️ Preço ACIMA da banda superior (+1σ) - pressão de venda estatística<br>`;
+    } else if (currentPrice < garch18.down1sigma) {
+      narrative += `⚠️ Preço ABAIXO da banda inferior (-1σ) - pressão de compra estatística<br>`;
+    } else {
+      narrative += `✅ Preço DENTRO das bandas ±1σ - comportamento normal<br>`;
+    }
+  }
+  
+  narrative += `</p><p><strong>PROJEÇÕES INTRADAY (FATORES EXP):</strong><br>`;
+  
+  if (intraday18) {
+    narrative += `Range esperado: ${this.fmt(intraday18.minIntraday)} - ${this.fmt(intraday18.maxIntraday)} (${intraday18.rangePercent.toFixed(2)}%)<br>`;
+    narrative += `Potencial alta: +${intraday18.potentialGain.toFixed(2)}% | Potencial baixa: -${intraday18.potentialLoss.toFixed(2)}%`;
+  }
+  
+  narrative += `</p><p><strong>PREÇO JUSTO INTEGRADO (PPP+UIP):</strong><br>`;
+  narrative += `PPP: ${this.fmt(fairPriceAnalysis.fairPricePPP)} | UIP: ${this.fmt(fairPriceAnalysis.fairPriceUIP)}<br>`;
+  narrative += `Justíssimo (40% PPP + 60% UIP): ${this.fmt(fairPriceAnalysis.fairPriceCombined)}<br>`;
+  narrative += `Diferencial juros BR-US: ${(fairPriceAnalysis.interestDifferential * 100).toFixed(2)}p.p.`;
+  
+  narrative += `</p><p><strong>CENÁRIOS PROBABILÍSTICOS:</strong><br>`;
+  
+  if (Math.abs(deviation) > 8) {
+    const direction = deviation > 0 ? 'CORREÇÃO BAIXISTA' : 'RECUPERAÇÃO ALTISTA';
+    const probability = Math.min(80, Math.round(Math.abs(deviation) * 8));
+    
+    narrative += `🎯 <strong>${direction} (${probability}%):</strong> Desvio extremo tende à reversão<br>`;
+    
+    if (vol18 < 2.5) {
+      narrative += `✅ <strong>ALTA CONFIANÇA:</strong> Baixa volatilidade favorece movimentos direcionais<br>`;
+    } else {
+      narrative += `⚠️ <strong>ATENÇÃO:</strong> Alta volatilidade pode gerar ruído no movimento`;
+    }
+  } else if (Math.abs(deviation) > 5) {
+    narrative += `📊 <strong>MOVIMENTO MODERADO:</strong> Desvio ${Math.abs(deviation).toFixed(1)}% sugere correção gradual<br>`;
+  } else {
+    narrative += `📊 <strong>EQUILÍBRIO:</strong> Preço próximo ao justo, aguardar catalisador<br>`;
+  }
+  
+  narrative += `</p><p><strong>RECOMENDAÇÃO FINAL:</strong><br>`;
+  
+  if (Math.abs(deviation) > 8 && vol18 < 2.5) {
+    if (deviation > 8) {
+      narrative += `🔴 <strong>VENDA RECOMENDADA:</strong> Confluência preço justo + GARCH indica sobrevalorização. Stop acima de ${garch18 ? this.fmt(garch18.up2sigma) : 'N/D'}.`;
+    } else {
+      narrative += `🟢 <strong>COMPRA RECOMENDADA:</strong> Confluência preço justo + GARCH indica subvalorização. Stop abaixo de ${garch18 ? this.fmt(garch18.down2sigma) : 'N/D'}.`;
+    }
+  } else if (vol18 > 4.0) {
+    narrative += `🟡 <strong>AGUARDAR:</strong> Volatilidade extrema (${vol18.toFixed(2)}%) requer paciência. Aguardar normalização abaixo de 3%.`;
+  } else {
+    narrative += `🔍 <strong>MONITORAR:</strong> Condições mistas. Aguardar confirmação de direção com aumento de volume.`;
+  }
+  
+  narrative += `</p>`;
+  
+  return narrative;
+}
       
       updateAIDisplay() {
         if (!this.aiAnalysis) {
