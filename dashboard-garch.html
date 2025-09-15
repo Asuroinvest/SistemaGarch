@@ -826,6 +826,62 @@
         grid-template-columns: 1fr;
       }
     }
+	
+	/* ADICIONE ESTE CSS NO SEU SISTEMA (dentro da tag <style>) */
+
+/* Cores dinâmicas para o círculo de score */
+.score-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--ai-gradient); /* Cor padrão (azul) */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.5s ease; /* Transição suave para mudança de cor */
+}
+
+/* Cor VERDE para recomendações de COMPRA */
+.score-circle.buy-signal {
+  background: linear-gradient(135deg, #10b981, #059669, #047857);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3), 0 4px 6px -2px rgba(16, 185, 129, 0.2);
+}
+
+/* Cor VERMELHA para recomendações de VENDA */
+.score-circle.sell-signal {
+  background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c);
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.2);
+}
+
+/* Cor AZUL para situações NEUTRAS/MONITORAR */
+.score-circle.neutral-signal {
+  background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8);
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -2px rgba(59, 130, 246, 0.2);
+}
+
+/* Cor LARANJA para AGUARDAR */
+.score-circle.wait-signal {
+  background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3), 0 4px 6px -2px rgba(245, 158, 11, 0.2);
+}
+
+/* Ajuste para API Config */
+#apiConfigInputs {
+  display: grid;
+  grid-template-columns: 1fr; /* cada input ocupa 100% da linha */
+  gap: 14px; /* espaço entre eles */
+}
+
+#apiConfigInputs .input input,
+#apiConfigInputs .input select {
+  width: 100%;        /* ocupa toda a largura */
+  font-size: 14px;    /* melhora legibilidade */
+  padding: 12px 14px; /* aumenta espaço interno */
+}
+
   </style>
 </head>
 <body>
@@ -885,7 +941,7 @@
           <div class="inputs">
             <div class="input">
               <label for="frp">FRP - Forward Rate Premium (%)</label>
-              <input id="frp" type="number" step="0.01" value="13.75" placeholder="Ex: 13.75 para Selic" />
+              <input id="frp" type="number" step="0.01" value="15.50" placeholder="Ex: 15.50 para Selic" />
               <div class="hint">Juros implícitos para converter Spot → Futuro</div>
             </div>
             <div class="input">
@@ -967,7 +1023,7 @@
           <div class="inputs">
             <div class="input">
               <label for="ppp_rate">Taxa PPP Base (R$)</label>
-              <input id="ppp_rate" type="number" step="0.01" value="3.20" />
+              <input id="ppp_rate" type="number" step="0.01" value="5.20" />
               <div class="hint">Paridade do Poder de Compra histórica</div>
             </div>
             <div class="input">
@@ -977,7 +1033,7 @@
             </div>
             <div class="input">
               <label for="inflation_us">Inflação EUA (%aa)</label>
-              <input id="inflation_us" type="number" step="0.1" value="3.2" />
+              <input id="inflation_us" type="number" step="0.1" value="5.2" />
               <div class="hint">CPI acumulado 12 meses</div>
             </div>
           </div>
@@ -985,7 +1041,7 @@
           <div class="inputs">
             <div class="input">
               <label for="selic_rate">Taxa Selic (%aa)</label>
-              <input id="selic_rate" type="number" step="0.25" value="13.75" />
+              <input id="selic_rate" type="number" step="0.25" value="15.50" />
             </div>
             <div class="input">
               <label for="fed_rate">Taxa Fed (%aa)</label>
@@ -1312,7 +1368,145 @@
           this.checkSessionValidity();
         }, 5 * 60 * 1000);
       }
-      
+      // Função para determinar o tipo de sinal baseado na recomendação
+determineSignalType(recommendation) {
+  if (!recommendation || typeof recommendation !== 'string') {
+    return 'neutral';
+  }
+  
+  const recText = recommendation.toLowerCase();
+  
+  // Sinais de COMPRA (Verde)
+  if (recText.includes('compra') || 
+      recText.includes('comprar') ||
+      recText.includes('subvalorizada') ||
+      recText.includes('atenção para compras') ||
+      recText.includes('forte recomendação de compra') ||
+      recText.includes('recomendação de compra') ||
+      recText.includes('oportunidade de compra')) {
+    return 'buy';
+  }
+  
+  // Sinais de VENDA (Vermelho)
+  if (recText.includes('venda') || 
+      recText.includes('vender') ||
+      recText.includes('sobrevalorizada') ||
+      recText.includes('atenção para vendas') ||
+      recText.includes('forte recomendação de venda') ||
+      recText.includes('recomendação de venda') ||
+      recText.includes('oportunidade de venda')) {
+    return 'sell';
+  }
+  
+  // Sinais de AGUARDAR (Laranja)
+  if (recText.includes('aguardar') || 
+      recText.includes('aguarde') ||
+      recText.includes('volatilidade extrema') ||
+      recText.includes('evitar trades') ||
+      recText.includes('aguardar redução') ||
+      recText.includes('aguardar normalização')) {
+    return 'wait';
+  }
+  
+  // Neutro/Monitorar (Azul) - padrão
+  return 'neutral';
+}
+
+// ========================================
+// SISTEMA DE CONFLUÊNCIA PONDERADA
+// ========================================
+calculateConfluenceScore() {
+  let score = 50; // base neutra
+
+  // --- 1. Confluência GARCH + Preço Justo ---
+  const garch = this.analyzeSystemGARCH().p18;
+  const fair = this.analyzeSystemFairPrice();
+  if (fair.valid && garch) {
+    const deviation = fair.deviationPercent;
+
+    // Preço acima do justo e acima de +1σ GARCH → VENDA
+    if (deviation > 5 && this.lastClose() > garch.up1sigma) {
+      score += 30;
+    }
+    // Preço abaixo do justo e abaixo de -1σ GARCH → COMPRA
+    if (deviation < -5 && this.lastClose() < garch.down1sigma) {
+      score += 30;
+    }
+  }
+
+  // --- 2. Volatilidade ---
+  const vol = this.analyzeSystemVolatility().p18;
+  if (vol) {
+    if (vol.volatilityPercent < 1.5) {
+      score += 20; // baixa volatilidade = condições estáveis
+    } else if (vol.volatilityPercent > 3.0) {
+      score -= 10; // muita volatilidade penaliza
+    }
+  }
+
+  // --- 3. Momentum Multi-timeframe ---
+  const mom9 = this.calculateMomentum(9);
+  const mom18 = this.calculateMomentum(18);
+  const mom27 = this.calculateMomentum(27);
+  if (mom9 && mom18 && mom27) {
+    if (mom9 > 0 && mom18 > 0 && mom27 > 0) {
+      score += 15; // momentum consistente para cima
+    }
+    if (mom9 < 0 && mom18 < 0 && mom27 < 0) {
+      score += 15; // momentum consistente para baixo
+    }
+  }
+
+  // --- 4. Suporte/Resistência via GARCH ---
+  if (garch) {
+    const price = this.lastClose();
+    if (Math.abs(price - garch.up1sigma) / price < 0.005) {
+      score += 10; // próximo da resistência
+    }
+    if (Math.abs(price - garch.down1sigma) / price < 0.005) {
+      score += 10; // próximo do suporte
+    }
+  }
+
+  // Limitar score entre 0 e 100
+  score = Math.max(0, Math.min(100, score));
+
+  return score;
+}
+
+
+// Função para atualizar a cor do círculo de score
+updateScoreCircleColor(signalType) {
+  const scoreCircle = document.querySelector('.score-circle');
+  if (!scoreCircle) {
+    console.warn('Score circle element not found');
+    return;
+  }
+  
+  // Remove todas as classes de cor existentes
+  scoreCircle.classList.remove('buy-signal', 'sell-signal', 'neutral-signal', 'wait-signal');
+  
+  // Adiciona a classe apropriada baseada no sinal
+  switch(signalType) {
+    case 'buy':
+      scoreCircle.classList.add('buy-signal');
+      console.log('Score circle: BUY signal (green)');
+      break;
+    case 'sell':
+      scoreCircle.classList.add('sell-signal');
+      console.log('Score circle: SELL signal (red)');
+      break;
+    case 'wait':
+      scoreCircle.classList.add('wait-signal');
+      console.log('Score circle: WAIT signal (orange)');
+      break;
+    case 'neutral':
+    default:
+      scoreCircle.classList.add('neutral-signal');
+      console.log('Score circle: NEUTRAL signal (blue)');
+      break;
+  }
+}
       initializeAI() {
         // Initialize AI analysis display
         this.updateAIDisplay();
@@ -1437,6 +1631,7 @@ generateAIAnalysis() {
   
   return analysis;
 }
+
 
 // Análise GARCH usando os cálculos reais do sistema
 analyzeSystemGARCH() {
@@ -1977,64 +2172,80 @@ generateEnhancedNarrative(currentPrice, garchAnalysis, intradayAnalysis, fairPri
   return narrative;
 }
       
-      updateAIDisplay() {
-        if (!this.aiAnalysis) {
-          document.getElementById('aiCurrentSituation').textContent = "Clique em 'Análise IA' para gerar insights...";
-          document.getElementById('aiMainRecommendation').textContent = "Aguardando análise...";
-          document.getElementById('opportunityScore').textContent = "--";
-          return;
-        }
-        
-        // Update main insights
-        document.getElementById('aiCurrentSituation').textContent = this.aiAnalysis.currentSituation;
-        document.getElementById('aiMainRecommendation').textContent = this.aiAnalysis.mainRecommendation;
-        document.getElementById('opportunityScore').textContent = this.aiAnalysis.opportunityScore;
-        
-        // Update alerts
-        const alertsContainer = document.getElementById('aiAlerts');
-        if (this.aiAnalysis.alerts && this.aiAnalysis.alerts.length > 0) {
-          alertsContainer.innerHTML = '';
-          this.aiAnalysis.alerts.forEach(alert => {
-            const alertElement = document.createElement('div');
-            alertElement.className = `alert-item ${alert.type}`;
-            alertElement.textContent = alert.message;
-            alertsContainer.appendChild(alertElement);
-          });
-          alertsContainer.style.display = 'grid';
-        } else {
-          alertsContainer.style.display = 'none';
-        }
-        
-        // Update scenarios
-        if (this.aiAnalysis.scenarios) {
-          const scenarios = document.querySelectorAll('#aiScenarios .scenario');
-          const scenarioValues = [
-            this.aiAnalysis.scenarios.strongUp,
-            this.aiAnalysis.scenarios.moderateUp,
-            this.aiAnalysis.scenarios.lateral,
-            this.aiAnalysis.scenarios.moderateDown,
-            this.aiAnalysis.scenarios.strongDown
-          ];
-          
-          scenarios.forEach((scenario, index) => {
-            const barFill = scenario.querySelector('.bar-fill');
-            const percentage = scenario.querySelector('.percentage');
-            const value = scenarioValues[index] || 0;
-            
-            barFill.style.width = `${value}%`;
-            percentage.textContent = `${value}%`;
-          });
-        }
-        
-        // Update narrative
-        const narrativeContainer = document.getElementById('aiNarrative');
-        if (this.aiAnalysis.narrative) {
-          narrativeContainer.innerHTML = this.aiAnalysis.narrative;
-          narrativeContainer.style.display = 'block';
-        } else {
-          narrativeContainer.style.display = 'none';
-        }
+updateAIDisplay() {
+  if (!this.aiAnalysis) {
+    document.getElementById('aiCurrentSituation').textContent = "Clique em 'Análise IA' para gerar insights...";
+    document.getElementById('aiMainRecommendation').textContent = "Aguardando análise...";
+    document.getElementById('opportunityScore').textContent = "--";
+    
+    // Cor padrão quando não há análise
+    this.updateScoreCircleColor('neutral');
+    return;
+  }
+  
+  // Update main insights
+  document.getElementById('aiCurrentSituation').textContent = this.aiAnalysis.currentSituation;
+  document.getElementById('aiMainRecommendation').textContent = this.aiAnalysis.mainRecommendation;
+  document.getElementById('opportunityScore').textContent = this.aiAnalysis.opportunityScore;
+  
+  // *** ATUALIZAR COR DO CÍRCULO BASEADO NA RECOMENDAÇÃO ***
+  try {
+    const signalType = this.determineSignalType(this.aiAnalysis.mainRecommendation);
+    this.updateScoreCircleColor(signalType);
+  } catch (error) {
+    console.error('Erro ao atualizar cor do círculo:', error);
+    this.updateScoreCircleColor('neutral');
+  }
+  
+  // Update alerts
+  const alertsContainer = document.getElementById('aiAlerts');
+  if (this.aiAnalysis.alerts && this.aiAnalysis.alerts.length > 0) {
+    alertsContainer.innerHTML = '';
+    this.aiAnalysis.alerts.forEach(alert => {
+      const alertElement = document.createElement('div');
+      alertElement.className = `alert-item ${alert.type}`;
+      alertElement.textContent = alert.message;
+      alertsContainer.appendChild(alertElement);
+    });
+    alertsContainer.style.display = 'grid';
+  } else {
+    alertsContainer.style.display = 'none';
+  }
+  
+  // Update scenarios
+  if (this.aiAnalysis.scenarios) {
+    const scenarios = document.querySelectorAll('#aiScenarios .scenario');
+    const scenarioValues = [
+      this.aiAnalysis.scenarios.strongUp,
+      this.aiAnalysis.scenarios.moderateUp,
+      this.aiAnalysis.scenarios.lateral,
+      this.aiAnalysis.scenarios.moderateDown,
+      this.aiAnalysis.scenarios.strongDown
+    ];
+    
+    scenarios.forEach((scenario, index) => {
+      const barFill = scenario.querySelector('.bar-fill');
+      const percentage = scenario.querySelector('.percentage');
+      const value = scenarioValues[index] || 0;
+      
+      if (barFill && percentage) {
+        barFill.style.width = `${value}%`;
+        percentage.textContent = `${value}%`;
       }
+    });
+  }
+  
+  // Update narrative
+  const narrativeContainer = document.getElementById('aiNarrative');
+  if (narrativeContainer) {
+    if (this.aiAnalysis.narrative) {
+      narrativeContainer.innerHTML = this.aiAnalysis.narrative;
+      narrativeContainer.style.display = 'block';
+    } else {
+      narrativeContainer.style.display = 'none';
+    }
+  }
+}
       
       // Sistema FRP - Forward Rate Premium (mantido do original)
       convertSpotToFuture(spotPrice) {
@@ -2911,6 +3122,8 @@ generateEnhancedNarrative(currentPrice, garchAnalysis, intradayAnalysis, fairPri
     document.addEventListener('DOMContentLoaded', () => {
       window.tradingSystem = new TradingSystemWithAI();
     });
+	
+	
   </script>
 </body>
 </html>
