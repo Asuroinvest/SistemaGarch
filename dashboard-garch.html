@@ -679,6 +679,27 @@
       align-items: center;
       color: white;
       box-shadow: var(--shadow-lg);
+      transition: all 0.5s ease;
+    }
+    
+    .score-circle.buy-signal {
+      background: linear-gradient(135deg, #10b981, #059669, #047857);
+      box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+    }
+    
+    .score-circle.sell-signal {
+      background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c);
+      box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
+    }
+    
+    .score-circle.neutral-signal {
+      background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8);
+      box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+    }
+    
+    .score-circle.wait-signal {
+      background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
+      box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
     }
     
     .score-value {
@@ -743,11 +764,25 @@
     }
     
     .alert-item {
-      padding: 12px;
+      padding: 12px 16px;
       border-radius: 8px;
       font-size: 13px;
       line-height: 1.4;
       border-left: 4px solid;
+      margin-bottom: 4px;
+    }
+    
+    .alert-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    
+    .alert-item em {
+      font-size: 11px;
+      opacity: 0.8;
+      display: block;
+      margin-top: 4px;
     }
     
     .alert-item.warning {
@@ -792,6 +827,56 @@
       color: var(--text);
     }
     
+    /* Advanced metrics styles */
+    .advanced-metrics {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr); /* Sempre 2 colunas */
+	gap: 12px;
+	margin: 16px 0;
+	}
+
+	/* Para telas muito pequenas, usar 1 coluna */
+	@media(max-width: 480px){
+	.advanced-metrics{
+    grid-template-columns: repeat(1, 1fr);
+	}
+	}
+    
+    .metric-card-advanced {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+    
+    .metric-value-advanced {
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 4px;
+      color: var(--accent);
+    }
+    
+    .metric-label-advanced {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    #apiConfigInputs {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    
+    #apiConfigInputs .input input,
+    #apiConfigInputs .input select {
+      width: 100%;
+      font-size: 14px;
+      padding: 12px 14px;
+    }
+    
     @media (max-width: 480px) {
       .cards, .fair-price-cards {
         grid-template-columns: 1fr;
@@ -825,63 +910,11 @@
       .content-area {
         grid-template-columns: 1fr;
       }
+      
+      .advanced-metrics {
+        grid-template-columns: 1fr;
+      }
     }
-	
-	/* ADICIONE ESTE CSS NO SEU SISTEMA (dentro da tag <style>) */
-
-/* Cores dinâmicas para o círculo de score */
-.score-circle {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: var(--ai-gradient); /* Cor padrão (azul) */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  box-shadow: var(--shadow-lg);
-  transition: all 0.5s ease; /* Transição suave para mudança de cor */
-}
-
-/* Cor VERDE para recomendações de COMPRA */
-.score-circle.buy-signal {
-  background: linear-gradient(135deg, #10b981, #059669, #047857);
-  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3), 0 4px 6px -2px rgba(16, 185, 129, 0.2);
-}
-
-/* Cor VERMELHA para recomendações de VENDA */
-.score-circle.sell-signal {
-  background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c);
-  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.2);
-}
-
-/* Cor AZUL para situações NEUTRAS/MONITORAR */
-.score-circle.neutral-signal {
-  background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8);
-  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -2px rgba(59, 130, 246, 0.2);
-}
-
-/* Cor LARANJA para AGUARDAR */
-.score-circle.wait-signal {
-  background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
-  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3), 0 4px 6px -2px rgba(245, 158, 11, 0.2);
-}
-
-/* Ajuste para API Config */
-#apiConfigInputs {
-  display: grid;
-  grid-template-columns: 1fr; /* cada input ocupa 100% da linha */
-  gap: 14px; /* espaço entre eles */
-}
-
-#apiConfigInputs .input input,
-#apiConfigInputs .input select {
-  width: 100%;        /* ocupa toda a largura */
-  font-size: 14px;    /* melhora legibilidade */
-  padding: 12px 14px; /* aumenta espaço interno */
-}
-
   </style>
 </head>
 <body>
@@ -893,7 +926,7 @@
     <div class="header-content">
       <div>
         <div class="title">Sistema Quant Pro</div>
-        <div class="sub">Análise Avançada de Contratos Futuros DOL com Dados em Tempo Real via API</div>
+        <div class="sub">Análise Avançada de Contratos Futuros DOL com IA Multidimensional</div>
       </div>
       <div class="user-info">
         <div class="user-name" id="userName">Carregando...</div>
@@ -905,8 +938,8 @@
 
   <main>
     <div class="welcome-banner">
-      <h3>Sistema Inicializado com Sucesso!</h3>
-      <p>Configure sua API preferida ou use dados simulados para começar a análise.</p>
+      <h3>Sistema IA Avançado Inicializado com Sucesso!</h3>
+      <p>Configure sua API ou use dados simulados para análise multidimensional com detecção de regime de mercado.</p>
     </div>
     
     <div class="main-grid">
@@ -917,7 +950,7 @@
             <button class="btn primary" id="btnFetchAPI">Dados via API</button>
             <button class="btn" id="btnFetch">Dados Simulados</button>
             <button class="btn" id="btnAnalyze">Análise Avançada</button>
-            <button class="btn ai" id="btnAIAnalysis">Análise IA</button>
+            <button class="btn ai" id="btnAIAnalysis">Análise IA Multidimensional</button>
             <span class="hint" id="dataStatus">aguardando dados…</span>
             <span class="api-status disconnected" id="apiStatus">API: Desconectado</span>
           </div>
@@ -1070,13 +1103,36 @@
         </section>
 
         <section class="panel ai-panel" id="ai-analysis-panel">
-          <h2 class="section-title ai-title">Análise Inteligente</h2>
+          <h2 class="section-title ai-title">Análise IA Multidimensional</h2>
+          
+          <!-- Métricas Avançadas -->
+          <div class="advanced-metrics">
+            <div class="metric-card-advanced">
+              <div class="metric-value-advanced" id="advancedConfidenceDisplay">--</div>
+              <div class="metric-label-advanced">Confiança Multi</div>
+            </div>
+            
+            <div class="metric-card-advanced">
+              <div class="metric-value-advanced" id="marketRegimeDisplay">--</div>
+              <div class="metric-label-advanced">Regime</div>
+            </div>
+            
+            <div class="metric-card-advanced">
+              <div class="metric-value-advanced" id="confluenceDisplay">--</div>
+              <div class="metric-label-advanced">Confluência</div>
+            </div>
+            
+            <div class="metric-card-advanced">
+              <div class="metric-value-advanced" id="riskRewardDisplay">--</div>
+              <div class="metric-label-advanced">Risk/Reward</div>
+            </div>
+          </div>
           
           <div class="ai-insights">
             <div class="insight-card">
               <div class="insight-title">Situação Atual</div>
               <div class="insight-content" id="aiCurrentSituation">
-                Aguardando dados para análise...
+                Execute 'Análise IA' para insights multidimensionais...
               </div>
             </div>
             
@@ -1088,9 +1144,9 @@
             </div>
             
             <div class="insight-card">
-              <div class="insight-title">Recomendação Principal</div>
+              <div class="insight-title">Estratégia Operacional</div>
               <div class="insight-content" id="aiMainRecommendation">
-                Configure os dados primeiro...
+                Aguardando análise de regime de mercado...
               </div>
             </div>
           </div>
@@ -1143,6 +1199,14 @@
               </div>
             </div>
           </div>
+          <div class="sep"></div>		  
+		  <div class="panel" id="aiStrategyPanel">
+			<h2 class="section-title">⚡ Estratégia Recomendada</h2>
+
+			<div id="aiOperation" class="insight-card"></div>
+			<div id="aiRisk" class="insight-card"></div>
+			<div id="aiLevels" class="insight-card"></div>
+		</div>
         </section>
       </div>
 
@@ -1368,145 +1432,630 @@
           this.checkSessionValidity();
         }, 5 * 60 * 1000);
       }
+      
+      // ========================================
+      // NOVAS FUNÇÕES DE IA AVANÇADA
+      // ========================================
+      
+      // 1. SCORE DE CONFIANÇA MULTIDIMENSIONAL
+      calculateAdvancedConfidenceScore() {
+        let totalScore = 0;
+        let totalWeight = 0;
+        
+        // Componente GARCH (peso 30)
+        const garchScore = this.calculateGARCHConfidenceComponent();
+        totalScore += garchScore * 30;
+        totalWeight += 30;
+        
+        // Componente Preço Justo (peso 25)
+        const fairPriceScore = this.calculateFairPriceConfidenceComponent();
+        totalScore += fairPriceScore * 25;
+        totalWeight += 25;
+        
+        // Componente Volatilidade (peso 20)
+        const volScore = this.calculateVolatilityConfidenceComponent();
+        totalScore += volScore * 20;
+        totalWeight += 20;
+        
+        // Componente Momentum (peso 15)
+        const momentumScore = this.calculateMomentumConfidenceComponent();
+        totalScore += momentumScore * 15;
+        totalWeight += 15;
+        
+        // Componente Confluência (peso 10)
+        const confluenceScore = this.calculateConfluenceComponent();
+        totalScore += confluenceScore * 10;
+        totalWeight += 10;
+        
+        return Math.round(totalScore / totalWeight);
+      }
+      
+      calculateGARCHConfidenceComponent() {
+        const periods = [9, 18, 27];
+        let consistency = 0;
+        let validPeriods = 0;
+        
+        const currentPrice = this.lastClose();
+        if (!isFinite(currentPrice)) return 30;
+        
+        periods.forEach(period => {
+          const stdDev = this.calculateStdDevReturns(period);
+          if (!isFinite(stdDev)) return;
+          
+          validPeriods++;
+          const up1sigma = currentPrice * (1 + stdDev);
+          const down1sigma = currentPrice * (1 - stdDev);
+          
+          // Maior pontuação quando preço está próximo das bandas
+          if (currentPrice > up1sigma || currentPrice < down1sigma) {
+            consistency += 80;
+          } else {
+            const distanceFromBands = Math.min(
+              Math.abs(currentPrice - up1sigma) / currentPrice,
+              Math.abs(currentPrice - down1sigma) / currentPrice
+            );
+            consistency += Math.max(20, 80 - (distanceFromBands * 1000));
+          }
+        });
+        
+        return validPeriods > 0 ? consistency / validPeriods : 30;
+      }
+      
+      calculateFairPriceConfidenceComponent() {
+        const fairAnalysis = this.analyzeSystemFairPrice();
+        if (!fairAnalysis.valid) return 30;
+        
+        const deviation = fairAnalysis.deviationAbs;
+        
+        // Quanto maior o desvio, maior a confiança na direção
+        if (deviation > 10) return 95;
+        if (deviation > 8) return 85;
+        if (deviation > 5) return 70;
+        if (deviation > 3) return 50;
+        if (deviation > 1) return 35;
+        return 20;
+      }
+      
+      calculateVolatilityConfidenceComponent() {
+        const vol18 = this.calculateStdDevReturns(18) * 100;
+        if (!isFinite(vol18)) return 50;
+        
+        // Volatilidade ideal entre 1.5% e 2.5%
+        if (vol18 >= 1.5 && vol18 <= 2.5) return 90;
+        if (vol18 < 1.0) return 60; // Muito baixa
+        if (vol18 > 4.0) return 20; // Muito alta
+        if (vol18 > 3.0) return 40;
+        return 70;
+      }
+      
+      calculateMomentumConfidenceComponent() {
+        const mom9 = this.calculateMomentum(9);
+        const mom18 = this.calculateMomentum(18);
+        const mom27 = this.calculateMomentum(27);
+        
+        if (!isFinite(mom9) || !isFinite(mom18) || !isFinite(mom27)) return 40;
+        
+        // Momentum consistente em todas as janelas = alta confiança
+        if ((mom9 > 0 && mom18 > 0 && mom27 > 0) || 
+            (mom9 < 0 && mom18 < 0 && mom27 < 0)) {
+          return 85;
+        }
+        
+        // Divergências = menor confiança
+        const directions = [mom9 > 0, mom18 > 0, mom27 > 0];
+        const consistent = directions.filter(d => d === directions[0]).length;
+        
+        return Math.max(25, consistent * 30);
+      }
+      
+      calculateMomentum(periods) {
+        if (this.priceData.length < periods + 1) return NaN;
+        
+        const recent = this.priceData.slice(-periods);
+        const older = this.priceData.slice(-(periods * 2), -periods);
+        
+        if (recent.length === 0 || older.length === 0) return NaN;
+        
+        const recentAvg = recent.reduce((sum, p) => sum + p, 0) / recent.length;
+        const olderAvg = older.reduce((sum, p) => sum + p, 0) / older.length;
+        
+        return ((recentAvg - olderAvg) / olderAvg) * 100;
+      }
+      
+      calculateConfluenceComponent() {
+        const garchAnalysis = this.analyzeSystemGARCH();
+        const fairAnalysis = this.analyzeSystemFairPrice();
+        
+        if (!fairAnalysis.valid || !garchAnalysis.p18) return 50;
+        
+        const currentPrice = this.lastClose();
+        const fairPrice = fairAnalysis.fairPriceCombined;
+        const garch18 = garchAnalysis.p18;
+        
+        let confluenceScore = 50;
+        
+        // Confluência: preço alto + acima GARCH + acima justo
+        if (currentPrice > fairPrice && currentPrice > garch18.up1sigma) {
+          confluenceScore = 90;
+        }
+        // Confluência: preço baixo + abaixo GARCH + abaixo justo  
+        else if (currentPrice < fairPrice && currentPrice < garch18.down1sigma) {
+          confluenceScore = 90;
+        }
+        // Divergência: sinais conflitantes
+        else if ((currentPrice > fairPrice && currentPrice < garch18.down1sigma) ||
+                 (currentPrice < fairPrice && currentPrice > garch18.up1sigma)) {
+          confluenceScore = 25;
+        }
+        
+        return confluenceScore;
+      }
+      
+      // 2. DETECÇÃO DE REGIME DE MERCADO
+      detectMarketRegime() {
+        const fairAnalysis = this.analyzeSystemFairPrice();
+        const volAnalysis = this.analyzeSystemVolatility();
+        const garchAnalysis = this.analyzeSystemGARCH();
+        
+        if (!fairAnalysis.valid || !volAnalysis.p18 || !garchAnalysis.p18) {
+          return {
+            type: 'UNDEFINED',
+            confidence: 'LOW',
+            description: 'Dados insuficientes para determinar regime',
+            probability: 50
+          };
+        }
+        
+        const deviation = fairAnalysis.deviationPercent;
+        const vol18 = volAnalysis.p18.volatilityPercent;
+        const currentPrice = this.lastClose();
+        const garch18 = garchAnalysis.p18;
+        
+        // Regime de REVERSÃO À MÉDIA
+        if (Math.abs(deviation) > 6 && vol18 < 3.0) {
+          const direction = deviation > 0 ? 'BAIXISTA' : 'ALTISTA';
+          const probability = Math.min(85, Math.abs(deviation) * 8 + (3.0 - vol18) * 10);
+          
+          return {
+            type: 'MEAN_REVERSION',
+            direction: direction,
+            confidence: 'HIGH',
+            description: `Reversão à média ${direction.toLowerCase()} detectada. Desvio ${Math.abs(deviation).toFixed(1)}% com volatilidade controlada (${vol18.toFixed(2)}%).`,
+            probability: Math.round(probability),
+            expectedDuration: '2-5 pregões'
+          };
+        }
+        
+        // Regime de ALTA VOLATILIDADE
+        if (vol18 > 4.0) {
+          return {
+            type: 'HIGH_VOLATILITY',
+            confidence: 'HIGH',
+            description: `Volatilidade extrema (${vol18.toFixed(2)}%). Mercado imprevisível, evitar trades direcionais.`,
+            probability: 75,
+            expectedDuration: 'Indefinido - aguardar normalização'
+          };
+        }
+        
+        // Regime de BREAKOUT
+        if (garch18 && ((currentPrice > garch18.up2sigma) || (currentPrice < garch18.down2sigma))) {
+          const direction = currentPrice > garch18.up2sigma ? 'ALTISTA' : 'BAIXISTA';
+          return {
+            type: 'BREAKOUT',
+            direction: direction,
+            confidence: 'MEDIUM',
+            description: `Possível breakout ${direction.toLowerCase()}. Preço além de ±2σ GARCH.`,
+            probability: 65,
+            expectedDuration: '1-3 pregões'
+          };
+        }
+        
+        // Regime LATERAL
+        return {
+          type: 'LATERAL',
+          confidence: 'MEDIUM', 
+          description: `Mercado em equilíbrio. Desvio: ${Math.abs(deviation).toFixed(1)}%, Vol: ${vol18.toFixed(2)}%.`,
+          probability: 60,
+          expectedDuration: 'Aguardar catalisador'
+        };
+      }
+      
+      // 3. ALERTAS CONTEXTUALIZADOS E HIERARQUIZADOS
+      generateAdvancedAlerts() {
+        const alerts = [];
+        const regime = this.detectMarketRegime();
+        const fairAnalysis = this.analyzeSystemFairPrice();
+        const garchAnalysis = this.analyzeSystemGARCH();
+        const volAnalysis = this.analyzeSystemVolatility();
+        const confluence = this.calculateConfluenceComponent();
+        
+        // ALERTAS CRÍTICOS (Ação imediata)
+        if (regime.type === 'MEAN_REVERSION' && regime.confidence === 'HIGH' && confluence > 80) {
+          alerts.push({
+            level: 'CRITICAL',
+            type: 'success',
+            icon: '🚨',
+            title: 'OPORTUNIDADE DE ALTA PROBABILIDADE',
+            message: `${regime.description} Confluência técnica: ${confluence}%. AÇÃO RECOMENDADA: ${regime.direction === 'BAIXISTA' ? 'VENDA' : 'COMPRA'} direcional.`,
+            action: 'Considerar entrada imediata',
+            confidence: regime.probability
+          });
+        }
+        
+        if (volAnalysis.p18 && volAnalysis.p18.volatilityPercent > 4.5) {
+          alerts.push({
+            level: 'CRITICAL',
+            type: 'warning',
+            icon: '⚠️',
+            title: 'VOLATILIDADE EXTREMA',
+            message: `Volatilidade em ${volAnalysis.p18.volatilityPercent.toFixed(2)}% - ZONA PERIGOSA. Evitar novas posições até normalização.`,
+            action: 'Reduzir exposição imediatamente',
+            confidence: 90
+          });
+        }
+        
+        // ALERTAS IMPORTANTES (Atenção redobrada)
+        if (garchAnalysis.p18) {
+          const currentPrice = this.lastClose();
+          if (currentPrice > garchAnalysis.p18.up2sigma) {
+            alerts.push({
+              level: 'IMPORTANT',
+              type: 'warning',
+              icon: '📈',
+              title: 'SOBRECOMPRA ESTATÍSTICA',
+              message: `Preço ${((currentPrice/garchAnalysis.p18.up2sigma - 1) * 100).toFixed(1)}% acima de +2σ GARCH (${this.fmt(garchAnalysis.p18.up2sigma)}). Pressão de venda esperada.`,
+              action: 'Monitorar reversão',
+              confidence: 70
+            });
+          } else if (currentPrice < garchAnalysis.p18.down2sigma) {
+            alerts.push({
+              level: 'IMPORTANT', 
+              type: 'info',
+              icon: '📉',
+              title: 'SOBREVENDA ESTATÍSTICA',
+              message: `Preço ${((1 - currentPrice/garchAnalysis.p18.down2sigma) * 100).toFixed(1)}% abaixo de -2σ GARCH (${this.fmt(garchAnalysis.p18.down2sigma)}). Pressão de compra esperada.`,
+              action: 'Monitorar recuperação',
+              confidence: 70
+            });
+          }
+        }
+        
+        if (fairAnalysis.valid && fairAnalysis.deviationAbs > 8) {
+          alerts.push({
+            level: 'IMPORTANT',
+            type: fairAnalysis.deviationPercent > 0 ? 'warning' : 'info',
+            icon: fairAnalysis.deviationPercent > 0 ? '💰' : '🔥',
+            title: fairAnalysis.deviationPercent > 0 ? 'SOBREVALORIZAÇÃO SEVERA' : 'SUBVALORIZAÇÃO SEVERA',
+            message: `Desvio de ${fairAnalysis.deviationAbs.toFixed(1)}% do preço justíssimo (${this.fmt(fairAnalysis.fairPriceCombined)}). ${fairAnalysis.severityLevel} probabilidade de reversão.`,
+            action: `Preparar ${fairAnalysis.deviationPercent > 0 ? 'venda' : 'compra'}`,
+            confidence: Math.min(85, fairAnalysis.deviationAbs * 8)
+          });
+        }
+        
+        // ALERTAS INFORMATIVOS
+        if (confluence > 75) {
+          alerts.push({
+            level: 'INFO',
+            type: 'success',
+            icon: '✅',
+            title: 'CONFLUÊNCIA TÉCNICA FORTE',
+            message: `Múltiplos indicadores apontam mesma direção (${confluence}% confluência). Sinal consistente.`,
+            action: 'Considerar aumento de posição',
+            confidence: confluence
+          });
+        } else if (confluence < 40) {
+          alerts.push({
+            level: 'INFO',
+            type: 'info',
+            icon: '🤔',
+            title: 'SINAIS CONFLITANTES',
+            message: `Indicadores divergindo (${confluence}% confluência). Aguardar definição de direção.`,
+            action: 'Aguardar confirmação',
+            confidence: 100 - confluence
+          });
+        }
+        
+        // Ordenar por prioridade
+        const priority = { 'CRITICAL': 3, 'IMPORTANT': 2, 'INFO': 1 };
+        alerts.sort((a, b) => priority[b.level] - priority[a.level] || b.confidence - a.confidence);
+        
+        return alerts.slice(0, 5); // Máximo 5 alertas
+      }
+      
+      // 4. ESTRATÉGIA OPERACIONAL ESPECÍFICA
+      generateTradingStrategy() {
+        const regime = this.detectMarketRegime();
+        const fairAnalysis = this.analyzeSystemFairPrice();
+        const garchAnalysis = this.analyzeSystemGARCH();
+        const intradayAnalysis = this.analyzeSystemIntraday();
+        const confidence = this.calculateAdvancedConfidenceScore();
+        
+        if (!fairAnalysis.valid || !garchAnalysis.p18 || !intradayAnalysis.p18) {
+          return {
+            recommendation: 'AGUARDAR',
+            reason: 'Dados insuficientes para estratégia operacional',
+            confidence: 30
+          };
+        }
+        
+        const currentPrice = this.lastClose();
+        const garch18 = garchAnalysis.p18;
+        const intraday18 = intradayAnalysis.p18;
+        const vol18 = this.analyzeSystemVolatility().p18?.volatilityPercent || 2.0;
+        
+        let strategy = {
+          recommendation: 'MONITORAR',
+          direction: null,
+          entryZone: { min: 0, max: 0 },
+          target: 0,
+          stopLoss: 0,
+          positionSize: 'NORMAL',
+          timeframe: '1-3 pregões',
+          confidence: confidence,
+          riskReward: 0
+        };
+        
+        // ESTRATÉGIA PARA REVERSÃO À MÉDIA
+        if (regime.type === 'MEAN_REVERSION' && confidence > 70) {
+          if (regime.direction === 'BAIXISTA') {
+            // Entrada de VENDA
+            strategy.recommendation = 'VENDA DIRECIONAL';
+            strategy.direction = 'SELL';
+            strategy.entryZone = { 
+              min: Math.max(currentPrice * 0.998, garch18.up1sigma * 0.999),
+              max: Math.min(currentPrice * 1.005, garch18.up2sigma)
+            };
+            strategy.target = Math.max(
+              fairAnalysis.fairPriceCombined * 1.02,
+              intraday18.minIntraday * 1.01
+            );
+            strategy.stopLoss = Math.min(
+              currentPrice * 1.015,
+              garch18.up2sigma * 1.005
+            );
+            
+          } else {
+            // Entrada de COMPRA
+            strategy.recommendation = 'COMPRA DIRECIONAL';
+            strategy.direction = 'BUY';
+            strategy.entryZone = {
+              min: Math.max(currentPrice * 0.995, garch18.down2sigma),
+              max: Math.min(currentPrice * 1.002, garch18.down1sigma * 1.001)
+            };
+            strategy.target = Math.min(
+              fairAnalysis.fairPriceCombined * 0.98,
+              intraday18.maxIntraday * 0.99
+            );
+            strategy.stopLoss = Math.max(
+              currentPrice * 0.985,
+              garch18.down2sigma * 0.995
+            );
+          }
+          
+          strategy.timeframe = '2-5 pregões';
+        }
+        
+        // AJUSTE DE TAMANHO DE POSIÇÃO BASEADO EM VOLATILIDADE
+        if (vol18 > 3.0) {
+          strategy.positionSize = 'REDUZIDA (50-70%)';
+        } else if (vol18 < 1.5 && confidence > 80) {
+          strategy.positionSize = 'AUMENTADA (120-150%)';
+        } else if (confidence > 85) {
+          strategy.positionSize = 'NORMAL+ (110%)';
+        }
+        
+        // CÁLCULO RISK/REWARD
+        if (strategy.target > 0 && strategy.stopLoss > 0 && currentPrice > 0) {
+          const potentialGain = Math.abs(strategy.target - currentPrice) / currentPrice;
+          const potentialLoss = Math.abs(strategy.stopLoss - currentPrice) / currentPrice;
+          strategy.riskReward = potentialLoss > 0 ? potentialGain / potentialLoss : 0;
+        }
+        
+        return strategy;
+      }
+		renderStrategyPanel() {
+		const strategy = this.generateTradingStrategy();
+		const operationDiv = document.getElementById("aiOperation");
+		const riskDiv = document.getElementById("aiRisk");
+		const levelsDiv = document.getElementById("aiLevels");
+
+		if (!operationDiv || !riskDiv || !levelsDiv) return;
+
+  // 1. Operação sugerida
+  operationDiv.innerHTML = `
+    <strong>OPERAÇÃO SUGERIDA</strong><br>
+    ${strategy.recommendation}<br>
+    <em>Entrada: ${strategy.entryZone.min.toFixed(2)} – ${strategy.entryZone.max.toFixed(2)}</em><br>
+    🎯 Meta: ${strategy.target.toFixed(2)}<br>
+    🛑 Stop Loss: ${strategy.stopLoss.toFixed(2)}<br>
+    ⏳ Prazo: ${strategy.timeframe}<br>
+    📊 Confiança: ${strategy.confidence}%
+  `;
+
+  // 2. Gestão de Risco
+  riskDiv.innerHTML = `
+    <strong>GESTÃO DE RISCO</strong><br>
+    Cenário adverso: rompimento pode levar a ${ (strategy.stopLoss * 1.01).toFixed(2) }<br>
+    Gatilho de saída: Volatilidade > 3.5% ou perda de confluência<br>
+    Hedge sugerido: Put protection se exposição > R$ 100k
+  `;
+
+  // 3. Suporte e Resistência
+  const garch = this.analyzeSystemGARCH();
+  if (garch.p18) {
+    levelsDiv.innerHTML = `
+      <strong>NÍVEIS DE DECISÃO</strong><br>
+      Resistência forte: ${garch.p18.up1sigma.toFixed(2)}<br>
+      Suporte forte: ${garch.p18.down1sigma.toFixed(2)}
+    `;
+  }
+}
+
+      
+      // FUNÇÕES AUXILIARES PARA AS MELHORIAS
+      determineSignalTypeFromStrategy(strategy) {
+        if (strategy.recommendation.includes('VENDA')) return 'sell';
+        if (strategy.recommendation.includes('COMPRA')) return 'buy';
+        if (strategy.recommendation.includes('AGUARDAR')) return 'wait';
+        return 'neutral';
+      }
+      
+      adjustScenariosForRegime(baseScenarios, regime) {
+        let scenarios = { ...baseScenarios };
+        
+        if (regime.type === 'MEAN_REVERSION') {
+          if (regime.direction === 'BAIXISTA') {
+            scenarios.strongDown = Math.min(40, scenarios.strongDown + 20);
+            scenarios.moderateDown = Math.min(35, scenarios.moderateDown + 15);
+            scenarios.strongUp = Math.max(5, scenarios.strongUp - 15);
+            scenarios.lateral = Math.max(10, scenarios.lateral - 20);
+          } else if (regime.direction === 'ALTISTA') {
+            scenarios.strongUp = Math.min(40, scenarios.strongUp + 20);
+            scenarios.moderateUp = Math.min(35, scenarios.moderateUp + 15);
+            scenarios.strongDown = Math.max(5, scenarios.strongDown - 15);
+            scenarios.lateral = Math.max(10, scenarios.lateral - 20);
+          }
+        } else if (regime.type === 'HIGH_VOLATILITY') {
+          scenarios.lateral = Math.max(50, scenarios.lateral + 20);
+          scenarios.strongUp = Math.max(5, scenarios.strongUp - 10);
+          scenarios.strongDown = Math.max(5, scenarios.strongDown - 10);
+        }
+        
+        return scenarios;
+      }
+      
+      generateEnhancedNarrativeWithRegime(regime, strategy, confidence) {
+        const currentPrice = this.lastClose();
+        const fairAnalysis = this.analyzeSystemFairPrice();
+        
+        return `
+          <h4>ANÁLISE GARCH-IA AVANÇADA - ${new Date().toLocaleDateString('pt-BR')}</h4>
+          
+          <p><strong>REGIME IDENTIFICADO: ${regime.type}</strong><br>
+          ${regime.description} Probabilidade: ${regime.probability}%</p>
+          
+          <p><strong>ESTRATÉGIA OPERACIONAL:</strong><br>
+          ${strategy.recommendation} | Confiança Multidimensional: ${confidence}%<br>
+          ${strategy.direction ? `Zona de Entrada: ${this.fmt(strategy.entryZone.min)} - ${this.fmt(strategy.entryZone.max)}` : ''}<br>
+          ${strategy.target > 0 ? `Meta Primária: ${this.fmt(strategy.target)} | Stop Loss: ${this.fmt(strategy.stopLoss)}` : ''}<br>
+          ${strategy.riskReward > 0 ? `Risk/Reward: 1:${strategy.riskReward.toFixed(1)} | Tamanho: ${strategy.positionSize}` : ''}</p>
+          
+          <p><strong>CONFLUÊNCIA TÉCNICA:</strong><br>
+          PreçoJusto: ${fairAnalysis.valid ? this.fmt(fairAnalysis.fairPriceCombined) : 'N/D'} | 
+          Desvio: ${fairAnalysis.valid ? fairAnalysis.deviationPercent.toFixed(1) + '%' : 'N/D'}<br>
+          Confluência: ${this.calculateConfluenceComponent()}% | 
+          Timeframe: ${strategy.timeframe}</p>
+          
+          <p><strong>GESTÃO DE RISCO:</strong><br>
+          ${confidence > 80 ? '✅ ALTA confiança - Operação recomendada' : 
+            confidence > 60 ? '⚠️ MÉDIA confiança - Aguardar confirmação' : 
+            '❌ BAIXA confiança - Evitar trades direcionais'}</p>
+        `;
+      }
+      
+      updateAdvancedMetricsDisplay() {
+        if (!this.aiAnalysis) {
+          document.getElementById('advancedConfidenceDisplay').textContent = '--';
+          document.getElementById('marketRegimeDisplay').textContent = '--';
+          document.getElementById('confluenceDisplay').textContent = '--';
+          document.getElementById('riskRewardDisplay').textContent = '--';
+          return;
+        }
+        
+        // Atualizar displays das métricas avançadas
+        const advancedConfidence = this.calculateAdvancedConfidenceScore();
+        const regime = this.detectMarketRegime();
+        const confluence = this.calculateConfluenceComponent();
+        const strategy = this.generateTradingStrategy();
+        
+        document.getElementById('advancedConfidenceDisplay').textContent = advancedConfidence + '%';
+        document.getElementById('marketRegimeDisplay').textContent = regime.type;
+        document.getElementById('confluenceDisplay').textContent = confluence + '%';
+        document.getElementById('riskRewardDisplay').textContent = strategy.riskReward > 0 ? 
+          '1:' + strategy.riskReward.toFixed(1) : '--';
+      }
+      
+      // ========================================
+      // FIM DAS NOVAS FUNÇÕES DE IA AVANÇADA  
+      // ========================================
+      
       // Função para determinar o tipo de sinal baseado na recomendação
-determineSignalType(recommendation) {
-  if (!recommendation || typeof recommendation !== 'string') {
-    return 'neutral';
-  }
-  
-  const recText = recommendation.toLowerCase();
-  
-  // Sinais de COMPRA (Verde)
-  if (recText.includes('compra') || 
-      recText.includes('comprar') ||
-      recText.includes('subvalorizada') ||
-      recText.includes('atenção para compras') ||
-      recText.includes('forte recomendação de compra') ||
-      recText.includes('recomendação de compra') ||
-      recText.includes('oportunidade de compra')) {
-    return 'buy';
-  }
-  
-  // Sinais de VENDA (Vermelho)
-  if (recText.includes('venda') || 
-      recText.includes('vender') ||
-      recText.includes('sobrevalorizada') ||
-      recText.includes('atenção para vendas') ||
-      recText.includes('forte recomendação de venda') ||
-      recText.includes('recomendação de venda') ||
-      recText.includes('oportunidade de venda')) {
-    return 'sell';
-  }
-  
-  // Sinais de AGUARDAR (Laranja)
-  if (recText.includes('aguardar') || 
-      recText.includes('aguarde') ||
-      recText.includes('volatilidade extrema') ||
-      recText.includes('evitar trades') ||
-      recText.includes('aguardar redução') ||
-      recText.includes('aguardar normalização')) {
-    return 'wait';
-  }
-  
-  // Neutro/Monitorar (Azul) - padrão
-  return 'neutral';
-}
-
-// ========================================
-// SISTEMA DE CONFLUÊNCIA PONDERADA
-// ========================================
-calculateConfluenceScore() {
-  let score = 50; // base neutra
-
-  // --- 1. Confluência GARCH + Preço Justo ---
-  const garch = this.analyzeSystemGARCH().p18;
-  const fair = this.analyzeSystemFairPrice();
-  if (fair.valid && garch) {
-    const deviation = fair.deviationPercent;
-
-    // Preço acima do justo e acima de +1σ GARCH → VENDA
-    if (deviation > 5 && this.lastClose() > garch.up1sigma) {
-      score += 30;
-    }
-    // Preço abaixo do justo e abaixo de -1σ GARCH → COMPRA
-    if (deviation < -5 && this.lastClose() < garch.down1sigma) {
-      score += 30;
-    }
-  }
-
-  // --- 2. Volatilidade ---
-  const vol = this.analyzeSystemVolatility().p18;
-  if (vol) {
-    if (vol.volatilityPercent < 1.5) {
-      score += 20; // baixa volatilidade = condições estáveis
-    } else if (vol.volatilityPercent > 3.0) {
-      score -= 10; // muita volatilidade penaliza
-    }
-  }
-
-  // --- 3. Momentum Multi-timeframe ---
-  const mom9 = this.calculateMomentum(9);
-  const mom18 = this.calculateMomentum(18);
-  const mom27 = this.calculateMomentum(27);
-  if (mom9 && mom18 && mom27) {
-    if (mom9 > 0 && mom18 > 0 && mom27 > 0) {
-      score += 15; // momentum consistente para cima
-    }
-    if (mom9 < 0 && mom18 < 0 && mom27 < 0) {
-      score += 15; // momentum consistente para baixo
-    }
-  }
-
-  // --- 4. Suporte/Resistência via GARCH ---
-  if (garch) {
-    const price = this.lastClose();
-    if (Math.abs(price - garch.up1sigma) / price < 0.005) {
-      score += 10; // próximo da resistência
-    }
-    if (Math.abs(price - garch.down1sigma) / price < 0.005) {
-      score += 10; // próximo do suporte
-    }
-  }
-
-  // Limitar score entre 0 e 100
-  score = Math.max(0, Math.min(100, score));
-
-  return score;
-}
-
-
-// Função para atualizar a cor do círculo de score
-updateScoreCircleColor(signalType) {
-  const scoreCircle = document.querySelector('.score-circle');
-  if (!scoreCircle) {
-    console.warn('Score circle element not found');
-    return;
-  }
-  
-  // Remove todas as classes de cor existentes
-  scoreCircle.classList.remove('buy-signal', 'sell-signal', 'neutral-signal', 'wait-signal');
-  
-  // Adiciona a classe apropriada baseada no sinal
-  switch(signalType) {
-    case 'buy':
-      scoreCircle.classList.add('buy-signal');
-      console.log('Score circle: BUY signal (green)');
-      break;
-    case 'sell':
-      scoreCircle.classList.add('sell-signal');
-      console.log('Score circle: SELL signal (red)');
-      break;
-    case 'wait':
-      scoreCircle.classList.add('wait-signal');
-      console.log('Score circle: WAIT signal (orange)');
-      break;
-    case 'neutral':
-    default:
-      scoreCircle.classList.add('neutral-signal');
-      console.log('Score circle: NEUTRAL signal (blue)');
-      break;
-  }
-}
+      determineSignalType(recommendation) {
+        if (!recommendation || typeof recommendation !== 'string') {
+          return 'neutral';
+        }
+        
+        const recText = recommendation.toLowerCase();
+        
+        // Sinais de COMPRA (Verde)
+        if (recText.includes('compra') || 
+            recText.includes('comprar') ||
+            recText.includes('subvalorizada') ||
+            recText.includes('atenção para compras') ||
+            recText.includes('forte recomendação de compra') ||
+            recText.includes('recomendação de compra') ||
+            recText.includes('oportunidade de compra')) {
+          return 'buy';
+        }
+        
+        // Sinais de VENDA (Vermelho)
+        if (recText.includes('venda') || 
+            recText.includes('vender') ||
+            recText.includes('sobrevalorizada') ||
+            recText.includes('atenção para vendas') ||
+            recText.includes('forte recomendação de venda') ||
+            recText.includes('recomendação de venda') ||
+            recText.includes('oportunidade de venda')) {
+          return 'sell';
+        }
+        
+        // Sinais de AGUARDAR (Laranja)
+        if (recText.includes('aguardar') || 
+            recText.includes('aguarde') ||
+            recText.includes('volatilidade extrema') ||
+            recText.includes('evitar trades') ||
+            recText.includes('aguardar redução') ||
+            recText.includes('aguardar normalização')) {
+          return 'wait';
+        }
+        
+        // Neutro/Monitorar (Azul) - padrão
+        return 'neutral';
+      }
+      
+      // Função para atualizar a cor do círculo de score
+      updateScoreCircleColor(signalType) {
+        const scoreCircle = document.querySelector('.score-circle');
+        if (!scoreCircle) {
+          console.warn('Score circle element not found');
+          return;
+        }
+        
+        // Remove todas as classes de cor existentes
+        scoreCircle.classList.remove('buy-signal', 'sell-signal', 'neutral-signal', 'wait-signal');
+        
+        // Adiciona a classe apropriada baseada no sinal
+        switch(signalType) {
+          case 'buy':
+            scoreCircle.classList.add('buy-signal');
+            console.log('Score circle: BUY signal (green)');
+            break;
+          case 'sell':
+            scoreCircle.classList.add('sell-signal');
+            console.log('Score circle: SELL signal (red)');
+            break;
+          case 'wait':
+            scoreCircle.classList.add('wait-signal');
+            console.log('Score circle: WAIT signal (orange)');
+            break;
+          case 'neutral':
+          default:
+            scoreCircle.classList.add('neutral-signal');
+            console.log('Score circle: NEUTRAL signal (blue)');
+            break;
+        }
+      }
+      
       initializeAI() {
         // Initialize AI analysis display
         this.updateAIDisplay();
@@ -1516,8 +2065,11 @@ updateScoreCircleColor(signalType) {
         document.getElementById('btnFetch').addEventListener('click', () => this.fetchSimulatedData());
         document.getElementById('btnFetchAPI').addEventListener('click', () => this.fetchAPIData());
         document.getElementById('btnAnalyze').addEventListener('click', () => this.analyze());
-        document.getElementById('btnAIAnalysis').addEventListener('click', () => this.performAIAnalysis());
-        document.getElementById('btnLoadManual').addEventListener('click', () => this.loadManualData());
+		document.getElementById('btnAIAnalysis').addEventListener('click', () => {
+			this.performAIAnalysis();
+			this.renderStrategyPanel();
+		});        
+		document.getElementById('btnLoadManual').addEventListener('click', () => this.loadManualData());
         document.getElementById('btnClear').addEventListener('click', () => this.clearData());
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
         
@@ -1583,7 +2135,7 @@ updateScoreCircleColor(signalType) {
         }
       }
       
-      // AI Analysis System
+      // AI Analysis System - VERSÃO MELHORADA
       async performAIAnalysis() {
         if (!this.priceData.length) {
           this.log("Carregue dados primeiro para análise com IA");
@@ -1591,16 +2143,24 @@ updateScoreCircleColor(signalType) {
         }
         
         this.showLoading();
-        this.log("Executando análise inteligente...");
+        this.log("Executando análise inteligente multidimensional...");
         
         try {
           // Simulate AI processing time
           await new Promise(resolve => setTimeout(resolve, 2000));
           
+          // Análise original + melhorias
           this.aiAnalysis = this.generateAIAnalysis();
+          
+          // NOVA: Adicionar métricas avançadas
+          this.aiAnalysis.advancedConfidence = this.calculateAdvancedConfidenceScore();
+          this.aiAnalysis.marketRegime = this.detectMarketRegime();
+          this.aiAnalysis.tradingStrategy = this.generateTradingStrategy();
+          this.aiAnalysis.advancedAlerts = this.generateAdvancedAlerts();
+          
           this.updateAIDisplay();
           
-          this.log("✅ Análise IA concluída com sucesso!");
+          this.log(`✅ Análise IA avançada concluída! Regime: ${this.aiAnalysis.marketRegime.type} | Confiança: ${this.aiAnalysis.advancedConfidence}%`);
           
         } catch (error) {
           this.log("❌ Erro na análise IA: " + error.message);
@@ -1609,643 +2169,661 @@ updateScoreCircleColor(signalType) {
         }
       }
       
+      // VERSÃO MELHORADA da função updateAIDisplay()
+      updateAIDisplay() {
+        if (!this.aiAnalysis) {
+          document.getElementById('aiCurrentSituation').textContent = "Execute 'Análise IA' para insights multidimensionais...";
+          document.getElementById('aiMainRecommendation').textContent = "Aguardando análise de regime de mercado...";
+          document.getElementById('opportunityScore').textContent = "--";
+          this.updateScoreCircleColor('neutral');
+          this.updateAdvancedMetricsDisplay();
+          return;
+        }
+        
+        // Calcular métricas avançadas
+        const advancedConfidence = this.calculateAdvancedConfidenceScore();
+        const regime = this.detectMarketRegime();
+        const advancedAlerts = this.generateAdvancedAlerts();
+        const strategy = this.generateTradingStrategy();
+        
+        // Update main insights com dados mais ricos
+        const enhancedSituation = `${this.aiAnalysis.currentSituation} | Regime: ${regime.type} (${regime.probability}%) | Confiança: ${advancedConfidence}%`;
+        document.getElementById('aiCurrentSituation').textContent = enhancedSituation;
+        
+        // Recomendação estratégica melhorada
+        let enhancedRecommendation = strategy.recommendation;
+        if (strategy.direction) {
+          enhancedRecommendation += ` | Entrada: ${this.fmt(strategy.entryZone.min)}-${this.fmt(strategy.entryZone.max)}`;
+          enhancedRecommendation += ` | Meta: ${this.fmt(strategy.target)} | Stop: ${this.fmt(strategy.stopLoss)}`;
+          enhancedRecommendation += ` | R/R: ${strategy.riskReward.toFixed(1)}x`;
+        }
+        document.getElementById('aiMainRecommendation').textContent = enhancedRecommendation;
+        
+        // Score com base na confiança avançada
+        document.getElementById('opportunityScore').textContent = advancedConfidence;
+        
+        // Cor do círculo baseada na estratégia
+        const signalType = this.determineSignalTypeFromStrategy(strategy);
+        this.updateScoreCircleColor(signalType);
+        
+        // Update alerts com sistema avançado
+        const alertsContainer = document.getElementById('aiAlerts');
+        if (advancedAlerts && advancedAlerts.length > 0) {
+          alertsContainer.innerHTML = '';
+          advancedAlerts.forEach(alert => {
+            const alertElement = document.createElement('div');
+            alertElement.className = `alert-item ${alert.type}`;
+            alertElement.innerHTML = `
+              <strong>${alert.icon} ${alert.title}</strong>
+              ${alert.message}
+              <em>Ação: ${alert.action} (Confiança: ${alert.confidence}%)</em>
+            `;
+            alertsContainer.appendChild(alertElement);
+          });
+          alertsContainer.style.display = 'grid';
+        } else {
+          alertsContainer.style.display = 'none';
+        }
+        
+        // Update scenarios com probabilidades condicionais
+        if (this.aiAnalysis.scenarios) {
+          // Ajustar cenários baseado no regime detectado
+          const adjustedScenarios = this.adjustScenariosForRegime(this.aiAnalysis.scenarios, regime);
+          
+          const scenarios = document.querySelectorAll('#aiScenarios .scenario');
+          const scenarioValues = [
+            adjustedScenarios.strongUp,
+            adjustedScenarios.moderateUp, 
+            adjustedScenarios.lateral,
+            adjustedScenarios.moderateDown,
+            adjustedScenarios.strongDown
+          ];
+          
+          scenarios.forEach((scenario, index) => {
+            const barFill = scenario.querySelector('.bar-fill');
+            const percentage = scenario.querySelector('.percentage');
+            const value = scenarioValues[index] || 0;
+            
+            if (barFill && percentage) {
+              barFill.style.width = `${value}%`;
+              percentage.textContent = `${value}%`;
+            }
+          });
+        }
+        
+        // Enhanced narrative com regime e estratégia
+        const narrativeContainer = document.getElementById('aiNarrative');
+        if (narrativeContainer) {
+          const enhancedNarrative = this.generateEnhancedNarrativeWithRegime(regime, strategy, advancedConfidence);
+          narrativeContainer.innerHTML = enhancedNarrative;
+          narrativeContainer.style.display = 'block';
+        }
+        
+        // Atualizar métricas avançadas
+        this.updateAdvancedMetricsDisplay();
+      }
+      
       // SUBSTITUA APENAS ESTAS FUNÇÕES NO SEU SISTEMA ORIGINAL
-// Mantenha todo o resto igual, apenas cole estas funções sobre as existentes
+      // Mantenha todo o resto igual, apenas cole estas funções sobre as existentes
 
-// Nova análise de IA que usa os cálculos reais do seu sistema
-generateAIAnalysis() {
-  const currentPrice = this.lastClose();
-  const garchAnalysis = this.analyzeSystemGARCH();
-  const intradayAnalysis = this.analyzeSystemIntraday();
-  const fairPriceAnalysis = this.analyzeSystemFairPrice();
-  const volatilityAnalysis = this.analyzeSystemVolatility();
-  
-  const analysis = {
-    opportunityScore: this.calculateEnhancedOpportunityScore(garchAnalysis, fairPriceAnalysis, volatilityAnalysis),
-    currentSituation: this.generateEnhancedSituation(currentPrice, garchAnalysis, fairPriceAnalysis),
-    mainRecommendation: this.generateEnhancedRecommendation(garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis),
-    alerts: this.generateEnhancedAlerts(garchAnalysis, fairPriceAnalysis, volatilityAnalysis),
-    scenarios: this.calculateEnhancedScenarios(garchAnalysis, fairPriceAnalysis),
-    narrative: this.generateEnhancedNarrative(currentPrice, garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis)
-  };
-  
-  return analysis;
-}
-
-
-// Análise GARCH usando os cálculos reais do sistema
-analyzeSystemGARCH() {
-  const currentPrice = this.lastClose();
-  const periods = [9, 18, 27];
-  const results = {};
-  
-  periods.forEach(period => {
-    const stdDev = this.calculateStdDevReturns(period);
-    if (isNaN(stdDev)) return;
-    
-    results[`p${period}`] = {
-      stdDev: stdDev,
-      stdDevPercent: stdDev * 100,
-      up1sigma: currentPrice * (1 + stdDev),
-      down1sigma: currentPrice * (1 - stdDev),
-      up2sigma: currentPrice * (1 + 2 * stdDev),
-      down2sigma: currentPrice * (1 - 2 * stdDev),
-      currentInRange1: currentPrice >= (currentPrice * (1 - stdDev)) && currentPrice <= (currentPrice * (1 + stdDev)),
-      distanceFromMean: Math.abs((currentPrice - currentPrice) / (currentPrice * stdDev))
-    };
-  });
-  
-  return results;
-}
-
-// Análise Intraday usando fatores EXP do sistema
-analyzeSystemIntraday() {
-  const currentPrice = this.lastClose();
-  const periods = [9, 18, 27];
-  const results = {};
-  
-  periods.forEach(period => {
-    const stdDev = this.calculateStdDevReturns(period);
-    const expFactor = this.getExpFor(period);
-    
-    if (isNaN(stdDev)) return;
-    
-    const expStdDev = Math.pow(expFactor, stdDev);
-    const maxIntraday = currentPrice * expStdDev;
-    const minIntraday = currentPrice / expStdDev;
-    
-    results[`p${period}`] = {
-      expFactor: expFactor,
-      expStdDev: expStdDev,
-      maxIntraday: maxIntraday,
-      minIntraday: minIntraday,
-      range: maxIntraday - minIntraday,
-      rangePercent: ((maxIntraday - minIntraday) / currentPrice) * 100,
-      potentialGain: ((maxIntraday - currentPrice) / currentPrice) * 100,
-      potentialLoss: ((currentPrice - minIntraday) / currentPrice) * 100
-    };
-  });
-  
-  return results;
-}
-
-// Análise de Preço Justo usando fórmulas PPP/UIP do sistema
-analyzeSystemFairPrice() {
-  const currentPrice = this.lastClose();
-  if (!isFinite(currentPrice) || currentPrice <= 0) {
-    return { valid: false };
-  }
-  
-  // Usar os valores dos inputs do sistema
-  let pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 5.30);
-  const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
-  const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
-  const selicRate = parseFloat(document.getElementById('selic_rate')?.value || 13.75) / 100;
-  const fedRate = parseFloat(document.getElementById('fed_rate')?.value || 5.50) / 100;
-  const riskPremium = parseFloat(document.getElementById('risk_premium')?.value || 2.5) / 100;
-
-  // Ajuste de escala (igual ao sistema original)
-  if (currentPrice > 100) {
-    pppRate = pppRate * 1000;
-  }
-
-  // Cálculos PPP e UIP (igual ao sistema original)
-  const inflationDifferential = inflationBr - inflationUs;
-  const fairPricePPP = pppRate * ((1 + inflationBr) / (1 + inflationUs));
-
-  const interestDifferential = selicRate - fedRate;
-  const netInterestDifferential = interestDifferential - riskPremium;
-  const uipAdjustmentFactor = 1 + (netInterestDifferential * 0.15);
-  const fairPriceUIP = currentPrice * uipAdjustmentFactor;
-
-  // Limites UIP (igual ao sistema original)
-  const maxUIPDeviation = 0.20;
-  const upperBoundUIP = currentPrice * (1 + maxUIPDeviation);
-  const lowerBoundUIP = currentPrice * (1 - maxUIPDeviation);
-  const boundedFairPriceUIP = Math.max(lowerBoundUIP, Math.min(upperBoundUIP, fairPriceUIP));
-
-  // Preço combinado (igual ao sistema original)
-  const weightPPP = 0.4;
-  const weightUIP = 0.6;
-  const fairPriceCombined = (fairPricePPP * weightPPP) + (boundedFairPriceUIP * weightUIP);
-
-  // Limite total (igual ao sistema original)
-  const maxTotalDeviation = 0.25;
-  const upperBound = currentPrice * (1 + maxTotalDeviation);
-  const lowerBound = currentPrice * (1 - maxTotalDeviation);
-  const finalFairPrice = Math.max(lowerBound, Math.min(upperBound, fairPriceCombined));
-
-  const deviationPercent = ((currentPrice - finalFairPrice) / finalFairPrice) * 100;
-  
-  return {
-    valid: true,
-    currentPrice: currentPrice,
-    fairPricePPP: fairPricePPP,
-    fairPriceUIP: boundedFairPriceUIP,
-    fairPriceCombined: finalFairPrice,
-    deviationPercent: deviationPercent,
-    deviationAbs: Math.abs(deviationPercent),
-    isOvervalued: deviationPercent > 5,
-    isUndervalued: deviationPercent < -5,
-    severityLevel: Math.abs(deviationPercent) > 10 ? 'EXTREMA' : 
-                 Math.abs(deviationPercent) > 5 ? 'ALTA' : 'MODERADA',
-    interestDifferential: interestDifferential,
-    inflationDifferential: inflationDifferential,
-    riskPremium: riskPremium
-  };
-}
-
-// Análise de volatilidade por período
-analyzeSystemVolatility() {
-  const periods = [9, 18, 27];
-  const results = {};
-  
-  periods.forEach(period => {
-    const stdDev = this.calculateStdDevReturns(period);
-    if (isNaN(stdDev)) return;
-    
-    const volPercent = stdDev * 100;
-    let regime, riskLevel, tradingAdvice;
-    
-    if (volPercent > 3.0) {
-      regime = 'ALTA';
-      riskLevel = 'EXTREMO';
-      tradingAdvice = 'Evitar trades direcionais';
-    } else if (volPercent > 2.0) {
-      regime = 'MODERADA-ALTA';
-      riskLevel = 'ALTO';
-      tradingAdvice = 'Reduzir tamanho de posição';
-    } else if (volPercent > 1.0) {
-      regime = 'MODERADA';
-      riskLevel = 'MÉDIO';
-      tradingAdvice = 'Condições normais de trading';
-    } else {
-      regime = 'BAIXA';
-      riskLevel = 'BAIXO';
-      tradingAdvice = 'Ideal para trades direcionais';
-    }
-    
-    results[`p${period}`] = {
-      period: period,
-      volatilityPercent: volPercent,
-      regime: regime,
-      riskLevel: riskLevel,
-      tradingAdvice: tradingAdvice,
-      isLowVol: volPercent < 1.5,
-      isHighVol: volPercent > 3.0
-    };
-  });
-  
-  return results;
-}
-
-// Score de oportunidade melhorado usando todos os cálculos do sistema
-calculateEnhancedOpportunityScore(garchAnalysis, fairPriceAnalysis, volatilityAnalysis) {
-  if (!fairPriceAnalysis.valid) return 30;
-  
-  let score = 50; // Base score
-  
-  // Componente: Desvio do preço justo (0-40 pontos)
-  const deviation = fairPriceAnalysis.deviationAbs;
-  const deviationScore = Math.min(40, deviation * 3);
-  score += deviationScore;
-  
-  // Componente: Volatilidade (penaliza alta volatilidade)
-  const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
-  if (vol18 < 1.5) {
-    score += 15; // Baixa volatilidade é boa
-  } else if (vol18 > 3.0) {
-    score -= 20; // Alta volatilidade penaliza
-  }
-  
-  // Componente: Consistência entre períodos GARCH
-  const periods = [9, 18, 27];
-  let consistentDirection = 0;
-  const referencePrice = this.lastClose();
-  
-  periods.forEach(p => {
-    const garch = garchAnalysis[`p${p}`];
-    if (garch) {
-      if (fairPriceAnalysis.deviationPercent > 5 && referencePrice > garch.up1sigma) {
-        consistentDirection++; // Preço alto + acima de +1σ
-      } else if (fairPriceAnalysis.deviationPercent < -5 && referencePrice < garch.down1sigma) {
-        consistentDirection++; // Preço baixo + abaixo de -1σ
-      }
-    }
-  });
-  
-  score += consistentDirection * 5;
-  
-  // Limitar entre 0-100
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-// Situação atual melhorada
-generateEnhancedSituation(currentPrice, garchAnalysis, fairPriceAnalysis) {
-  if (!fairPriceAnalysis.valid) {
-    return "Configure os parâmetros de preço justo para análise completa.";
-  }
-  
-  const deviation = fairPriceAnalysis.deviationPercent;
-  const garch18 = garchAnalysis.p18;
-  
-  let situation = `USD/BRL em ${this.fmt(currentPrice)}, `;
-  
-  // Análise de preço justo
-  if (Math.abs(deviation) < 2) {
-    situation += `próximo ao justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
-  } else if (deviation > 0) {
-    situation += `${deviation.toFixed(1)}% ACIMA do justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
-  } else {
-    situation += `${Math.abs(deviation).toFixed(1)}% ABAIXO do justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
-  }
-  
-  // Análise GARCH 18P
-  if (garch18) {
-    if (currentPrice > garch18.up1sigma) {
-      situation += `Acima da banda +1σ GARCH (${this.fmt(garch18.up1sigma)}).`;
-    } else if (currentPrice < garch18.down1sigma) {
-      situation += `Abaixo da banda -1σ GARCH (${this.fmt(garch18.down1sigma)}).`;
-    } else {
-      situation += `Dentro das bandas GARCH ±1σ.`;
-    }
-  }
-  
-  return situation;
-}
-
-// Recomendação principal melhorada
-generateEnhancedRecommendation(garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis) {
-  if (!fairPriceAnalysis.valid) {
-    return "Configure os parâmetros do sistema para recomendações precisas.";
-  }
-  
-  const deviation = fairPriceAnalysis.deviationPercent;
-  const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
-  const garch18 = garchAnalysis.p18;
-  const intraday18 = intradayAnalysis.p18;
-  const currentPrice = this.lastClose();
-  
-  let recommendation = "";
-  
-  // Lógica principal baseada nos cálculos reais do sistema
-  if (Math.abs(deviation) > 8 && vol18 < 2.5) {
-    // Desvio extremo + baixa volatilidade = alta confiança
-    if (deviation > 8) {
-      recommendation = `FORTE RECOMENDAÇÃO DE VENDA: Moeda ${deviation.toFixed(1)}% sobrevalorizada com volatilidade controlada (${vol18.toFixed(2)}%). `;
-      
-      if (garch18 && currentPrice > garch18.up1sigma) {
-        recommendation += `GARCH confirma: preço acima de +1σ (${this.fmt(garch18.up1sigma)}). `;
+      // Nova análise de IA que usa os cálculos reais do seu sistema
+      generateAIAnalysis() {
+        const currentPrice = this.lastClose();
+        const garchAnalysis = this.analyzeSystemGARCH();
+        const intradayAnalysis = this.analyzeSystemIntraday();
+        const fairPriceAnalysis = this.analyzeSystemFairPrice();
+        const volatilityAnalysis = this.analyzeSystemVolatility();
+        
+        const analysis = {
+          opportunityScore: this.calculateEnhancedOpportunityScore(garchAnalysis, fairPriceAnalysis, volatilityAnalysis),
+          currentSituation: this.generateEnhancedSituation(currentPrice, garchAnalysis, fairPriceAnalysis),
+          mainRecommendation: this.generateEnhancedRecommendation(garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis),
+          alerts: this.generateEnhancedAlerts(garchAnalysis, fairPriceAnalysis, volatilityAnalysis),
+          scenarios: this.calculateEnhancedScenarios(garchAnalysis, fairPriceAnalysis),
+          narrative: this.generateEnhancedNarrative(currentPrice, garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis)
+        };
+        
+        return analysis;
       }
       
-      if (intraday18) {
-        recommendation += `Meta máxima intraday: ${this.fmt(intraday18.maxIntraday)}.`;
+      // Análise GARCH usando os cálculos reais do sistema
+      analyzeSystemGARCH() {
+        const currentPrice = this.lastClose();
+        const periods = [9, 18, 27];
+        const results = {};
+        
+        periods.forEach(period => {
+          const stdDev = this.calculateStdDevReturns(period);
+          if (isNaN(stdDev)) return;
+          
+          results[`p${period}`] = {
+            stdDev: stdDev,
+            stdDevPercent: stdDev * 100,
+            up1sigma: currentPrice * (1 + stdDev),
+            down1sigma: currentPrice * (1 - stdDev),
+            up2sigma: currentPrice * (1 + 2 * stdDev),
+            down2sigma: currentPrice * (1 - 2 * stdDev),
+            currentInRange1: currentPrice >= (currentPrice * (1 - stdDev)) && currentPrice <= (currentPrice * (1 + stdDev)),
+            distanceFromMean: Math.abs((currentPrice - currentPrice) / (currentPrice * stdDev))
+          };
+        });
+        
+        return results;
       }
-    } else {
-      recommendation = `FORTE RECOMENDAÇÃO DE COMPRA: Moeda ${Math.abs(deviation).toFixed(1)}% subvalorizada com volatilidade controlada (${vol18.toFixed(2)}%). `;
       
-      if (garch18 && currentPrice < garch18.down1sigma) {
-        recommendation += `GARCH confirma: preço abaixo de -1σ (${this.fmt(garch18.down1sigma)}). `;
+      // Análise Intraday usando fatores EXP do sistema
+      analyzeSystemIntraday() {
+        const currentPrice = this.lastClose();
+        const periods = [9, 18, 27];
+        const results = {};
+        
+        periods.forEach(period => {
+          const stdDev = this.calculateStdDevReturns(period);
+          const expFactor = this.getExpFor(period);
+          
+          if (isNaN(stdDev)) return;
+          
+          const expStdDev = Math.pow(expFactor, stdDev);
+          const maxIntraday = currentPrice * expStdDev;
+          const minIntraday = currentPrice / expStdDev;
+          
+          results[`p${period}`] = {
+            expFactor: expFactor,
+            expStdDev: expStdDev,
+            maxIntraday: maxIntraday,
+            minIntraday: minIntraday,
+            range: maxIntraday - minIntraday,
+            rangePercent: ((maxIntraday - minIntraday) / currentPrice) * 100,
+            potentialGain: ((maxIntraday - currentPrice) / currentPrice) * 100,
+            potentialLoss: ((currentPrice - minIntraday) / currentPrice) * 100
+          };
+        });
+        
+        return results;
       }
       
-      if (intraday18) {
-        recommendation += `Meta mínima intraday: ${this.fmt(intraday18.minIntraday)}.`;
-      }
-    }
-  } else if (Math.abs(deviation) > 5) {
-    // Desvio moderado
-    if (deviation > 5) {
-      recommendation = `ATENÇÃO PARA VENDAS: ${deviation.toFixed(1)}% sobrevalorizada. `;
-    } else {
-      recommendation = `ATENÇÃO PARA COMPRAS: ${Math.abs(deviation).toFixed(1)}% subvalorizada. `;
-    }
-    
-    if (vol18 > 3.0) {
-      recommendation += `CUIDADO: Volatilidade alta (${vol18.toFixed(2)}%) pode causar falsos sinais. `;
-    }
-  } else if (vol18 > 4.0) {
-    recommendation = `AGUARDAR: Volatilidade extrema (${vol18.toFixed(2)}%) domina. Aguardar normalização. `;
-  } else {
-    recommendation = `MONITORAR: Situação equilibrada. Desvio: ${deviation.toFixed(1)}%, Vol: ${vol18.toFixed(2)}%. `;
-    
-    if (intraday18) {
-      recommendation += `Range intraday esperado: ${this.fmt(intraday18.minIntraday)} - ${this.fmt(intraday18.maxIntraday)}.`;
-    }
-  }
-  
-  return recommendation;
-}
+      // Análise de Preço Justo usando fórmulas PPP/UIP do sistema
+      analyzeSystemFairPrice() {
+        const currentPrice = this.lastClose();
+        if (!isFinite(currentPrice) || currentPrice <= 0) {
+          return { valid: false };
+        }
+        
+        // Usar os valores dos inputs do sistema
+        let pppRate = parseFloat(document.getElementById('ppp_rate')?.value || 5.30);
+        const inflationBr = parseFloat(document.getElementById('inflation_br')?.value || 4.5) / 100;
+        const inflationUs = parseFloat(document.getElementById('inflation_us')?.value || 3.2) / 100;
+        const selicRate = parseFloat(document.getElementById('selic_rate')?.value || 13.75) / 100;
+        const fedRate = parseFloat(document.getElementById('fed_rate')?.value || 5.50) / 100;
+        const riskPremium = parseFloat(document.getElementById('risk_premium')?.value || 2.5) / 100;
 
-// Alertas melhorados baseados nos cálculos do sistema
-generateEnhancedAlerts(garchAnalysis, fairPriceAnalysis, volatilityAnalysis) {
-  const alerts = [];
-  
-  if (!fairPriceAnalysis.valid) {
-    alerts.push({
-      type: 'info',
-      message: 'Configure parâmetros PPP/UIP para análise completa do preço justo.'
-    });
-    return alerts;
-  }
-  
-  const deviation = fairPriceAnalysis.deviationPercent;
-  const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
-  const garch18 = garchAnalysis.p18;
-  const currentPrice = this.lastClose();
-  
-  // Alertas de desvio extremo
-  if (Math.abs(deviation) > 10) {
-    alerts.push({
-      type: 'warning',
-      message: `DESVIO EXTREMO: ${Math.abs(deviation).toFixed(1)}% do preço justíssimo! Reversão altamente provável.`
-    });
-  }
-  
-  // Alertas GARCH
-  if (garch18) {
-    if (currentPrice > garch18.up2sigma) {
-      alerts.push({
-        type: 'warning',
-        message: `Preço acima de +2σ GARCH (${this.fmt(garch18.up2sigma)}). Zona de sobrecompra estatística.`
-      });
-    } else if (currentPrice < garch18.down2sigma) {
-      alerts.push({
-        type: 'warning',
-        message: `Preço abaixo de -2σ GARCH (${this.fmt(garch18.down2sigma)}). Zona de sobrevenda estatística.`
-      });
-    }
-  }
-  
-  // Alertas de volatilidade
-  if (vol18 > 4.0) {
-    alerts.push({
-      type: 'warning',
-      message: `VOLATILIDADE EXTREMA: ${vol18.toFixed(2)}%! Mercado imprevisível, evitar trades direcionais.`
-    });
-  } else if (vol18 < 1.0 && Math.abs(deviation) > 5) {
-    alerts.push({
-      type: 'success',
-      message: `OPORTUNIDADE: Baixa volatilidade (${vol18.toFixed(2)}%) + desvio significativo = alta probabilidade de acerto.`
-    });
-  }
-  
-  // Alertas de confluência
-  if (Math.abs(deviation) > 5 && garch18) {
-    const garchConfirms = (deviation > 0 && currentPrice > garch18.up1sigma) || 
-                         (deviation < 0 && currentPrice < garch18.down1sigma);
-    
-    if (garchConfirms) {
-      alerts.push({
-        type: 'success',
-        message: 'CONFLUÊNCIA: Preço justo e GARCH apontam mesma direção. Alta confiabilidade.'
-      });
-    } else {
-      alerts.push({
-        type: 'info',
-        message: 'DIVERGÊNCIA: Preço justo e GARCH em conflito. Aguardar confirmação.'
-      });
-    }
-  }
-  
-  return alerts;
-}
+        // Ajuste de escala (igual ao sistema original)
+        if (currentPrice > 100) {
+          pppRate = pppRate * 1000;
+        }
 
-// Cenários melhorados usando GARCH e preço justo
-calculateEnhancedScenarios(garchAnalysis, fairPriceAnalysis) {
-  if (!fairPriceAnalysis.valid) {
-    return {
-      strongUp: 20, moderateUp: 20, lateral: 20, moderateDown: 20, strongDown: 20
-    };
-  }
-  
-  const deviation = fairPriceAnalysis.deviationPercent;
-  const garch18 = garchAnalysis.p18;
-  
-  // Base probabilities
-  let scenarios = {
-    strongUp: 15,    // >+2%
-    moderateUp: 20,  // +1% to +2%
-    lateral: 30,     // -1% to +1%
-    moderateDown: 20, // -2% to -1%
-    strongDown: 15   // <-2%
-  };
-  
-  // Ajuste baseado no desvio do preço justo
-  if (deviation > 8) {
-    // Muito sobrevalorizado - alta probabilidade de queda
-    scenarios.strongDown += 25;
-    scenarios.moderateDown += 15;
-    scenarios.strongUp -= 15;
-    scenarios.moderateUp -= 10;
-    scenarios.lateral -= 15;
-  } else if (deviation > 5) {
-    // Moderadamente sobrevalorizado
-    scenarios.strongDown += 15;
-    scenarios.moderateDown += 10;
-    scenarios.strongUp -= 10;
-    scenarios.lateral -= 15;
-  } else if (deviation < -8) {
-    // Muito subvalorizado - alta probabilidade de alta
-    scenarios.strongUp += 25;
-    scenarios.moderateUp += 15;
-    scenarios.strongDown -= 15;
-    scenarios.moderateDown -= 10;
-    scenarios.lateral -= 15;
-  } else if (deviation < -5) {
-    // Moderadamente subvalorizado
-    scenarios.strongUp += 15;
-    scenarios.moderateUp += 10;
-    scenarios.strongDown -= 10;
-    scenarios.lateral -= 15;
-  }
-  
-  // Ajuste baseado no GARCH
-  if (garch18) {
-    const currentPrice = this.lastClose();
-    
-    if (currentPrice > garch18.up1sigma) {
-      // Acima de +1σ - maior probabilidade de correção
-      scenarios.moderateDown += 10;
-      scenarios.strongDown += 5;
-      scenarios.strongUp -= 10;
-      scenarios.lateral -= 5;
-    } else if (currentPrice < garch18.down1sigma) {
-      // Abaixo de -1σ - maior probabilidade de recuperação
-      scenarios.moderateUp += 10;
-      scenarios.strongUp += 5;
-      scenarios.strongDown -= 10;
-      scenarios.lateral -= 5;
-    }
-  }
-  
-  // Normalizar para 100%
-  const total = Object.values(scenarios).reduce((sum, val) => sum + val, 0);
-  Object.keys(scenarios).forEach(key => {
-    scenarios[key] = Math.max(5, Math.round((scenarios[key] / total) * 100));
-  });
-  
-  return scenarios;
-}
+        // Cálculos PPP e UIP (igual ao sistema original)
+        const inflationDifferential = inflationBr - inflationUs;
+        const fairPricePPP = pppRate * ((1 + inflationBr) / (1 + inflationUs));
 
-// Narrativa melhorada com todos os cálculos do sistema
-generateEnhancedNarrative(currentPrice, garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis) {
-  if (!fairPriceAnalysis.valid) {
-    return `
-      <h4>ANÁLISE DIÁRIA - USD/BRL (${new Date().toLocaleDateString('pt-BR')})</h4>
-      <p>Configure os parâmetros de preço justo (PPP, UIP, juros) para análise narrativa completa.</p>
-    `;
-  }
-  
-  const deviation = fairPriceAnalysis.deviationPercent;
-  const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
-  const garch18 = garchAnalysis.p18;
-  const intraday18 = intradayAnalysis.p18;
-  
-  let narrative = `
-    <h4>ANÁLISE GARCH COM IA - USD/BRL (${new Date().toLocaleDateString('pt-BR')})</h4>
-    
-    <p><strong>SITUAÇÃO ATUAL:</strong><br>
-    O dólar fechou em ${this.fmt(currentPrice)}, operando ${Math.abs(deviation).toFixed(1)}% ${deviation > 0 ? 'ACIMA' : 'ABAIXO'} do preço justíssimo de ${this.fmt(fairPriceAnalysis.fairPriceCombined)}. 
-    Volatilidade 18P em ${vol18.toFixed(2)}% (${volatilityAnalysis.p18?.regime || 'MODERADA'}).</p>
-    
-    <p><strong>ANÁLISE GARCH MULTI-PERÍODO:</strong><br>`;
-  
-  if (garch18) {
-    narrative += `Bandas GARCH 18P: ${this.fmt(garch18.down1sigma)} (-1σ) | ${this.fmt(garch18.up1sigma)} (+1σ)<br>`;
-    
-    if (currentPrice > garch18.up1sigma) {
-      narrative += `⚠️ Preço ACIMA da banda superior (+1σ) - pressão de venda estatística<br>`;
-    } else if (currentPrice < garch18.down1sigma) {
-      narrative += `⚠️ Preço ABAIXO da banda inferior (-1σ) - pressão de compra estatística<br>`;
-    } else {
-      narrative += `✅ Preço DENTRO das bandas ±1σ - comportamento normal<br>`;
-    }
-  }
-  
-  narrative += `</p><p><strong>PROJEÇÕES INTRADAY (FATORES EXP):</strong><br>`;
-  
-  if (intraday18) {
-    narrative += `Range esperado: ${this.fmt(intraday18.minIntraday)} - ${this.fmt(intraday18.maxIntraday)} (${intraday18.rangePercent.toFixed(2)}%)<br>`;
-    narrative += `Potencial alta: +${intraday18.potentialGain.toFixed(2)}% | Potencial baixa: -${intraday18.potentialLoss.toFixed(2)}%`;
-  }
-  
-  narrative += `</p><p><strong>PREÇO JUSTO INTEGRADO (PPP+UIP):</strong><br>`;
-  narrative += `PPP: ${this.fmt(fairPriceAnalysis.fairPricePPP)} | UIP: ${this.fmt(fairPriceAnalysis.fairPriceUIP)}<br>`;
-  narrative += `Justíssimo (40% PPP + 60% UIP): ${this.fmt(fairPriceAnalysis.fairPriceCombined)}<br>`;
-  narrative += `Diferencial juros BR-US: ${(fairPriceAnalysis.interestDifferential * 100).toFixed(2)}p.p.`;
-  
-  narrative += `</p><p><strong>CENÁRIOS PROBABILÍSTICOS:</strong><br>`;
-  
-  if (Math.abs(deviation) > 8) {
-    const direction = deviation > 0 ? 'CORREÇÃO BAIXISTA' : 'RECUPERAÇÃO ALTISTA';
-    const probability = Math.min(80, Math.round(Math.abs(deviation) * 8));
-    
-    narrative += `🎯 <strong>${direction} (${probability}%):</strong> Desvio extremo tende à reversão<br>`;
-    
-    if (vol18 < 2.5) {
-      narrative += `✅ <strong>ALTA CONFIANÇA:</strong> Baixa volatilidade favorece movimentos direcionais<br>`;
-    } else {
-      narrative += `⚠️ <strong>ATENÇÃO:</strong> Alta volatilidade pode gerar ruído no movimento`;
-    }
-  } else if (Math.abs(deviation) > 5) {
-    narrative += `📊 <strong>MOVIMENTO MODERADO:</strong> Desvio ${Math.abs(deviation).toFixed(1)}% sugere correção gradual<br>`;
-  } else {
-    narrative += `📊 <strong>EQUILÍBRIO:</strong> Preço próximo ao justo, aguardar catalisador<br>`;
-  }
-  
-  narrative += `</p><p><strong>RECOMENDAÇÃO FINAL:</strong><br>`;
-  
-  if (Math.abs(deviation) > 8 && vol18 < 2.5) {
-    if (deviation > 8) {
-      narrative += `🔴 <strong>VENDA RECOMENDADA:</strong> Confluência preço justo + GARCH indica sobrevalorização. Stop acima de ${garch18 ? this.fmt(garch18.up2sigma) : 'N/D'}.`;
-    } else {
-      narrative += `🟢 <strong>COMPRA RECOMENDADA:</strong> Confluência preço justo + GARCH indica subvalorização. Stop abaixo de ${garch18 ? this.fmt(garch18.down2sigma) : 'N/D'}.`;
-    }
-  } else if (vol18 > 4.0) {
-    narrative += `🟡 <strong>AGUARDAR:</strong> Volatilidade extrema (${vol18.toFixed(2)}%) requer paciência. Aguardar normalização abaixo de 3%.`;
-  } else {
-    narrative += `🔍 <strong>MONITORAR:</strong> Condições mistas. Aguardar confirmação de direção com aumento de volume.`;
-  }
-  
-  narrative += `</p>`;
-  
-  return narrative;
-}
-      
-updateAIDisplay() {
-  if (!this.aiAnalysis) {
-    document.getElementById('aiCurrentSituation').textContent = "Clique em 'Análise IA' para gerar insights...";
-    document.getElementById('aiMainRecommendation').textContent = "Aguardando análise...";
-    document.getElementById('opportunityScore').textContent = "--";
-    
-    // Cor padrão quando não há análise
-    this.updateScoreCircleColor('neutral');
-    return;
-  }
-  
-  // Update main insights
-  document.getElementById('aiCurrentSituation').textContent = this.aiAnalysis.currentSituation;
-  document.getElementById('aiMainRecommendation').textContent = this.aiAnalysis.mainRecommendation;
-  document.getElementById('opportunityScore').textContent = this.aiAnalysis.opportunityScore;
-  
-  // *** ATUALIZAR COR DO CÍRCULO BASEADO NA RECOMENDAÇÃO ***
-  try {
-    const signalType = this.determineSignalType(this.aiAnalysis.mainRecommendation);
-    this.updateScoreCircleColor(signalType);
-  } catch (error) {
-    console.error('Erro ao atualizar cor do círculo:', error);
-    this.updateScoreCircleColor('neutral');
-  }
-  
-  // Update alerts
-  const alertsContainer = document.getElementById('aiAlerts');
-  if (this.aiAnalysis.alerts && this.aiAnalysis.alerts.length > 0) {
-    alertsContainer.innerHTML = '';
-    this.aiAnalysis.alerts.forEach(alert => {
-      const alertElement = document.createElement('div');
-      alertElement.className = `alert-item ${alert.type}`;
-      alertElement.textContent = alert.message;
-      alertsContainer.appendChild(alertElement);
-    });
-    alertsContainer.style.display = 'grid';
-  } else {
-    alertsContainer.style.display = 'none';
-  }
-  
-  // Update scenarios
-  if (this.aiAnalysis.scenarios) {
-    const scenarios = document.querySelectorAll('#aiScenarios .scenario');
-    const scenarioValues = [
-      this.aiAnalysis.scenarios.strongUp,
-      this.aiAnalysis.scenarios.moderateUp,
-      this.aiAnalysis.scenarios.lateral,
-      this.aiAnalysis.scenarios.moderateDown,
-      this.aiAnalysis.scenarios.strongDown
-    ];
-    
-    scenarios.forEach((scenario, index) => {
-      const barFill = scenario.querySelector('.bar-fill');
-      const percentage = scenario.querySelector('.percentage');
-      const value = scenarioValues[index] || 0;
-      
-      if (barFill && percentage) {
-        barFill.style.width = `${value}%`;
-        percentage.textContent = `${value}%`;
+        const interestDifferential = selicRate - fedRate;
+        const netInterestDifferential = interestDifferential - riskPremium;
+        const uipAdjustmentFactor = 1 + (netInterestDifferential * 0.15);
+        const fairPriceUIP = currentPrice * uipAdjustmentFactor;
+
+        // Limites UIP (igual ao sistema original)
+        const maxUIPDeviation = 0.20;
+        const upperBoundUIP = currentPrice * (1 + maxUIPDeviation);
+        const lowerBoundUIP = currentPrice * (1 - maxUIPDeviation);
+        const boundedFairPriceUIP = Math.max(lowerBoundUIP, Math.min(upperBoundUIP, fairPriceUIP));
+
+        // Preço combinado (igual ao sistema original)
+        const weightPPP = 0.4;
+        const weightUIP = 0.6;
+        const fairPriceCombined = (fairPricePPP * weightPPP) + (boundedFairPriceUIP * weightUIP);
+
+        // Limite total (igual ao sistema original)
+        const maxTotalDeviation = 0.25;
+        const upperBound = currentPrice * (1 + maxTotalDeviation);
+        const lowerBound = currentPrice * (1 - maxTotalDeviation);
+        const finalFairPrice = Math.max(lowerBound, Math.min(upperBound, fairPriceCombined));
+
+        const deviationPercent = ((currentPrice - finalFairPrice) / finalFairPrice) * 100;
+        
+        return {
+          valid: true,
+          currentPrice: currentPrice,
+          fairPricePPP: fairPricePPP,
+          fairPriceUIP: boundedFairPriceUIP,
+          fairPriceCombined: finalFairPrice,
+          deviationPercent: deviationPercent,
+          deviationAbs: Math.abs(deviationPercent),
+          isOvervalued: deviationPercent > 5,
+          isUndervalued: deviationPercent < -5,
+          severityLevel: Math.abs(deviationPercent) > 10 ? 'EXTREMA' : 
+                       Math.abs(deviationPercent) > 5 ? 'ALTA' : 'MODERADA',
+          interestDifferential: interestDifferential,
+          inflationDifferential: inflationDifferential,
+          riskPremium: riskPremium
+        };
       }
-    });
-  }
-  
-  // Update narrative
-  const narrativeContainer = document.getElementById('aiNarrative');
-  if (narrativeContainer) {
-    if (this.aiAnalysis.narrative) {
-      narrativeContainer.innerHTML = this.aiAnalysis.narrative;
-      narrativeContainer.style.display = 'block';
-    } else {
-      narrativeContainer.style.display = 'none';
-    }
-  }
-}
+      
+      // Análise de volatilidade por período
+      analyzeSystemVolatility() {
+        const periods = [9, 18, 27];
+        const results = {};
+        
+        periods.forEach(period => {
+          const stdDev = this.calculateStdDevReturns(period);
+          if (isNaN(stdDev)) return;
+          
+          const volPercent = stdDev * 100;
+          let regime, riskLevel, tradingAdvice;
+          
+          if (volPercent > 3.0) {
+            regime = 'ALTA';
+            riskLevel = 'EXTREMO';
+            tradingAdvice = 'Evitar trades direcionais';
+          } else if (volPercent > 2.0) {
+            regime = 'MODERADA-ALTA';
+            riskLevel = 'ALTO';
+            tradingAdvice = 'Reduzir tamanho de posição';
+          } else if (volPercent > 1.0) {
+            regime = 'MODERADA';
+            riskLevel = 'MÉDIO';
+            tradingAdvice = 'Condições normais de trading';
+          } else {
+            regime = 'BAIXA';
+            riskLevel = 'BAIXO';
+            tradingAdvice = 'Ideal para trades direcionais';
+          }
+          
+          results[`p${period}`] = {
+            period: period,
+            volatilityPercent: volPercent,
+            regime: regime,
+            riskLevel: riskLevel,
+            tradingAdvice: tradingAdvice,
+            isLowVol: volPercent < 1.5,
+            isHighVol: volPercent > 3.0
+          };
+        });
+        
+        return results;
+      }
+      
+      // Score de oportunidade melhorado usando todos os cálculos do sistema
+      calculateEnhancedOpportunityScore(garchAnalysis, fairPriceAnalysis, volatilityAnalysis) {
+        if (!fairPriceAnalysis.valid) return 30;
+        
+        let score = 50; // Base score
+        
+        // Componente: Desvio do preço justo (0-40 pontos)
+        const deviation = fairPriceAnalysis.deviationAbs;
+        const deviationScore = Math.min(40, deviation * 3);
+        score += deviationScore;
+        
+        // Componente: Volatilidade (penaliza alta volatilidade)
+        const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
+        if (vol18 < 1.5) {
+          score += 15; // Baixa volatilidade é boa
+        } else if (vol18 > 3.0) {
+          score -= 20; // Alta volatilidade penaliza
+        }
+        
+        // Componente: Consistência entre períodos GARCH
+        const periods = [9, 18, 27];
+        let consistentDirection = 0;
+        const referencePrice = this.lastClose();
+        
+        periods.forEach(p => {
+          const garch = garchAnalysis[`p${p}`];
+          if (garch) {
+            if (fairPriceAnalysis.deviationPercent > 5 && referencePrice > garch.up1sigma) {
+              consistentDirection++; // Preço alto + acima de +1σ
+            } else if (fairPriceAnalysis.deviationPercent < -5 && referencePrice < garch.down1sigma) {
+              consistentDirection++; // Preço baixo + abaixo de -1σ
+            }
+          }
+        });
+        
+        score += consistentDirection * 5;
+        
+        // Limitar entre 0-100
+        return Math.max(0, Math.min(100, Math.round(score)));
+      }
+      
+      // Situação atual melhorada
+      generateEnhancedSituation(currentPrice, garchAnalysis, fairPriceAnalysis) {
+        if (!fairPriceAnalysis.valid) {
+          return "Configure os parâmetros de preço justo para análise completa.";
+        }
+        
+        const deviation = fairPriceAnalysis.deviationPercent;
+        const garch18 = garchAnalysis.p18;
+        
+        let situation = `USD/BRL em ${this.fmt(currentPrice)}, `;
+        
+        // Análise de preço justo
+        if (Math.abs(deviation) < 2) {
+          situation += `próximo ao justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
+        } else if (deviation > 0) {
+          situation += `${deviation.toFixed(1)}% ACIMA do justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
+        } else {
+          situation += `${Math.abs(deviation).toFixed(1)}% ABAIXO do justíssimo (${this.fmt(fairPriceAnalysis.fairPriceCombined)}). `;
+        }
+        
+        // Análise GARCH 18P
+        if (garch18) {
+          if (currentPrice > garch18.up1sigma) {
+            situation += `Acima da banda +1σ GARCH (${this.fmt(garch18.up1sigma)}).`;
+          } else if (currentPrice < garch18.down1sigma) {
+            situation += `Abaixo da banda -1σ GARCH (${this.fmt(garch18.down1sigma)}).`;
+          } else {
+            situation += `Dentro das bandas GARCH ±1σ.`;
+          }
+        }
+        
+        return situation;
+      }
+      
+      // Recomendação principal melhorada
+      generateEnhancedRecommendation(garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis) {
+        if (!fairPriceAnalysis.valid) {
+          return "Configure os parâmetros do sistema para recomendações precisas.";
+        }
+        
+        const deviation = fairPriceAnalysis.deviationPercent;
+        const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
+        const garch18 = garchAnalysis.p18;
+        const intraday18 = intradayAnalysis.p18;
+        const currentPrice = this.lastClose();
+        
+        let recommendation = "";
+        
+        // Lógica principal baseada nos cálculos reais do sistema
+        if (Math.abs(deviation) > 8 && vol18 < 2.5) {
+          // Desvio extremo + baixa volatilidade = alta confiança
+          if (deviation > 8) {
+            recommendation = `FORTE RECOMENDAÇÃO DE VENDA: Moeda ${deviation.toFixed(1)}% sobrevalorizada com volatilidade controlada (${vol18.toFixed(2)}%). `;
+            
+            if (garch18 && currentPrice > garch18.up1sigma) {
+              recommendation += `GARCH confirma: preço acima de +1σ (${this.fmt(garch18.up1sigma)}). `;
+            }
+            
+            if (intraday18) {
+              recommendation += `Meta máxima intraday: ${this.fmt(intraday18.maxIntraday)}.`;
+            }
+          } else {
+            recommendation = `FORTE RECOMENDAÇÃO DE COMPRA: Moeda ${Math.abs(deviation).toFixed(1)}% subvalorizada com volatilidade controlada (${vol18.toFixed(2)}%). `;
+            
+            if (garch18 && currentPrice < garch18.down1sigma) {
+              recommendation += `GARCH confirma: preço abaixo de -1σ (${this.fmt(garch18.down1sigma)}). `;
+            }
+            
+            if (intraday18) {
+              recommendation += `Meta mínima intraday: ${this.fmt(intraday18.minIntraday)}.`;
+            }
+          }
+        } else if (Math.abs(deviation) > 5) {
+          // Desvio moderado
+          if (deviation > 5) {
+            recommendation = `ATENÇÃO PARA VENDAS: ${deviation.toFixed(1)}% sobrevalorizada. `;
+          } else {
+            recommendation = `ATENÇÃO PARA COMPRAS: ${Math.abs(deviation).toFixed(1)}% subvalorizada. `;
+          }
+          
+          if (vol18 > 3.0) {
+            recommendation += `CUIDADO: Volatilidade alta (${vol18.toFixed(2)}%) pode causar falsos sinais. `;
+          }
+        } else if (vol18 > 4.0) {
+          recommendation = `AGUARDAR: Volatilidade extrema (${vol18.toFixed(2)}%) domina. Aguardar normalização. `;
+        } else {
+          recommendation = `MONITORAR: Situação equilibrada. Desvio: ${deviation.toFixed(1)}%, Vol: ${vol18.toFixed(2)}%. `;
+          
+          if (intraday18) {
+            recommendation += `Range intraday esperado: ${this.fmt(intraday18.minIntraday)} - ${this.fmt(intraday18.maxIntraday)}.`;
+          }
+        }
+        
+        return recommendation;
+      }
+      
+      // Alertas melhorados baseados nos cálculos do sistema
+      generateEnhancedAlerts(garchAnalysis, fairPriceAnalysis, volatilityAnalysis) {
+        const alerts = [];
+        
+        if (!fairPriceAnalysis.valid) {
+          alerts.push({
+            type: 'info',
+            message: 'Configure parâmetros PPP/UIP para análise completa do preço justo.'
+          });
+          return alerts;
+        }
+        
+        const deviation = fairPriceAnalysis.deviationPercent;
+        const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
+        const garch18 = garchAnalysis.p18;
+        const currentPrice = this.lastClose();
+        
+        // Alertas de desvio extremo
+        if (Math.abs(deviation) > 10) {
+          alerts.push({
+            type: 'warning',
+            message: `DESVIO EXTREMO: ${Math.abs(deviation).toFixed(1)}% do preço justíssimo! Reversão altamente provável.`
+          });
+        }
+        
+        // Alertas GARCH
+        if (garch18) {
+          if (currentPrice > garch18.up2sigma) {
+            alerts.push({
+              type: 'warning',
+              message: `Preço acima de +2σ GARCH (${this.fmt(garch18.up2sigma)}). Zona de sobrecompra estatística.`
+            });
+          } else if (currentPrice < garch18.down2sigma) {
+            alerts.push({
+              type: 'warning',
+              message: `Preço abaixo de -2σ GARCH (${this.fmt(garch18.down2sigma)}). Zona de sobrevenda estatística.`
+            });
+          }
+        }
+        
+        // Alertas de volatilidade
+        if (vol18 > 4.0) {
+          alerts.push({
+            type: 'warning',
+            message: `VOLATILIDADE EXTREMA: ${vol18.toFixed(2)}%! Mercado imprevisível, evitar trades direcionais.`
+          });
+        } else if (vol18 < 1.0 && Math.abs(deviation) > 5) {
+          alerts.push({
+            type: 'success',
+            message: `OPORTUNIDADE: Baixa volatilidade (${vol18.toFixed(2)}%) + desvio significativo = alta probabilidade de acerto.`
+          });
+        }
+        
+        // Alertas de confluência
+        if (Math.abs(deviation) > 5 && garch18) {
+          const garchConfirms = (deviation > 0 && currentPrice > garch18.up1sigma) || 
+                               (deviation < 0 && currentPrice < garch18.down1sigma);
+          
+          if (garchConfirms) {
+            alerts.push({
+              type: 'success',
+              message: 'CONFLUÊNCIA: Preço justo e GARCH apontam mesma direção. Alta confiabilidade.'
+            });
+          } else {
+            alerts.push({
+              type: 'info',
+              message: 'DIVERGÊNCIA: Preço justo e GARCH em conflito. Aguardar confirmação.'
+            });
+          }
+        }
+        
+        return alerts;
+      }
+      
+      // Cenários melhorados usando GARCH e preço justo
+      calculateEnhancedScenarios(garchAnalysis, fairPriceAnalysis) {
+        if (!fairPriceAnalysis.valid) {
+          return {
+            strongUp: 20, moderateUp: 20, lateral: 20, moderateDown: 20, strongDown: 20
+          };
+        }
+        
+        const deviation = fairPriceAnalysis.deviationPercent;
+        const garch18 = garchAnalysis.p18;
+        
+        // Base probabilities
+        let scenarios = {
+          strongUp: 15,    // >+2%
+          moderateUp: 20,  // +1% to +2%
+          lateral: 30,     // -1% to +1%
+          moderateDown: 20, // -2% to -1%
+          strongDown: 15   // <-2%
+        };
+        
+        // Ajuste baseado no desvio do preço justo
+        if (deviation > 8) {
+          // Muito sobrevalorizado - alta probabilidade de queda
+          scenarios.strongDown += 25;
+          scenarios.moderateDown += 15;
+          scenarios.strongUp -= 15;
+          scenarios.moderateUp -= 10;
+          scenarios.lateral -= 15;
+        } else if (deviation > 5) {
+          // Moderadamente sobrevalorizado
+          scenarios.strongDown += 15;
+          scenarios.moderateDown += 10;
+          scenarios.strongUp -= 10;
+          scenarios.lateral -= 15;
+        } else if (deviation < -8) {
+          // Muito subvalorizado - alta probabilidade de alta
+          scenarios.strongUp += 25;
+          scenarios.moderateUp += 15;
+          scenarios.strongDown -= 15;
+          scenarios.moderateDown -= 10;
+          scenarios.lateral -= 15;
+        } else if (deviation < -5) {
+          // Moderadamente subvalorizado
+          scenarios.strongUp += 15;
+          scenarios.moderateUp += 10;
+          scenarios.strongDown -= 10;
+          scenarios.lateral -= 15;
+        }
+        
+        // Ajuste baseado no GARCH
+        if (garch18) {
+          const currentPrice = this.lastClose();
+          
+          if (currentPrice > garch18.up1sigma) {
+            // Acima de +1σ - maior probabilidade de correção
+            scenarios.moderateDown += 10;
+            scenarios.strongDown += 5;
+            scenarios.strongUp -= 10;
+            scenarios.lateral -= 5;
+          } else if (currentPrice < garch18.down1sigma) {
+            // Abaixo de -1σ - maior probabilidade de recuperação
+            scenarios.moderateUp += 10;
+            scenarios.strongUp += 5;
+            scenarios.strongDown -= 10;
+            scenarios.lateral -= 5;
+          }
+        }
+        
+        // Normalizar para 100%
+        const total = Object.values(scenarios).reduce((sum, val) => sum + val, 0);
+        Object.keys(scenarios).forEach(key => {
+          scenarios[key] = Math.max(5, Math.round((scenarios[key] / total) * 100));
+        });
+        
+        return scenarios;
+      }
+      
+      // Narrativa melhorada com todos os cálculos do sistema
+      generateEnhancedNarrative(currentPrice, garchAnalysis, intradayAnalysis, fairPriceAnalysis, volatilityAnalysis) {
+        if (!fairPriceAnalysis.valid) {
+          return `
+            <h4>ANÁLISE DIÁRIA - USD/BRL (${new Date().toLocaleDateString('pt-BR')})</h4>
+            <p>Configure os parâmetros de preço justo (PPP, UIP, juros) para análise narrativa completa.</p>
+          `;
+        }
+        
+        const deviation = fairPriceAnalysis.deviationPercent;
+        const vol18 = volatilityAnalysis.p18?.volatilityPercent || 2.0;
+        const garch18 = garchAnalysis.p18;
+        const intraday18 = intradayAnalysis.p18;
+        
+        let narrative = `
+          <h4>ANÁLISE GARCH COM IA - USD/BRL (${new Date().toLocaleDateString('pt-BR')})</h4>
+          
+          <p><strong>SITUAÇÃO ATUAL:</strong><br>
+          O dólar fechou em ${this.fmt(currentPrice)}, operando ${Math.abs(deviation).toFixed(1)}% ${deviation > 0 ? 'ACIMA' : 'ABAIXO'} do preço justíssimo de ${this.fmt(fairPriceAnalysis.fairPriceCombined)}. 
+          Volatilidade 18P em ${vol18.toFixed(2)}% (${volatilityAnalysis.p18?.regime || 'MODERADA'}).</p>
+          
+          <p><strong>ANÁLISE GARCH MULTI-PERÍODO:</strong><br>`;
+        
+        if (garch18) {
+          narrative += `Bandas GARCH 18P: ${this.fmt(garch18.down1sigma)} (-1σ) | ${this.fmt(garch18.up1sigma)} (+1σ)<br>`;
+          
+          if (currentPrice > garch18.up1sigma) {
+            narrative += `⚠️ Preço ACIMA da banda superior (+1σ) - pressão de venda estatística<br>`;
+          } else if (currentPrice < garch18.down1sigma) {
+            narrative += `⚠️ Preço ABAIXO da banda inferior (-1σ) - pressão de compra estatística<br>`;
+          } else {
+            narrative += `✅ Preço DENTRO das bandas ±1σ - comportamento normal<br>`;
+          }
+        }
+        
+        narrative += `</p><p><strong>PROJEÇÕES INTRADAY (FATORES EXP):</strong><br>`;
+        
+        if (intraday18) {
+          narrative += `Range esperado: ${this.fmt(intraday18.minIntraday)} - ${this.fmt(intraday18.maxIntraday)} (${intraday18.rangePercent.toFixed(2)}%)<br>`;
+          narrative += `Potencial alta: +${intraday18.potentialGain.toFixed(2)}% | Potencial baixa: -${intraday18.potentialLoss.toFixed(2)}%`;
+        }
+        
+        narrative += `</p><p><strong>PREÇO JUSTO INTEGRADO (PPP+UIP):</strong><br>`;
+        narrative += `PPP: ${this.fmt(fairPriceAnalysis.fairPricePPP)} | UIP: ${this.fmt(fairPriceAnalysis.fairPriceUIP)}<br>`;
+        narrative += `Justíssimo (40% PPP + 60% UIP): ${this.fmt(fairPriceAnalysis.fairPriceCombined)}<br>`;
+        narrative += `Diferencial juros BR-US: ${(fairPriceAnalysis.interestDifferential * 100).toFixed(2)}p.p.`;
+        
+        narrative += `</p><p><strong>CENÁRIOS PROBABILÍSTICOS:</strong><br>`;
+        
+        if (Math.abs(deviation) > 8) {
+          const direction = deviation > 0 ? 'CORREÇÃO BAIXISTA' : 'RECUPERAÇÃO ALTISTA';
+          const probability = Math.min(80, Math.round(Math.abs(deviation) * 8));
+          
+          narrative += `🎯 <strong>${direction} (${probability}%):</strong> Desvio extremo tende à reversão<br>`;
+          
+          if (vol18 < 2.5) {
+            narrative += `✅ <strong>ALTA CONFIANÇA:</strong> Baixa volatilidade favorece movimentos direcionais<br>`;
+          } else {
+            narrative += `⚠️ <strong>ATENÇÃO:</strong> Alta volatilidade pode gerar ruído no movimento`;
+          }
+        } else if (Math.abs(deviation) > 5) {
+          narrative += `📊 <strong>MOVIMENTO MODERADO:</strong> Desvio ${Math.abs(deviation).toFixed(1)}% sugere correção gradual<br>`;
+        } else {
+          narrative += `📊 <strong>EQUILÍBRIO:</strong> Preço próximo ao justo, aguardar catalisador<br>`;
+        }
+        
+        narrative += `</p><p><strong>RECOMENDAÇÃO FINAL:</strong><br>`;
+        
+        if (Math.abs(deviation) > 8 && vol18 < 2.5) {
+          if (deviation > 8) {
+            narrative += `🔴 <strong>VENDA RECOMENDADA:</strong> Confluência preço justo + GARCH indica sobrevalorização. Stop acima de ${garch18 ? this.fmt(garch18.up2sigma) : 'N/D'}.`;
+          } else {
+            narrative += `🟢 <strong>COMPRA RECOMENDADA:</strong> Confluência preço justo + GARCH indica subvalorização. Stop abaixo de ${garch18 ? this.fmt(garch18.down2sigma) : 'N/D'}.`;
+          }
+        } else if (vol18 > 4.0) {
+          narrative += `🟡 <strong>AGUARDAR:</strong> Volatilidade extrema (${vol18.toFixed(2)}%) requer paciência. Aguardar normalização abaixo de 3%.`;
+        } else {
+          narrative += `🔍 <strong>MONITORAR:</strong> Condições mistas. Aguardar confirmação de direção com aumento de volume.`;
+        }
+        
+        narrative += `</p>`;
+        
+        return narrative;
+      }
       
       // Sistema FRP - Forward Rate Premium (mantido do original)
       convertSpotToFuture(spotPrice) {
@@ -3122,8 +3700,429 @@ updateAIDisplay() {
     document.addEventListener('DOMContentLoaded', () => {
       window.tradingSystem = new TradingSystemWithAI();
     });
-	
-	
   </script>
+  
+  
+<script>
+/* =======================
+   PATCH CONSOLIDADO — 2 cards (Compra & Venda)
+   Toque + 10–15 pts + Justíssimo + cluster de 3 níveis
+   Compat com IA + distâncias (pts) arredondadas
+   ======================= */
+(function(){
+  function onReady(fn){
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
+    else fn();
+  }
+
+  onReady(function(){
+    var tries = 0, t = setInterval(function(){
+      var ts = window.tradingSystem;
+      if (ts && typeof ts.generateTradingStrategy==="function"
+            && typeof ts.analyzeSystemIntraday==="function"
+            && typeof ts.analyzeSystemFairPrice==="function"
+            && typeof ts.analyzeSystemVolatility==="function"
+            && typeof ts.analyzeSystemGARCH==="function"
+            && typeof ts.lastClose==="function") {
+        clearInterval(t);
+        apply(ts);
+      }
+      if (++tries>200) clearInterval(t);
+    }, 100);
+  });
+
+  // helpers globais
+  const F = (x)=> Number.isFinite(x) ? Number(x).toFixed(2) : "--";
+  const STORAGE_KEY = "touchMode"; // "prearm" | "strict"
+  function getTouchMode(){ return localStorage.getItem(STORAGE_KEY) || "prearm"; }
+  function setTouchMode(v){ localStorage.setItem(STORAGE_KEY, v==="strict"?"strict":"prearm"); }
+
+  function apply(ts){
+    function getLevels(){
+      const ia = ts.analyzeSystemIntraday();
+      const p9  = ia.p9  || {}, p18 = ia.p18 || {}, p27 = ia.p27 || {};
+      return {
+        buys:  [p9.minIntraday,  p18.minIntraday,  p27.minIntraday].filter(Number.isFinite),
+        sells: [p9.maxIntraday,  p18.maxIntraday,  p27.maxIntraday].filter(Number.isFinite)
+      };
+    }
+    function getFair(){
+      const f = ts.analyzeSystemFairPrice() || {};
+      return { valid: !!f.valid, justoPPP: f.fairPricePPP, justissimo: f.fairPriceCombined };
+    }
+    function choosePts(vol18){
+      if (vol18 >= 3.0) return 15;
+      if (vol18 <= 1.5) return 10;
+      return 12;
+    }
+    function sizeByVol(vol18, conf){
+      if (vol18 > 3.5) return "REDUZIDA (50%)";
+      if (vol18 > 3.0) return "REDUZIDA (70%)";
+      if (vol18 < 1.5 && conf > 80) return "AUMENTADA (120-150%)";
+      if (conf > 85) return "NORMAL+ (110%)";
+      return "NORMAL";
+    }
+    function RR(entry, tgt, stop){
+      const g = Math.abs(tgt-entry), l = Math.abs(entry-stop);
+      return (l>0) ? (g/l) : 0;
+    }
+    function clusterOK(levels, maxSpreadPts){
+      if (levels.length < 2) return false;
+      const min = Math.min(...levels), max = Math.max(...levels);
+      return (max - min) <= maxSpreadPts;
+    }
+
+    function buildSide(side, px, levels, fair, vol18, conf, g18){
+      const mode = getTouchMode();
+      const pts  = choosePts(vol18);
+      const tol  = pts;                       // tolerância de toque
+      const spreadOK = clusterOK(levels, 10); // 3 níveis dentro de 10 pts
+
+      const levs = levels.slice().sort((a,b)=>a-b);
+      const minL = levs[0], maxL = levs[levs.length-1];
+      const nearest = levs.reduce((best,lv)=> (Math.abs(px-lv) < Math.abs(px-best)? lv:best), levs[0]);
+
+      const s = {
+        side, // "BUY" | "SELL"
+        recommendation: "AGUARDAR",
+        entryRange: {min: NaN, max: NaN},
+        entryRef: NaN,
+        stopLoss: NaN,
+        target: NaN,
+        targetFinal: NaN,
+        confidence: conf,
+        positionSize: sizeByVol(vol18, conf),
+        timeframe: "intraday",
+        riskReward: 0,
+        preArmNote: "",
+        bandsNote: ""
+      };
+
+      if (!spreadOK){
+        s.entryRange = { min: nearest, max: nearest };
+        s.entryRef   = nearest;
+      } else {
+        s.entryRange = { min: minL, max: maxL };
+        s.entryRef   = (minL + maxL)/2;
+      }
+
+      // stop 10 pts além do último nível
+      const stop = (side==="BUY") ? (minL - 10) : (maxL + 10);
+
+      // alvo curto 10–15 pts a partir do ref
+      const tgt  = (side==="BUY") ? (s.entryRef + pts) : (s.entryRef - pts);
+
+      // alvo final = Justíssimo quando a direção favorece
+      const just = fair.justissimo;
+      const aFavorDoJust = (side==="BUY"  && just > s.entryRef) ||
+                           (side==="SELL" && just < s.entryRef);
+      const tgtFinal = aFavorDoJust ? just : tgt;
+
+      s.stopLoss = stop;
+      s.target   = tgt;
+      s.targetFinal = tgtFinal;
+
+      // condição de “toque/armado”
+      const insideRange = (px >= s.entryRange.min - tol) && (px <= s.entryRange.max + tol);
+
+      if (!insideRange){
+        const dist = Math.min(Math.abs(px - s.entryRange.min), Math.abs(px - s.entryRange.max));
+        const distPts = Math.round(dist); // <<< arredondado
+        if (mode === "prearm"){
+          s.recommendation = "AGUARDAR";
+          s.preArmNote = `A ${distPts} pts da região (${F(s.entryRange.min)}–${F(s.entryRange.max)})`;
+        } else {
+          s.recommendation = "AGUARDAR";
+          s.entryRange = {min: NaN, max: NaN};
+          s.entryRef = NaN; s.stopLoss = NaN; s.target = NaN; s.targetFinal = NaN;
+          s.preArmNote = `A ${distPts} pts da região`;
+        }
+      } else {
+        s.recommendation = (side==="BUY") ? "COMPRA NA REGIÃO" : "VENDA NA REGIÃO";
+      }
+
+      // RR
+      if (Number.isFinite(s.entryRef) && Number.isFinite(s.target) && Number.isFinite(s.stopLoss)){
+        s.riskReward = RR(s.entryRef, s.target, s.stopLoss);
+      }
+
+      // nota de bandas (±1σ) como referência
+      if (g18) {
+        if (side==="BUY") s.bandsNote = `Referência bandas: -1σ ${F(g18.down1sigma)} | +1σ ${F(g18.up1sigma)}`;
+        else              s.bandsNote = `Referência bandas: +1σ ${F(g18.up1sigma)} | -1σ ${F(g18.down1sigma)}`;
+      }
+
+      return s;
+    }
+
+    // ============ ESTRATÉGIA (2 cards) + OBJETO COMPAT ============
+    ts.generateTradingStrategy = function(){
+      const fair = getFair();
+      const {buys, sells} = getLevels();
+      const px   = Number(ts.lastClose()||0) || 0;
+      const vol18 = (ts.analyzeSystemVolatility().p18||{}).volatilityPercent || 2.0;
+      const conf  = Number(ts.calculateAdvancedConfidenceScore ? ts.calculateAdvancedConfidenceScore() : 60);
+      const g18   = (ts.analyzeSystemGARCH()||{}).p18;
+
+      // helpers locais para seleção do compat
+      function regionDistance(px, s){
+        if (!s || !Number.isFinite(s.entryRange?.min) || !Number.isFinite(s.entryRange?.max)) return Infinity;
+        const d1 = Math.abs(px - s.entryRange.min);
+        const d2 = Math.abs(px - s.entryRange.max);
+        return Math.min(d1, d2);
+      }
+      function centerDist(px, s){
+        if (!s || !Number.isFinite(s.entryRange?.min) || !Number.isFinite(s.entryRange?.max)) return Infinity;
+        const c = (s.entryRange.min + s.entryRange.max)/2;
+        return Math.abs(px - c);
+      }
+      const isArmed = s => s && typeof s.recommendation==="string" && s.recommendation.includes("REGIÃO");
+
+      // sem dados suficientes
+      if (!fair.valid || (!buys.length && !sells.length)) {
+        return {
+          long: null,
+          short: null,
+          recommendation: "AGUARDAR",
+          direction: null,
+          entryZone: {min: NaN, max: NaN},
+          target: NaN,
+          stopLoss: NaN,
+          riskReward: 0
+        };
+      }
+
+      // monta os dois lados
+      const long  = buys.length  ? buildSide("BUY",  px, buys,  fair, vol18, conf, g18)  : null;
+      const short = sells.length ? buildSide("SELL", px, sells, fair, vol18, conf, g18) : null;
+
+      // ===== escolhe um lado para o compat =====
+      let chosen = null;
+      if (isArmed(long) || isArmed(short)){
+        const cand = [long, short].filter(isArmed);
+        chosen = cand.sort((a,b)=>centerDist(px,a)-centerDist(px,b))[0] || null;
+      } else {
+        const dL = regionDistance(px,long), dS = regionDistance(px,short);
+        chosen = (dL < dS) ? long : short;
+      }
+
+      // monta campos compat
+      let compat = {
+        recommendation: "AGUARDAR",
+        direction: null,
+        entryZone: {min: NaN, max: NaN},
+        target: NaN,
+        stopLoss: NaN,
+        riskReward: 0
+      };
+      if (chosen){
+        compat.recommendation = isArmed(chosen)
+          ? (chosen.side==="BUY" ? "COMPRA NA REGIÃO" : "VENDA NA REGIÃO")
+          : "AGUARDAR";
+        compat.direction = chosen.side==="BUY" ? "BUY" : "SELL";
+        compat.entryZone = { min: chosen.entryRange?.min, max: chosen.entryRange?.max };
+        compat.target    = chosen.target;
+        compat.stopLoss  = chosen.stopLoss;
+        compat.riskReward= chosen.riskReward || 0;
+      }
+
+      // devolve os dois cards + o compat na mesma resposta
+      return Object.assign(compat, { long, short });
+    };
+
+    // ============ PAINEL (dois cards) + Toggle ============
+    ts.renderStrategyPanel = function(){
+      const out = ts.generateTradingStrategy();
+      const op = document.getElementById("aiOperation");
+      const rk = document.getElementById("aiRisk");
+      const lv = document.getElementById("aiLevels");
+      if (!op || !rk || !lv) return;
+
+      const mode = getTouchMode();
+      const toggle = `
+        <div style="margin:-6px 0 8px 0; display:flex; gap:12px; align-items:center;">
+          <label style="font-size:12px; font-weight:700;">Modo:</label>
+          <label style="font-size:12px; display:flex; gap:6px; align-items:center; cursor:pointer;">
+            <input id="prearmToggle" type="checkbox" ${mode==="prearm"?"checked":""} />
+            <span>Pré-armar</span>
+          </label>
+          <span style="font-size:11px; color:#475569;">(desmarque para exigir toque)</span>
+        </div>`;
+
+      function cta(s){
+        if (!s) return {title:"Aguardando dados", detail:""};
+        const dirTxt = s.side==="BUY" ? "COMPRA" : "VENDA";
+        const armed  = s.recommendation.includes("REGIÃO");
+        const title  = armed
+          ? `✅ <b>${dirTxt} NA REGIÃO</b> ${F(s.entryRange.min)}–${F(s.entryRange.max)}`
+          : `⏳ <b>PREPARAR ${dirTxt}</b> ${s.preArmNote ? "— "+s.preArmNote : ""}`;
+
+        const pts = (Number.isFinite(s.entryRef) && Number.isFinite(s.stopLoss))
+                      ? Math.abs(s.entryRef - s.stopLoss).toFixed(0) : "--";
+
+        const detail = `
+          <span style="display:block;margin-top:4px;">
+            🔔 <b>Gatilho:</b> tocar região ${F(s.entryRange.min)}–${F(s.entryRange.max)} ·
+            🛑 <b>Stop:</b> ${F(s.stopLoss)} (${pts} pts após última ${s.side==="BUY"?"mínima":"máxima"}) ·
+            🎯 <b>Alvo:</b> ${F(s.target)}${(s.targetFinal && s.targetFinal!==s.target) ? ` → ${F(s.targetFinal)}` : ""} ·
+            📊 <b>R/R:</b> ${(s.riskReward>0 && Number.isFinite(s.riskReward)) ? ("1:"+s.riskReward.toFixed(2)):"--"}
+          </span>
+          ${s.bandsNote ? `<span style="display:block;margin-top:4px; font-size:12px; color:#475569;">${s.bandsNote}</span>`:""}
+        `;
+        return {title, detail};
+      }
+
+      const L = cta(out.long), S = cta(out.short);
+
+      // dois cards (verde compra, vermelho venda)
+      op.innerHTML = `
+        <div class="card-grid">
+          <div class="card card-success">
+            ${toggle}
+            <h4>🟢 COMPRA — 3 MÍNIMAS</h4>
+            <p>${L.title}</p>
+            ${L.detail}
+            <p style="margin-top:6px;">⏳ <b>Prazo:</b> intraday &nbsp; 📈 <b>Confiança:</b> ${out.long? out.long.confidence:"--"}% &nbsp; 📦 <b>Tamanho:</b> ${out.long? out.long.positionSize:"--"}</p>
+          </div>
+
+          <div class="card card-danger">
+            <h4>🔴 VENDA — 3 MÁXIMAS</h4>
+            <p>${S.title}</p>
+            ${S.detail}
+            <p style="margin-top:6px;">⏳ <b>Prazo:</b> intraday &nbsp; 📈 <b>Confiança:</b> ${out.short? out.short.confidence:"--"}% &nbsp; 📦 <b>Tamanho:</b> ${out.short? out.short.positionSize:"--"}</p>
+          </div>
+        </div>
+      `;
+
+      // liga o toggle
+      const cb = op.querySelector("#prearmToggle");
+      if (cb){
+        cb.addEventListener("change", ()=>{
+          setTouchMode(cb.checked ? "prearm" : "strict");
+          try{ ts.renderStrategyPanel(); }catch(_){}
+        }, { once:true });
+      }
+
+      // Gestão de risco (texto)
+      rk.innerHTML = `
+        <div class="card-grid">
+          <div class="card card-info" style="border-color:#fca5a5; background:linear-gradient(180deg,#fef2f2,#ffffff);">
+            <h4>⚠️ GESTÃO DE RISCO</h4>
+            <p>• Trabalhar a <b>região</b> quando as 3 mínimas/máximas estiverem a ≤10 pts entre si;</p>
+            <p>• <b>Stop:</b> 10 pts além da última máxima/mínima (lado da operação);</p>
+            <p>• <b>Alvo curto:</b> 10–15 pts (dinâmico pela vol 18P); <b>Alvo final:</b> Justíssimo quando a direção favorecer;</p>
+            <p>• <b>Break-even:</b> ao atingir +8 pts a favor, mover stop para o preço de entrada;</p>
+            <p>• <b>Ruído:</b> reduzir lote se vol 18P > 3.0%.</p>
+          </div>
+        </div>
+      `;
+
+      // Níveis de decisão (GARCH 18P) — tipografia do print
+const g = (ts.analyzeSystemGARCH()||{}).p18;
+const up1 = g?.up1sigma, dn1 = g?.down1sigma;
+
+// helper local para 2 casas (sem mexer em escala)
+const F2 = v => (Number.isFinite(v) ? Number(v).toFixed(2) : "--");
+
+lv.innerHTML = `
+  <div class="nd-wrap">
+    <h4 class="nd-title">🧷 Níveis de Decisão</h4>
+    <div class="nd-row">
+      <div class="nd-pill">
+        <div class="nd-label red">RESISTÊNCIA FORTE</div>
+        <div class="nd-value">${F2(up1)}</div>
+      </div>
+      <div class="nd-pill">
+        <div class="nd-label green">SUPORTE FORTE</div>
+        <div class="nd-value">${F2(dn1)}</div>
+      </div>
+    </div>
+  </div>
+`;
+
+
+    };
+
+    // re-render automático
+    hookAfter(ts, "performAIAnalysis", ()=>{ try{ ts.renderStrategyPanel(); }catch(_){} });
+    hookAfter(ts, "updateAIDisplay",   ()=>{ try{ ts.renderStrategyPanel(); }catch(_){} });
+    setTimeout(()=>{ try{ ts.renderStrategyPanel(); }catch(_){} }, 200);
+  } // apply(ts)
+
+  function hookAfter(obj, method, after){
+    try{
+      if (typeof obj[method] !== "function") return;
+      const orig = obj[method].bind(obj);
+      obj[method] = function(){ const r = orig.apply(obj, arguments); try{ after(); }catch(_){ } return r; };
+    }catch(_){}
+  }
+})();
+</script>
+
+	
+<style>
+
+/* layout vertical para os níveis (+1σ / -1σ) */
+.level-col {
+  display: grid;
+  grid-template-columns: 1fr;  /* sempre 1 por linha */
+  gap: 10px;
+}
+
+/* reaproveita o mesmo “cardzinho” de nível, mas ocupando 100% */
+.level-col .level {
+  text-align: center;
+  padding: 12px 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+/* só um charme: títulos em pílula */
+.level-col .title {
+  display:inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.level-col .badge-red   { background:#fee2e2; color:#991b1b; }
+.level-col .badge-green { background:#dcfce7; color:#065f46; }
+.level-col .value { font-size: 18px; font-weight: 900; }
+
+  .card-grid { display:grid; gap:12px; }
+  .card { border-radius:14px; padding:14px 16px; border:1px solid #e5e7eb; background:#fff; }
+  .card h4 { margin:0 0 8px; font-size:15px; }
+  .card p  { margin:4px 0; font-size:13px; line-height:1.4; }
+  .card-success { background: linear-gradient(180deg,#ecfdf5,#ffffff); border-color:#86efac; }
+  .card-danger  { background: linear-gradient(180deg,#fef2f2,#ffffff); border-color:#fca5a5; }
+  .card-info    { background: linear-gradient(180deg,#eff6ff,#ffffff); border-color:#93c5fd; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:700; font-size:11px; }
+  .badge-red{background:#fee2e2;color:#991b1b}.badge-green{background:#dcfce7;color:#065f46}
+  .level-box{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .level{text-align:center;padding:12px 10px;background:#fff;border:1px solid #e5e7eb;border-radius:12px}
+  .level .title{font-weight:800;font-size:13px;margin-bottom:8px}
+  .level .value{font-size:18px;font-weight:900}
+  
+  /* —— Níveis de Decisão (tipografia do print) —— */
+.nd-wrap { background:#eef6ff; border-radius:12px; padding:14px; }
+.nd-title { font-weight:800; color:#2563eb; margin:0 0 10px; font-size:14px; display:flex; align-items:center; gap:8px; }
+.nd-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+.nd-pill {
+  background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  padding:12px 10px; text-align:center;
+  box-shadow:0 1px 0 rgba(0,0,0,.02);
+}
+.nd-label { font-weight:900; font-size:12px; letter-spacing:.3px; margin-bottom:6px; }
+.nd-label.red { color:#ef4444; }      /* RESISTÊNCIA */
+.nd-label.green { color:#059669; }    /* SUPORTE    */
+.nd-value { font-size:18px; font-weight:900; color:#0f172a; }
+@media(max-width:480px){ .nd-row{ grid-template-columns:1fr; } }
+
+</style>
+
+
+
 </body>
-</html>
