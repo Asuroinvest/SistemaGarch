@@ -916,6 +916,20 @@
       }
     }
   </style>
+
+<style id="vwap-card-css">
+  #aiStrategyPanel .vwap-card{ background:#eef6ff; border:1px solid var(--border); border-radius:16px; padding:14px; margin:8px 0 14px; }
+  .vwap-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .vwap-title{ font-weight:900; font-size:15px; }
+  .vwap-sub{ color: var(--muted); font-size:12px; font-weight:700; }
+  .vwap-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap:12px; margin-top:10px; }
+  .vwap-field{ display:flex; flex-direction:column; gap:6px; }
+  .vwap-label{ font-size:12px; color: var(--muted); font-weight:800; }
+  .vwap-box{ display:flex; align-items:center; gap:8px; border:1px solid var(--border); background:#fff; border-radius:12px; padding:8px 10px; box-shadow:0 1px 0 rgba(0,0,0,.02); }
+  .vwap-chip{ width:24px; height:24px; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; font-weight:900; background:var(--panel-2); color:var(--text); border:1px solid var(--border); font-size:12px; }
+  .vwap-box input[disabled]{ background:transparent; border:0; outline:0; font-weight:900; font-variant-numeric: tabular-nums; color:#0f172a; }
+</style>
+
 </head>
 <body>
   <div class="loading-overlay" id="loadingOverlay">
@@ -1201,6 +1215,22 @@
           </div>
           <div class="sep"></div>		  
 		  <div class="panel" id="aiStrategyPanel">
+			<div id="vwapCard" class="vwap-card">
+				<div class="vwap-head">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="opacity:.85">
+						<path d="M3 13h2v-2H3v2zm4 0h14v-2H7v2zm0 6h14v-2H7v2zM3 5v2h2V5H3zm4 2h14V5H7v2z"></path>
+					</svg>
+					<span class="vwap-title">VWAP (D/S/M)</span>
+					<span class="vwap-sub">opcional · auto da planilha</span>
+				</div>
+				<div class="vwap-grid">
+					<label class="vwap-field"><span class="vwap-label">VWAP D</span><div class="vwap-box"><span class="vwap-chip">D</span><input id="vwapD" type="text" readonly disabled placeholder="—" /></div></label>
+					<label class="vwap-field"><span class="vwap-label">VWAP S</span><div class="vwap-box"><span class="vwap-chip">S</span><input id="vwapS" type="text" readonly disabled placeholder="—" /></div></label>
+					<label class="vwap-field"><span class="vwap-label">VWAP M</span><div class="vwap-box"><span class="vwap-chip">M</span><input id="vwapM" type="text" readonly disabled placeholder="—" /></div></label>
+				</div>
+				<div class="vwap-tips">Lemos as colunas <b>VWAP D</b>, <b>VWAP S</b>, <b>VWAP M</b> da última linha da planilha.</div>
+			</div>
+
 			<h2 class="section-title">⚡ Estratégia Recomendada</h2>
 
 			<div id="aiOperation" class="insight-card"></div>
@@ -3150,7 +3180,7 @@
           }
           
           const prices = [];
-          const recentDates = dates.slice(-60);
+          const recentDates = dates.slice(-180);
           
           for (const date of recentDates) {
             const dayData = timeSeries[date];
@@ -3195,7 +3225,7 @@
         const data = [];
         let currentRate = baseRate;
         
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 180; i++) {
           const dailyChange = (Math.random() - 0.5) * 0.06;
           const trend = Math.sin(i * 0.1) * 0.01;
           
@@ -3210,17 +3240,17 @@
       
       async fetchYahooFinanceData() {
         await new Promise(resolve => setTimeout(resolve, 1200));
-        return this.generateRealisticData(100);
+        return this.generateRealisticData(180);
       }
       
       async fetchPolygonData() {
         await new Promise(resolve => setTimeout(resolve, 1000));
-        return this.generateRealisticData(75);
+        return this.generateRealisticData(180);
       }
       
       async fetchTradierData() {
         await new Promise(resolve => setTimeout(resolve, 1300));
-        return this.generateRealisticData(50);
+        return this.generateRealisticData(180);
       }
       
       generateRealisticData(count) {
@@ -3252,7 +3282,7 @@
         
         try {
           await new Promise(resolve => setTimeout(resolve, 1000));
-          const data = this.generateRealisticData(50);
+          const data = this.generateRealisticData(180);
           const processedData = this.processRawData(data, 'simulated');
           this.priceData = processedData;
           this.refreshAll();
@@ -3382,6 +3412,46 @@
             
             const firstRow = jsonData[0] || [];
             
+            
+            // Detectar colunas VWAP e utilitários
+            let vwapDCol = -1, vwapSCol = -1, vwapMCol = -1, dateCol = -1;
+            function _toNumBR(v){ if(v==null||v==='') return NaN; if(typeof v==='number') return v; const s=String(v).trim().replace(/\./g,'').replace(',', '.'); const n=parseFloat(s); return isFinite(n)?n:NaN; }
+            function _fmtBR(x){ if(!(x>0)) return ''; const s=Number(x).toFixed(2); const p=s.split('.'); p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.'); return p[0]+','+p[1]; }
+            function _parseDate(v){
+              if (v==null || v==='') return null;
+              if (typeof v==='number'){ const base = new Date(Date.UTC(1899,11,30)); base.setUTCDate(base.getUTCDate()+Math.floor(v)); return new Date(base.getFullYear(), base.getMonth(), base.getDate()); }
+              const s = String(v).trim();
+              const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+              if (m){ const yy = (m[3].length===2? Number('20'+m[3]): Number(m[3])); return new Date(yy, Number(m[2])-1, Number(m[1])); }
+              const d = new Date(s); if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+              return null;
+            }
+            for (let j=0;j<firstRow.length;j++){ const h=String(firstRow[j]||'').toLowerCase();
+              if (h.includes('data') || h.includes('date')) dateCol = j;
+              if(h.includes('vwap')){
+                if (h.includes('vwap d') || h.includes('vwap_d') || /\bd\b|dia|daily/.test(h)) vwapDCol=j;
+                if (h.includes('vwap s') || h.includes('vwap_s') || /\bs\b|sem|week/.test(h)) vwapSCol=j;
+                if (h.includes('vwap m') || h.includes('vwap_m') || /\bm\b|m[eê]s|month/.test(h)) vwapMCol=j;
+              }
+            }
+            let _lastDate = null;
+            for (let i=1;i<jsonData.length;i++){ const row=jsonData[i]; const dv = (dateCol>=0? row[dateCol] : null); const dt=_parseDate(dv); if(dt){ if(!_lastDate || dt>_lastDate) _lastDate = dt; } }
+            let _firstD = NaN, _firstS = NaN, _firstM = NaN;
+            if (_lastDate){
+              for (let i=1;i<jsonData.length;i++){
+                const row=jsonData[i]; const dv=(dateCol>=0? row[dateCol] : null); const dt=_parseDate(dv);
+                if (dt && dt.getFullYear()===_lastDate.getFullYear() && dt.getMonth()===_lastDate.getMonth() && dt.getDate()===_lastDate.getDate()){
+                  if (isNaN(_firstD) && vwapDCol>=0){ const vv=_toNumBR(row[vwapDCol]); if (isFinite(vv)) _firstD = vv; }
+                  if (isNaN(_firstS) && vwapSCol>=0){ const vv=_toNumBR(row[vwapSCol]); if (isFinite(vv)) _firstS = vv; }
+                  if (isNaN(_firstM) && vwapMCol>=0){ const vv=_toNumBR(row[vwapMCol]); if (isFinite(vv)) _firstM = vv; }
+                  if (!isNaN(_firstD) && !isNaN(_firstS) && !isNaN(_firstM)) break;
+                }
+              }
+            }
+            let _lastD=NaN,_lastS=NaN,_lastM=NaN; // mantido por compatibilidade, mas não usado
+
+    
+            
             let closeColumn = 4;
             for (let i = 0; i < firstRow.length; i++) {
               const header = String(firstRow[i]).toLowerCase();
@@ -3395,6 +3465,9 @@
             
             for (let i = 1; i < jsonData.length; i++) {
               const row = jsonData[i];
+                            if (vwapSCol>=0){ const vv=_toNumBR(row[vwapSCol]); if (isFinite(vv)) _lastS=vv; }
+              if (vwapMCol>=0){ const vv=_toNumBR(row[vwapMCol]); if (isFinite(vv)) _lastM=vv; }
+    
               if (!row || row.length <= closeColumn) continue;
               
               let rawPrice = row[closeColumn];
@@ -3426,6 +3499,20 @@
               this.refreshAll();
               this.setStatus(`${processedPrices.length} preços importados`);
               this.log(`${processedPrices.length} preços do Excel processados (DOL Futuro)`);
+              // Preencher VWAP filtrando por ordem de grandeza do último fechamento
+              try{
+                const lc = this.lastClose?.() || (this.priceData?.slice(-1)[0]) || NaN;
+                function within(x){ if(!isFinite(lc)) return (x>800 && x<20000); return (x>=lc*0.3 && x<=lc*3); }
+                function backfill(series){ for (let k=series.length-1;k>=0;k--){ const v=series[k]; if(isFinite(v) && within(v)) return v; } return NaN; }
+                // Reconstrói séries rápidas a partir do loop feito acima
+                const d=_firstD, s=_firstS, m=_firstM;
+                const D = d, S = s, M = m;
+                const Df=document.getElementById('vwapD'), Sf=document.getElementById('vwapS'), Mf=document.getElementById('vwapM');
+                if (Df && isFinite(D)) Df.value = _fmtBR(D);
+                if (Sf && isFinite(S)) Sf.value = _fmtBR(S);
+                if (Mf && isFinite(M)) Mf.value = _fmtBR(M);
+              }catch(_){}
+    
               this.updateAPIInfo();
               
               // Auto-run AI analysis
@@ -4062,48 +4149,7 @@ lv.innerHTML = `
 	
 <style>
 
-/* layout vertical para os níveis (+1σ / -1σ) */
-.level-col {
-  display: grid;
-  grid-template-columns: 1fr;  /* sempre 1 por linha */
-  gap: 10px;
-}
 
-/* reaproveita o mesmo “cardzinho” de nível, mas ocupando 100% */
-.level-col .level {
-  text-align: center;
-  padding: 12px 10px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-}
-
-/* só um charme: títulos em pílula */
-.level-col .title {
-  display:inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 800;
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-.level-col .badge-red   { background:#fee2e2; color:#991b1b; }
-.level-col .badge-green { background:#dcfce7; color:#065f46; }
-.level-col .value { font-size: 18px; font-weight: 900; }
-
-  .card-grid { display:grid; gap:12px; }
-  .card { border-radius:14px; padding:14px 16px; border:1px solid #e5e7eb; background:#fff; }
-  .card h4 { margin:0 0 8px; font-size:15px; }
-  .card p  { margin:4px 0; font-size:13px; line-height:1.4; }
-  .card-success { background: linear-gradient(180deg,#ecfdf5,#ffffff); border-color:#86efac; }
-  .card-danger  { background: linear-gradient(180deg,#fef2f2,#ffffff); border-color:#fca5a5; }
-  .card-info    { background: linear-gradient(180deg,#eff6ff,#ffffff); border-color:#93c5fd; }
-  .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:700; font-size:11px; }
-  .badge-red{background:#fee2e2;color:#991b1b}.badge-green{background:#dcfce7;color:#065f46}
-  .level-box{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .level{text-align:center;padding:12px 10px;background:#fff;border:1px solid #e5e7eb;border-radius:12px}
-  .level .title{font-weight:800;font-size:13px;margin-bottom:8px}
-  .level .value{font-size:18px;font-weight:900}
   
   /* —— Níveis de Decisão (tipografia do print) —— */
 .nd-wrap { background:#eef6ff; border-radius:12px; padding:14px; }
@@ -4124,5 +4170,2062 @@ lv.innerHTML = `
 </style>
 
 
+<!-- ===== BACKTEST GARCH — CONSOLIDADO (V2) ===== -->
+<style id="gbStyles-v2">
+/* Painel */
+#garchBacktestPanel{border:1px solid var(--border,#e5e7eb);border-radius:16px;background:linear-gradient(180deg,#f8fafc,#ffffff);box-shadow:0 1px 3px rgba(0,0,0,.06);margin-top:14px;padding:16px}
+#garchBacktestPanel .section-title{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;color:#0f172a;margin:10px 0 12px}
+#garchBacktestPanel .section-title::before{content:"📈";font-size:18px}
+/* Grid: controles (esq) + botão (dir) */
+#garchBacktestPanel .gb-row{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:14px;align-items:start}
+#garchBacktestPanel .gb-col-controls{display:grid;grid-template-columns:1fr;gap:10px}
+/* Pílulas */
+#garchBacktestPanel .gb-control{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 10px 12px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+#garchBacktestPanel .gb-control label{display:block;margin:0 0 6px;font-size:11px;letter-spacing:.3px;text-transform:uppercase;color:#475569;font-weight:900}
+#garchBacktestPanel .gb-control input,#garchBacktestPanel .gb-control select{width:100%;height:40px;line-height:40px;border:1px solid #e2e8f0;border-radius:10px;padding:0 12px;font-weight:800;color:#0f172a;background:#fff;outline:none;appearance:auto}
+#garchBacktestPanel .gb-control input::placeholder{color:#94a3b8;font-weight:600}
+#garchBacktestPanel .gb-control input:focus,#garchBacktestPanel .gb-control select:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.18)}
+/* Botões (direita) */
+#garchBacktestPanel .gb-buttons{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+#garchBacktestPanel #gbRun{height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:12px;padding:12px 14px;font-weight:900;letter-spacing:.2px;box-shadow:0 6px 16px rgba(59,130,246,.25)}
+#garchBacktestPanel #gbRun:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(59,130,246,.30)}
+#garchBacktestPanel #gbExport{background:#fff;border:1px solid #e5e7eb;color:#0f172a;border-radius:12px;padding:12px 14px;font-weight:800;white-space:nowrap}
+#garchBacktestPanel #gbExport:disabled{opacity:.5;cursor:not-allowed}
+/* Resumo e tabela */
+#garchBacktestPanel .gb-summary{background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:12px;padding:10px 12px;font-size:13px;color:#334155}
+#garchBacktestPanel .gb-table-wrap{max-height:340px;overflow:auto;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+#garchBacktestPanel .gb-table{width:100%;border-collapse:separate;border-spacing:0}
+#garchBacktestPanel .gb-table thead th{position:sticky;top:0;z-index:1;background:#fff;border-bottom:1px solid #e5e7eb;font-weight:900;font-size:12px;color:#334155;padding:10px 12px}
+#garchBacktestPanel .gb-table td{padding:10px 12px;font-size:12px;color:#0f172a}
+#garchBacktestPanel .gb-table tbody tr:nth-child(odd){background:#f9fafb}
+#garchBacktestPanel .gb-table tbody tr:hover{background:#eef2ff}
+/* Badges */
+.gb-badge{display:inline-block;padding:3px 8px;border-radius:999px;font-weight:900;font-size:11px}
+.gb-badge.buy{background:#dcfce7;color:#065f46}.gb-badge.sell{background:#fee2e2;color:#991b1b}.gb-badge.win{background:#e0f2fe;color:#075985}.gb-badge.loss{background:#fee2e2;color:#991b1b}
+/* Responsivo */
+@media (max-width:760px){#garchBacktestPanel .gb-row{grid-template-columns:1fr}#garchBacktestPanel .gb-buttons{flex-direction:row}#garchBacktestPanel #gbRun{height:auto}}
+</style>
+
+<script>
+(() => {
+  // evita duplicar
+  if (window.__GB_BACKTEST_V2__) return; window.__GB_BACKTEST_V2__ = true;
+
+  // instala quando o app existir
+  const boot = setInterval(() => { const ts = window.tradingSystem; if (!ts) return; clearInterval(boot); install(ts); }, 100);
+
+  function install(ts){
+    const anchor = document.getElementById("aiStrategyPanel") || document.getElementById("ai-analysis-panel") || document.getElementById("proj-panel") || document.body;
+
+    // limpa versões antigas do painel
+    document.querySelectorAll("#garchBacktestPanel").forEach(n => n.remove());
+
+    const wrap = document.createElement("div");
+    wrap.id = "garchBacktestPanel";
+    wrap.className = "panel";
+    wrap.innerHTML = `
+      <h2 class="section-title">Backtest (GARCH)</h2>
+      <div class="gb-row">
+        <div class="gb-col-controls">
+          <div class="gb-control"><label>Janela (barras)</label><input id="gbWindow" type="number" min="20" step="10" placeholder="ex.: 60 (vazio = tudo)" /></div>
+          <div class="gb-control"><label>Look-ahead (barras)</label><input id="gbLook" type="number" min="1" step="1" value="5" /></div>
+          <div class="gb-control"><label>Usar alvo final (Justíssimo)</label>
+            <select id="gbUseFair"><option value="no" selected>Não (só alvo curto)</option><option value="yes">Sim (se favorecer)</option></select>
+          </div>
+        </div>
+        <div class="gb-buttons">
+          <button class="btn ai" id="gbRun">▶️ Rodar Backtest</button>
+          <button class="btn" id="gbExport" disabled>⬇️ Exportar CSV</button>
+        </div>
+      </div>
+      <div class="gb-summary" id="gbSummary">Aguardando execução…</div>
+      <div class="gb-table-wrap">
+        <table class="gb-table">
+          <thead><tr><th>#</th><th>Data/Idx</th><th>Lado</th><th>Entrada</th><th>Alvo</th><th>Stop</th><th>Resultado</th><th>P/L (pts)</th></tr></thead>
+          <tbody id="gbTbody"></tbody>
+        </table>
+      </div>`;
+    anchor.insertAdjacentElement("afterend", wrap);
+
+    // defaults UX
+    const w = document.getElementById("gbWindow"), l = document.getElementById("gbLook"), s = document.getElementById("gbUseFair");
+    if (w && (!w.value || Number(w.value)<=0)) w.value = "60";
+    if (l && (!l.value || Number(l.value)<=0)) l.value = "5";
+    if (s && !s.value) s.value = "no";
+
+    document.getElementById("gbRun").addEventListener("click", () => runGarchBacktest(ts));
+    document.getElementById("gbExport").addEventListener("click", exportCSV);
+  }
+
+  /* ===== Cálculo ===== */
+  const F2 = x => Number.isFinite(x) ? Number(x).toFixed(2) : "--";
+  const PTSI = x => Number.isFinite(x) ? Math.round(x) : 0;
+  function choosePts(v){ if (v>=3.0) return 15; if (v<=1.5) return 10; return 12; }
+  function vol18At(ts,start,idx){ const run = ts.linearReturns.slice(start, idx); if (run.length<18) return 2.0;
+    const s = run.slice(-18), m = s.reduce((a,b)=>a+b,0)/s.length, v = s.reduce((q,r)=>q+Math.pow(r-m,2),0)/s.length; return Math.sqrt(v)*100; }
+  function expLevels(ts,i){ const out={min:[],max:[]}, lc = ts.priceData[i];
+    for (const p of [9,18,27]){ if (ts.linearReturns.length < p || i < p) continue;
+      const sl = ts.linearReturns.slice(i-p,i), m=sl.reduce((a,b)=>a+b,0)/sl.length, v=sl.reduce((q,r)=>q+Math.pow(r-m,2),0)/sl.length, sd=Math.sqrt(v);
+      const ef = ts.getExpFor ? ts.getExpFor(p) : 2.718, ex = Math.pow(ef, sd); out.max.push(lc*ex); out.min.push(lc/ex); } return out; }
+  function distToRange(px,a,b){ const lo=Math.min(a,b), hi=Math.max(a,b); if(px<lo) return lo-px; if(px>hi) return px-hi; return 0; }
+  function clusterRegion(levels,spread,px){ const lv=(levels||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b); if(!lv.length) return null;
+    const min=lv[0], max=lv[lv.length-1]; if(lv.length>=2 && (max-min)<=spread) return {min,max,ref:(min+max)/2,isCluster:true};
+    const nearest=lv.reduce((best,cur)=>Math.abs(px-cur)<Math.abs(px-best)?cur:best,lv[0]); return {min:nearest,max:nearest,ref:nearest,isCluster:false}; }
+  function fairCombined(ts,price){ const g=id=>document.getElementById(id);
+    const pppRate=parseFloat(g('ppp_rate')?.value||5.30), infBR=parseFloat(g('inflation_br')?.value||4.5)/100, infUS=parseFloat(g('inflation_us')?.value||3.2)/100,
+          selic=parseFloat(g('selic_rate')?.value||13.75)/100, fed=parseFloat(g('fed_rate')?.value||5.50)/100, risk=parseFloat(g('risk_premium')?.value||2.5)/100;
+    let ppp=pppRate; if(price>100) ppp=pppRate*1000; const fairPPP=ppp*((1+infBR)/(1+infUS)), net=(selic-fed)-risk, uip=1+(net*0.15), fairUIP=price*uip;
+    const bounded=Math.max(price*0.8,Math.min(price*1.2,fairUIP)), comb=0.4*fairPPP+0.6*bounded; return Math.max(price*0.75,Math.min(price*1.25,comb)); }
+
+  function runGarchBacktest(ts){
+    const sum = document.getElementById("gbSummary"), tb = document.getElementById("gbTbody"), btn = document.getElementById("gbExport");
+    if (!ts.priceData || ts.priceData.length<30){ sum.textContent="Carregue ≥ 30 preços (Excel/Simulado) e rode Análise."; return; }
+    ts.calculateLinearReturns();
+
+    const N = parseInt(document.getElementById("gbWindow")?.value||0,10);
+    const LH = Math.max(1, parseInt(document.getElementById("gbLook")?.value||5,10));
+    const USE_FAIR = (document.getElementById("gbUseFair")?.value==="yes");
+    const start = (N>0 && N<ts.priceData.length) ? (ts.priceData.length - N) : 0;
+
+    const spread=10, log=[], res={BUY:{win:0,loss:0,pl:0,trades:0}, SELL:{win:0,loss:0,pl:0,trades:0}};
+    let cNoLv=0, cNoIn=0;
+
+    for (let i=start+27; i<ts.priceData.length-1; i++){
+      const px=ts.priceData[i], vol=vol18At(ts,start,i), pts=choosePts(vol), lv=expLevels(ts,i);
+      if (!lv.min.length && !lv.max.length){ cNoLv++; continue; }
+
+      const rB=clusterRegion(lv.min,spread,px), rS=clusterRegion(lv.max,spread,px);
+      const cand=[];
+      if (rB){ const d=distToRange(px, rB.min-pts, rB.max+pts); if (d<=pts){ let tgt=rB.ref+pts; if(USE_FAIR){ const j=fairCombined(ts,px); if(j>rB.ref) tgt=j; }
+        cand.push({dir:"BUY",idx:i,entry:rB.ref,stop:rB.min-10,tgt,pts}); } }
+      if (rS){ const d=distToRange(px, rS.min-pts, rS.max+pts); if (d<=pts){ let tgt=rS.ref-pts; if(USE_FAIR){ const j=fairCombined(ts,px); if(j<rS.ref) tgt=j; }
+        cand.push({dir:"SELL",idx:i,entry:rS.ref,stop:rS.max+10,tgt,pts}); } }
+      if (!cand.length){ cNoIn++; continue; }
+
+      for (const tr of cand){
+        let outcome="NEUTRO", pl=0;
+        for (let k=1; k<=LH && (i+k)<ts.priceData.length; k++){
+          const pN=ts.priceData[i+k];
+          if (tr.dir==="BUY"){ if (pN>=tr.tgt){ outcome="WIN";  pl=Math.abs(tr.tgt-tr.entry); break; }
+                               if (pN<=tr.stop){ outcome="LOSS"; pl=-Math.abs(tr.entry-tr.stop); break; } }
+          else               { if (pN<=tr.tgt){ outcome="WIN";  pl=Math.abs(tr.entry-tr.tgt); break; }
+                               if (pN>=tr.stop){ outcome="LOSS"; pl=-Math.abs(tr.stop-tr.entry); break; } }
+        }
+        if (outcome==="NEUTRO"){ const last=ts.priceData[i+LH] ?? ts.priceData[ts.priceData.length-1]; pl=(tr.dir==="BUY")?(last-tr.entry):(tr.entry-last); }
+        if (outcome==="WIN") res[tr.dir].win++; if (outcome==="LOSS") res[tr.dir].loss++; res[tr.dir].trades++; res[tr.dir].pl+=pl;
+        log.push({n:log.length+1,idx:tr.idx,side:tr.dir,entry:tr.entry,tgt:tr.tgt,stop:tr.stop,outcome,pl});
+      }
+    }
+    renderResult(res, log, cNoLv, cNoIn);
+  }
+
+  function renderResult(res,log,cNoLv,cNoIn){
+    const sum=document.getElementById("gbSummary"), tb=document.getElementById("gbTbody"), btn=document.getElementById("gbExport"); tb.innerHTML="";
+    const met = d => { const hit=d.trades? (d.win/d.trades)*100 : 0; const avg=d.trades? (d.pl/d.trades) : 0; const rr=Math.abs(avg)/12 || 0;
+      return {trades:d.trades, win:d.win, loss:d.loss, hit:hit.toFixed(1)+"%", pl:PTSI(d.pl), rr:rr.toFixed(2)+"x"}; };
+    const B=met(res.BUY), S=met(res.SELL);
+    sum.innerHTML = `<b>Resultado:</b>
+      <br>🟢 BUY → trades: <b>${B.trades}</b> | win: <b>${B.win}</b> | loss: <b>${B.loss}</b> | hit: <b>${B.hit}</b> | P/L: <b>${B.pl} pts</b> | R/R efetivo: <b>${B.rr}</b>
+      <br>🔴 SELL → trades: <b>${S.trades}</b> | win: <b>${S.win}</b> | loss: <b>${S.loss}</b> | hit: <b>${S.hit}</b> | P/L: <b>${S.pl} pts</b> | R/R efetivo: <b>${S.rr}</b>
+      ${(B.trades+S.trades===0)?`<div style="margin-top:8px;font-size:12px;color:#334155"><b>Diagnóstico</b>: sem níveis em ${cNoLv} barras; fora da região em ${cNoIn} barras. Tente Janela=60, Look-ahead=5.</div>`:""}`;
+    for (const r of log){
+      const tr=document.createElement("tr");
+      tr.innerHTML = `<td>${r.n}</td><td>${r.idx}</td>
+        <td><span class="gb-badge ${r.side==='BUY'?'buy':'sell'}">${r.side}</span></td>
+        <td>${F2(r.entry)}</td><td>${F2(r.tgt)}</td><td>${F2(r.stop)}</td>
+        <td><span class="gb-badge ${r.outcome==='WIN'?'win':(r.outcome==='LOSS'?'loss':'')}">${r.outcome}</span></td>
+        <td>${PTSI(r.pl)}</td>`;
+      tb.appendChild(tr);
+    }
+    btn.disabled = (log.length===0); btn.dataset.csv = JSON.stringify(log);
+  }
+
+  function exportCSV(e){
+    const data = JSON.parse(e.currentTarget.dataset.csv || "[]"); if (!data.length) return;
+    const header=["n","idx","side","entry","tgt","stop","outcome","pl"];
+    const lines=[header.join(",")].concat(data.map(r=>[r.n,r.idx,r.side,F2(r.entry),F2(r.tgt),F2(r.stop),r.outcome,PTSI(r.pl)].join(",")));
+    const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8;"}), url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download="backtest_garch.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+})();
+</script>
+<script>
+(() => {
+  // Só roda se o V2 estiver instalado
+  if (!window.__GB_BACKTEST_V2__) return;
+
+  // Sobrescreve apenas o executor para usar tol/spread “amigáveis”
+  const ts = window.tradingSystem;
+  if (!ts) return;
+
+  // === Helpers (mesmos do V2) ===
+  const F2 = x => Number.isFinite(x) ? Number(x).toFixed(2) : "--";
+  const PTSI = x => Number.isFinite(x) ? Math.round(x) : 0;
+  function choosePts(v){ if (v>=3.0) return 15; if (v<=1.5) return 10; return 12; }
+  function vol18At(ts,start,idx){ const run=ts.linearReturns.slice(start,idx); if(run.length<18) return 2.0;
+    const s=run.slice(-18), m=s.reduce((a,b)=>a+b,0)/s.length, v=s.reduce((q,r)=>q+Math.pow(r-m,2),0)/s.length; return Math.sqrt(v)*100; }
+  function expLevels(ts,i){ const out={min:[],max:[]}, lc=ts.priceData[i];
+    for(const p of [9,18,27]){ if(ts.linearReturns.length<p||i<p) continue;
+      const sl=ts.linearReturns.slice(i-p,i), m=sl.reduce((a,b)=>a+b,0)/sl.length, v=sl.reduce((q,r)=>q+Math.pow(r-m,2),0)/sl.length, sd=Math.sqrt(v);
+      const ef=ts.getExpFor?ts.getExpFor(p):2.718, ex=Math.pow(ef,sd); out.max.push(lc*ex); out.min.push(lc/ex); } return out; }
+  function distToRange(px,a,b){ const lo=Math.min(a,b), hi=Math.max(a,b); if(px<lo) return lo-px; if(px>hi) return px-hi; return 0; }
+  function clusterRegion(levels,spread,px){ const lv=(levels||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b); if(!lv.length) return null;
+    const min=lv[0], max=lv[lv.length-1]; if(lv.length>=2&&(max-min)<=spread) return {min,max,ref:(min+max)/2,isCluster:true};
+    const nearest=lv.reduce((best,cur)=> Math.abs(px-cur)<Math.abs(px-best)?cur:best, lv[0]); return {min:nearest,max:nearest,ref:nearest,isCluster:false}; }
+  function fairCombined(ts,price){ const g=id=>document.getElementById(id);
+    const pppRate=parseFloat(g('ppp_rate')?.value||5.30), infBR=parseFloat(g('inflation_br')?.value||4.5)/100, infUS=parseFloat(g('inflation_us')?.value||3.2)/100,
+          selic=parseFloat(g('selic_rate')?.value||13.75)/100, fed=parseFloat(g('fed_rate')?.value||5.50)/100, risk=parseFloat(g('risk_premium')?.value||2.5)/100;
+    let ppp=pppRate; if(price>100) ppp=pppRate*1000; const fairPPP=ppp*((1+infBR)/(1+infUS)), net=(selic-fed)-risk, uip=1+(net*0.15), fairUIP=price*uip;
+    const bounded=Math.max(price*0.8,Math.min(price*1.2,fairUIP)), comb=0.4*fairPPP+0.6*bounded; return Math.max(price*0.75,Math.min(price*1.25,comb)); }
+
+  // Novo runner “amigável”
+  function runGarchBacktestSoft(ts){
+    const sum=document.getElementById("gbSummary"), tb=document.getElementById("gbTbody"), btn=document.getElementById("gbExport");
+    if(!ts.priceData || ts.priceData.length<30){ sum.textContent="Carregue ≥ 30 preços (Excel/Simulado) e rode Análise."; return; }
+    ts.calculateLinearReturns();
+
+    const N=parseInt(document.getElementById("gbWindow")?.value||0,10);
+    const LH=Math.max(1,parseInt(document.getElementById("gbLook")?.value||5,10));
+    const USE_FAIR=(document.getElementById("gbUseFair")?.value==="yes");
+
+    const start=(N>0 && N<ts.priceData.length)? (ts.priceData.length-N) : 0;
+    const usedBars = ts.priceData.length - start;
+
+    const spread=12; // (antes 10)
+    const log=[], res={BUY:{win:0,loss:0,pl:0,trades:0}, SELL:{win:0,loss:0,pl:0,trades:0}};
+    let cNoLv=0, cNoIn=0;
+
+    for(let i=start+27;i<ts.priceData.length-1;i++){
+      const px=ts.priceData[i], vol=vol18At(ts,start,i), pts=choosePts(vol), tol=15; // (antes tol=pts)
+      const lv=expLevels(ts,i); if(!lv.min.length && !lv.max.length){ cNoLv++; continue; }
+
+      const rB=clusterRegion(lv.min,spread,px), rS=clusterRegion(lv.max,spread,px);
+      const cand=[];
+
+      if(rB){
+        const d=distToRange(px, rB.min - tol, rB.max + tol);
+        if(d<=tol){
+          const stop=rB.min-10; let tgt=rB.ref+pts; if(USE_FAIR){ const j=fairCombined(ts,px); if(j>rB.ref) tgt=j; }
+          cand.push({dir:"BUY",idx:i,entry:rB.ref,stop,tgt});
+        }
+      }
+      if(rS){
+        const d=distToRange(px, rS.min - tol, rS.max + tol);
+        if(d<=tol){
+          const stop=rS.max+10; let tgt=rS.ref-pts; if(USE_FAIR){ const j=fairCombined(ts,px); if(j<rS.ref) tgt=j; }
+          cand.push({dir:"SELL",idx:i,entry:rS.ref,stop,tgt});
+        }
+      }
+      if(!cand.length){ cNoIn++; continue; }
+
+      for(const tr of cand){
+        let outcome="NEUTRO", pl=0;
+        for(let k=1;k<=LH && (i+k)<ts.priceData.length;k++){
+          const p=ts.priceData[i+k];
+          if(tr.dir==="BUY"){ if(p>=tr.tgt){ outcome="WIN";  pl=Math.abs(tr.tgt-tr.entry); break; }
+                              if(p<=tr.stop){ outcome="LOSS"; pl=-Math.abs(tr.entry-tr.stop); break; } }
+          else              { if(p<=tr.tgt){ outcome="WIN";  pl=Math.abs(tr.entry-tr.tgt); break; }
+                              if(p>=tr.stop){ outcome="LOSS"; pl=-Math.abs(tr.stop-tr.entry); break; } }
+        }
+        if(outcome==="NEUTRO"){ const last=ts.priceData[i+LH] ?? ts.priceData[ts.priceData.length-1]; pl=(tr.dir==="BUY")?(last-tr.entry):(tr.entry-last); }
+        if(outcome==="WIN") res[tr.dir].win++; if(outcome==="LOSS") res[tr.dir].loss++; res[tr.dir].trades++; res[tr.dir].pl+=pl;
+        log.push({n:log.length+1,idx:tr.idx,side:tr.dir,entry:tr.entry,tgt:tr.tgt,stop:tr.stop,outcome,pl});
+      }
+    }
+
+    // resumo + barras usadas
+    const met=d=>{const hit=d.trades?(d.win/d.trades)*100:0, avg=d.trades?(d.pl/d.trades):0, rr=Math.abs(avg)/12||0;
+      return {trades:d.trades, win:d.win, loss:d.loss, hit:hit.toFixed(1)+"%", pl:PTSI(d.pl), rr:rr.toFixed(2)+"x"};};
+    const B=met(res.BUY), S=met(res.SELL);
+    sum.innerHTML = `<b>Resultado (barras usadas: ${usedBars})</b>
+      <br>🟢 BUY → trades: <b>${B.trades}</b> | win: <b>${B.win}</b> | loss: <b>${B.loss}</b> | hit: <b>${B.hit}</b> | P/L: <b>${B.pl} pts</b> | R/R efetivo: <b>${B.rr}</b>
+      <br>🔴 SELL → trades: <b>${S.trades}</b> | win: <b>${S.win}</b> | loss: <b>${S.loss}</b> | hit: <b>${S.hit}</b> | P/L: <b>${S.pl} pts</b> | R/R efetivo: <b>${S.rr}</b>
+      ${(B.trades+S.trades===0)?`<div style="margin-top:8px;font-size:12px;color:#334155"><b>Diagnóstico</b>: sem níveis em ${cNoLv} barras; fora da região em ${cNoIn} barras.</div>`:""}`;
+
+    const tb=document.getElementById("gbTbody"); tb.innerHTML="";
+    for(const r of log){
+      const tr=document.createElement("tr");
+      tr.innerHTML = `<td>${r.n}</td><td>${r.idx}</td>
+        <td><span class="gb-badge ${r.side==='BUY'?'buy':'sell'}">${r.side}</span></td>
+        <td>${F2(r.entry)}</td><td>${F2(r.tgt)}</td><td>${F2(r.stop)}</td>
+        <td><span class="gb-badge ${r.outcome==='WIN'?'win':(r.outcome==='LOSS'?'loss':'')}">${r.outcome}</span></td>
+        <td>${PTSI(r.pl)}</td>`;
+      tb.appendChild(tr);
+    }
+    const btn=document.getElementById("gbExport"); btn.disabled=(log.length===0); btn.dataset.csv=JSON.stringify(log);
+  }
+
+  // pluga o botão no runner “soft”
+  const runBtn=document.getElementById("gbRun"); if(runBtn){ runBtn.onclick=()=>runGarchBacktestSoft(ts); }
+})();
+</script>
+
+
+<!-- ===== FIM BACKTEST GARCH — CONSOLIDADO (V2) ===== -->
+
+<!-- ===== NORMALIZADOR DE LAYOUT — BACKTEST (apenas 1x) ===== -->
+<script>
+(() => {
+  // 1) Desativa estilos antigos que conflitam
+  const badIds = [
+    "gbStyles","gbStyles-polish","gbStyles-unified","gbStyles-unified-v2",
+    "gbStyles-compact","gbStyles-stack","gbStyles-clean",
+    "gbStyles-hotfix","gbStyles-hotfix-final","final-ui-fix","gbStyles-v2-tune"
+  ];
+  badIds.forEach(id => document.getElementById(id)?.remove());
+
+  // Remove qualquer <style> inline que contenha regras antigas de '.level-col'
+  Array.from(document.querySelectorAll("style")).forEach(st => {
+    const txt = (st.textContent || "").toLowerCase();
+    if (txt.includes(".level-col ")) st.remove();
+  });
+
+  // 2) Normaliza a estrutura do painel (coluna de controles + coluna do botão)
+  const panel = document.getElementById("garchBacktestPanel");
+  if (panel){
+    const row = panel.querySelector(".gb-row") || panel.querySelector(".gbRow");
+    if (row){
+      // cria/garante a coluna de controles
+      let col = row.querySelector(".gb-col-controls");
+      if (!col){
+        col = document.createElement("div");
+        col.className = "gb-col-controls";
+        row.insertBefore(col, row.firstChild);
+      }
+      // move todos os .gb-control para a coluna (deixa .gb-buttons de fora)
+      Array.from(row.querySelectorAll(".gb-control")).forEach(ctrl => {
+        if (ctrl.parentElement !== col) col.appendChild(ctrl);
+      });
+
+      // afrouxa qualquer sticky/altura da coluna de botões
+      const buttons = row.querySelector(".gb-buttons");
+      if (buttons){
+        buttons.style.position = "static";
+        buttons.style.height   = "auto";
+        buttons.style.display  = "flex";
+        buttons.style.flexDirection = "column";
+        buttons.style.gap = "10px";
+        // botão em altura natural
+        const run = buttons.querySelector("#gbRun");
+        if (run){ run.style.height = "auto"; run.textContent = "▶️ Rodar Backtest"; }
+      }
+    }
+  }
+})();
+</script>
+
+<style id="gbStyles-final">
+/* === Grid estável: controles (esq) + botão (dir) === */
+#garchBacktestPanel .gb-row{
+  display:grid !important;
+  grid-template-columns: minmax(0,1fr) 230px !important;
+  gap:16px !important;
+  align-items:start !important;
+}
+#garchBacktestPanel .gb-col-controls{
+  display:grid !important;
+  grid-template-columns: 1fr !important; /* um embaixo do outro */
+  gap:10px !important;
+}
+
+/* === Pílulas de controle (compactas) === */
+#garchBacktestPanel .gb-control{
+  background:#fff !important;
+  border:1px solid #e5e7eb !important;
+  border-radius:12px !important;
+  padding:10px 12px !important;
+  box-shadow:0 1px 0 rgba(0,0,0,.03) !important;
+}
+#garchBacktestPanel .gb-control label{
+  display:block !important;
+  margin:0 0 6px !important;
+  font-size:11px !important;
+  letter-spacing:.3px !important;
+  text-transform:uppercase !important;
+  font-weight:900 !important;
+  color:#475569 !important;
+}
+#garchBacktestPanel .gb-control input,
+#garchBacktestPanel .gb-control select{
+  width:100% !important;
+  height:40px !important; line-height:40px !important;
+  border:1px solid #e2e8f0 !important;
+  border-radius:10px !important;
+  padding:0 12px !important;
+  background:#fff !important; color:#0f172a !important;
+  font-weight:800 !important; outline:none !important; appearance:auto !important;
+}
+#garchBacktestPanel .gb-control input::placeholder{ color:#94a3b8; font-weight:600; }
+
+/* === Coluna de botões (direita) — sem sticky nem 100% de altura === */
+#garchBacktestPanel .gb-buttons{
+  position: static !important;
+  display:flex !important; flex-direction:column !important;
+  gap:10px !important; align-items:stretch !important;
+  height:auto !important;
+}
+#garchBacktestPanel #gbRun{
+  height:auto !important;
+  background:linear-gradient(135deg,#3b82f6,#6366f1) !important;
+  color:#fff !important; border:none !important; border-radius:12px !important;
+  padding:12px 14px !important; font-weight:900 !important;
+  box-shadow:0 6px 16px rgba(59,130,246,.25) !important;
+}
+
+/* === Tipos dentro dos painéis (fontes contidas) === */
+#aiStrategyPanel .card, #aiStrategyPanel .insight-card { font-size:13px !important; }
+#aiStrategyPanel h4 { font-size:14px !important; margin:0 0 6px !important; }
+#aiStrategyPanel .value { font-size:16px !important; }
+
+/* Níveis de Decisão (nd-*) */
+.nd-label { font-size:12px !important; }
+.nd-value { font-size:16px !important; }
+
+/* Tabela do backtest */
+#garchBacktestPanel .gb-table td,
+#garchBacktestPanel .gb-table thead th { font-size:12px !important; }
+
+/* Responsivo */
+@media (max-width:760px){
+  #garchBacktestPanel .gb-row{ grid-template-columns:1fr !important; }
+  #garchBacktestPanel .gb-buttons{ flex-direction:row !important; }
+  #garchBacktestPanel #gbRun{ height:auto !important; }
+}
+</style>
+<script>
+/* Force o botão a usar o runner soft assim que o painel existir */
+(() => {
+  function attachSoftRunner(){
+    const ts  = window.tradingSystem;
+    const btn = document.getElementById("gbRun");
+    if (!ts || !btn){ setTimeout(attachSoftRunner, 150); return; }
+
+    // === helpers iguais aos do bloco soft já existente ===
+    const F2 = x => Number.isFinite(x) ? Number(x).toFixed(2) : "--";
+    const PTSI = x => Number.isFinite(x) ? Math.round(x) : 0;
+    function choosePts(v){ if (v>=3.0) return 15; if (v<=1.5) return 10; return 12; }
+    function vol18At(ts,start,idx){ const run=ts.linearReturns.slice(start,idx); if(run.length<18) return 2.0;
+      const s=run.slice(-18), m=s.reduce((a,b)=>a+b,0)/s.length, v=s.reduce((q,r)=>q+Math.pow(r-m,2),0)/s.length; return Math.sqrt(v)*100; }
+    function expLevels(ts,i){ const out={min:[],max:[]}, lc=ts.priceData[i];
+      for(const p of [9,18,27]){ if(ts.linearReturns.length<p||i<p) continue;
+        const sl=ts.linearReturns.slice(i-p,i), m=sl.reduce((a,b)=>a+b,0)/sl.length, v=sl.reduce((q,r)=>q+Math.pow(r-m,2),0)/sl.length, sd=Math.sqrt(v);
+        const ef=ts.getExpFor?ts.getExpFor(p):2.718, ex=Math.pow(ef,sd); out.max.push(lc*ex); out.min.push(lc/ex); } return out; }
+    function distToRange(px,a,b){ const lo=Math.min(a,b), hi=Math.max(a,b); if(px<lo) return lo-px; if(px>hi) return px-hi; return 0; }
+    function clusterRegion(levels,spread,px){ const lv=(levels||[]).filter(Number.isFinite).slice().sort((a,b)=>a-b); if(!lv.length) return null;
+      const min=lv[0], max=lv[lv.length-1]; if(lv.length>=2&&(max-min)<=spread) return {min,max,ref:(min+max)/2,isCluster:true};
+      const nearest=lv.reduce((best,cur)=> Math.abs(px-cur)<Math.abs(px-best)?cur:best, lv[0]); return {min:nearest,max:nearest,ref:nearest,isCluster:false}; }
+    function fairCombined(ts,price){ const g=id=>document.getElementById(id);
+      const pppRate=parseFloat(g('ppp_rate')?.value||5.30), infBR=parseFloat(g('inflation_br')?.value||4.5)/100, infUS=parseFloat(g('inflation_us')?.value||3.2)/100,
+            selic=parseFloat(g('selic_rate')?.value||13.75)/100, fed=parseFloat(g('fed_rate')?.value||5.50)/100, risk=parseFloat(g('risk_premium')?.value||2.5)/100;
+      let ppp=pppRate; if(price>100) ppp=pppRate*1000; const fairPPP=ppp*((1+infBR)/(1+infUS)), net=(selic-fed)-risk, uip=1+(net*0.15), fairUIP=price*uip;
+      const bounded=Math.max(price*0.8,Math.min(price*1.2,fairUIP)), comb=0.4*fairPPP+0.6*bounded; return Math.max(price*0.75,Math.min(price*1.25,comb)); }
+
+    function runSoft(){
+      const sum=document.getElementById("gbSummary"), tb=document.getElementById("gbTbody"), csv=document.getElementById("gbExport");
+      if(!ts.priceData || ts.priceData.length<30){ sum.textContent="Carregue ≥ 30 preços (Excel/Simulado) e rode Análise."; return; }
+      ts.calculateLinearReturns();
+
+      const N = parseInt(document.getElementById("gbWindow")?.value||0,10);
+      const LH = Math.max(1, parseInt(document.getElementById("gbLook")?.value||5,10));
+      const USE_FAIR = (document.getElementById("gbUseFair")?.value==="yes");
+      const start = (N>0 && N<ts.priceData.length)? (ts.priceData.length-N) : 0;
+      const usedBars = ts.priceData.length - start;
+
+      const spread=12, tol=15; // mais “amigáveis” p/ janelas grandes
+      const log=[], res={BUY:{win:0,loss:0,pl:0,trades:0}, SELL:{win:0,loss:0,pl:0,trades:0}};
+      let cNoLv=0, cNoIn=0;
+
+      for(let i=start+27;i<ts.priceData.length-1;i++){
+        const px=ts.priceData[i], vol=vol18At(ts,start,i), pts=choosePts(vol), lv=expLevels(ts,i);
+        if(!lv.min.length && !lv.max.length){ cNoLv++; continue; }
+        const rB=clusterRegion(lv.min,spread,px), rS=clusterRegion(lv.max,spread,px);
+        const cand=[];
+        if(rB){ const d=distToRange(px, rB.min-tol, rB.max+tol); if(d<=tol){ let tgt=rB.ref+pts; if(USE_FAIR){ const j=fairCombined(ts,px); if(j>rB.ref) tgt=j; }
+          cand.push({dir:"BUY",idx:i,entry:rB.ref,stop:rB.min-10,tgt}); } }
+        if(rS){ const d=distToRange(px, rS.min-tol, rS.max+tol); if(d<=tol){ let tgt=rS.ref-pts; if(USE_FAIR){ const j=fairCombined(ts,px); if(j<rS.ref) tgt=j; }
+          cand.push({dir:"SELL",idx:i,entry:rS.ref,stop:rS.max+10,tgt}); } }
+        if(!cand.length){ cNoIn++; continue; }
+
+        for(const tr of cand){
+          let outcome="NEUTRO", pl=0;
+          for(let k=1;k<=LH && (i+k)<ts.priceData.length;k++){
+            const p=ts.priceData[i+k];
+            if(tr.dir==="BUY"){ if(p>=tr.tgt){ outcome="WIN";  pl=Math.abs(tr.tgt-tr.entry); break; }
+                                if(p<=tr.stop){ outcome="LOSS"; pl=-Math.abs(tr.entry-tr.stop); break; } }
+            else              { if(p<=tr.tgt){ outcome="WIN";  pl=Math.abs(tr.entry-tr.tgt); break; }
+                                if(p>=tr.stop){ outcome="LOSS"; pl=-Math.abs(tr.stop-tr.entry); break; } }
+          }
+          if(outcome==="NEUTRO"){ const last=ts.priceData[i+LH] ?? ts.priceData[ts.priceData.length-1]; pl=(tr.dir==="BUY")?(last-tr.entry):(tr.entry-last); }
+          if(outcome==="WIN") res[tr.dir].win++; if(outcome==="LOSS") res[tr.dir].loss++; res[tr.dir].trades++; res[tr.dir].pl+=pl;
+          log.push({n:log.length+1,idx:tr.idx,side:tr.dir,entry:tr.entry,tgt:tr.tgt,stop:tr.stop,outcome,pl});
+        }
+      }
+
+      const met=d=>{const hit=d.trades?(d.win/d.trades)*100:0, avg=d.trades?(d.pl/d.trades):0, rr=Math.abs(avg)/12||0;
+        return {trades:d.trades, win:d.win, loss:d.loss, hit:hit.toFixed(1)+"%", pl:PTSI(d.pl), rr:rr.toFixed(2)+"x"};};
+      const B=met(res.BUY), S=met(res.SELL);
+      sum.innerHTML = `<b>Resultado (barras usadas: ${usedBars})</b>
+        <br>🟢 BUY → trades: <b>${B.trades}</b> | win: <b>${B.win}</b> | loss: <b>${B.loss}</b> | hit: <b>${B.hit}</b> | P/L: <b>${B.pl} pts</b> | R/R efetivo: <b>${B.rr}</b>
+        <br>🔴 SELL → trades: <b>${S.trades}</b> | win: <b>${S.win}</b> | loss: <b>${S.loss}</b> | hit: <b>${S.hit}</b> | P/L: <b>${S.pl} pts</b> | R/R efetivo: <b>${S.rr}</b>`;
+      tb.innerHTML="";
+      for(const r of log){
+        const tr=document.createElement("tr");
+        tr.innerHTML = `<td>${r.n}</td><td>${r.idx}</td>
+          <td><span class="gb-badge ${r.side==='BUY'?'buy':'sell'}">${r.side}</span></td>
+          <td>${F2(r.entry)}</td><td>${F2(r.tgt)}</td><td>${F2(r.stop)}</td>
+          <td><span class="gb-badge ${r.outcome==='WIN'?'win':(r.outcome==='LOSS'?'loss':'')}">${r.outcome}</span></td>
+          <td>${PTSI(r.pl)}</td>`;
+        tb.appendChild(tr);
+      }
+      csv.disabled = (log.length===0);
+      csv.dataset.csv = JSON.stringify(log);
+    }
+
+    btn.onclick = runSoft; // agora substitui com certeza
+  }
+  attachSoftRunner();
+})();
+</script>
+
+<style id="gbLayout-final">
+#garchBacktestPanel .gb-row{display:grid !important;grid-template-columns:minmax(0,1fr) 230px !important;gap:16px !important;align-items:start !important;}
+#garchBacktestPanel .gb-col-controls{display:grid !important;grid-template-columns:1fr !important;gap:10px !important;}
+#garchBacktestPanel .gb-buttons{position:static !important;display:flex !important;flex-direction:column !important;gap:10px !important;align-items:stretch !important;height:auto !important;}
+#garchBacktestPanel #gbRun{height:auto !important;}
+/* Tipografia contida dentro dos painéis */
+#aiStrategyPanel .card, #aiStrategyPanel .insight-card{font-size:13px !important;}
+#aiStrategyPanel h4{font-size:14px !important;margin:0 0 6px !important;}
+#aiStrategyPanel .value{font-size:16px !important;}
+.nd-label{font-size:12px !important;}
+.nd-value{font-size:16px !important;}
+#garchBacktestPanel .gb-table td, #garchBacktestPanel .gb-table thead th{font-size:12px !important;}
+@media (max-width:760px){#garchBacktestPanel .gb-row{grid-template-columns:1fr !important}#garchBacktestPanel .gb-buttons{flex-direction:row !important}}
+</style>
+<script>
+/* Backtest Layout – normaliza DOM e coloca botões onde você preferir */
+(() => {
+  const panel = document.getElementById("garchBacktestPanel");
+  if (!panel) return;
+  const row = panel.querySelector(".gb-row");
+  if (!row) return;
+
+  // 1) Garante a coluna de controles
+  let col = row.querySelector(".gb-col-controls");
+  if (!col) {
+    col = document.createElement("div");
+    col.className = "gb-col-controls";
+    row.insertBefore(col, row.firstChild);
+  }
+  // move todos os .gb-control para a coluna (independente da posição atual)
+  Array.from(row.querySelectorAll(".gb-control")).forEach(ctrl => {
+    if (ctrl.parentElement !== col) col.appendChild(ctrl);
+  });
+
+  // 2) Garante o bloco de botões e move para a posição desejada
+  const buttons = row.querySelector(".gb-buttons");
+  if (buttons) {
+    // 👉 Opção A: botões ABAIXO dos controles (recomendado pela estabilidade visual)
+    if (buttons.parentElement !== col) col.appendChild(buttons);
+
+    // 👉 Opção B: se quiser manter os botões à DIREITA,
+    // comente a linha acima e descomente a linha abaixo:
+    // if (buttons.parentElement !== row) row.appendChild(buttons);
+  }
+})();
+</script>
+
+<style id="backtest-layout-final">
+/* ====== Grade principal ====== */
+/* Opção A (padrão): 1 coluna (controles + botões embaixo) */
+#garchBacktestPanel .gb-row{
+  display:grid !important;
+  grid-template-columns: 1fr !important;
+  gap:14px !important;
+  align-items:start !important;
+}
+
+/* Coluna de controles empilhados */
+#garchBacktestPanel .gb-col-controls{
+  display:grid !important;
+  grid-template-columns: 1fr !important;
+  gap:10px !important;
+}
+
+/* Botões logo abaixo dos controles, largura total */
+#garchBacktestPanel .gb-buttons{
+  display:flex !important;
+  flex-direction:row !important;
+  gap:10px !important;
+  align-items:stretch !important;
+}
+
+/* Botão com altura do conteúdo (sem tentar ocupar “toda a coluna”) */
+#garchBacktestPanel #gbRun{
+  height:auto !important;
+  background:linear-gradient(135deg,#3b82f6,#6366f1) !important;
+  color:#fff !important; border:none !important;
+  border-radius:12px !important; padding:12px 14px !important;
+  font-weight:900 !important; box-shadow:0 6px 16px rgba(59,130,246,.25) !important;
+}
+
+/* Pílulas de controle (compactas) */
+#garchBacktestPanel .gb-control{
+  background:#fff !important;
+  border:1px solid #e5e7eb !important;
+  border-radius:12px !important;
+  padding:10px 12px !important;
+  box-shadow:0 1px 0 rgba(0,0,0,.03) !important;
+}
+#garchBacktestPanel .gb-control label{
+  display:block !important; margin:0 0 6px !important;
+  font-size:11px !important; letter-spacing:.3px !important;
+  text-transform:uppercase !important; font-weight:900 !important; color:#475569 !important;
+}
+#garchBacktestPanel .gb-control input,
+#garchBacktestPanel .gb-control select{
+  width:100% !important; height:40px !important; line-height:40px !important;
+  border:1px solid #e2e8f0 !important; border-radius:10px !important;
+  padding:0 12px !important; background:#fff !important; color:#0f172a !important;
+  font-weight:800 !important; outline:none !important; appearance:auto !important;
+}
+#garchBacktestPanel .gb-control input::placeholder{ color:#94a3b8; font-weight:600; }
+
+/* Tipografia mais contida dentro dos painéis */
+#aiStrategyPanel .card, #aiStrategyPanel .insight-card { font-size:13px !important; }
+#aiStrategyPanel h4 { font-size:14px !important; margin:0 0 6px !important; }
+#aiStrategyPanel .value { font-size:16px !important; }
+
+/* Níveis (nd-*) */
+.nd-label { font-size:12px !important; }
+.nd-value { font-size:16px !important; }
+
+/* Tabela do backtest */
+#garchBacktestPanel .gb-table td,
+#garchBacktestPanel .gb-table thead th { font-size:12px !important; }
+
+/* ===== Se preferir os botões à DIREITA (modo 2 colunas), troque as 3 regras abaixo =====
+#garchBacktestPanel .gb-row{ grid-template-columns:minmax(0,1fr) 230px !important; }
+#garchBacktestPanel .gb-buttons{ flex-direction:column !important; }
+@media (max-width:760px){ #garchBacktestPanel .gb-row{ grid-template-columns:1fr !important; } .gb-buttons{ flex-direction:row !important; } }
+==================================================================== */
+</style>
+<script>
+/* ===== Tiers de Entrada (Nível 1 - Zona Principal: cluster; Nível 2 - Extensão 18P/3: ±2σ 18P/27P) ===== */
+(() => {
+  const ts = window.tradingSystem;
+  if (!ts) return;
+
+  // — helpers: usa os cálculos reais do seu sistema
+  function garch(){ return ts.analyzeSystemGARCH() || {}; }
+  function vol18(){ const v = ts.analyzeSystemVolatility(); return v?.p18?.volatilityPercent || 2.0; }
+  function choosePts(v){ if (v>=3.0) return 15; if (v<=1.5) return 10; return 12; }
+  const F2 = v => Number.isFinite(v) ? Number(v).toFixed(2) : "--";
+
+  // Constroi níveis de 3 tiers por LADO
+  function buildTiers(side){
+    const ga = garch(); const p9 = ga.p9||{}, p18=ga.p18||{}, p27=ga.p27||{};
+
+    // Nível 1 - Zona Principal: região (você já cria no generateTradingStrategy de 2 cards)
+    // Vamos reaproveitar os valores calculados lá:
+    const last = ts.generateTradingStrategy();  // retorna { long, short, ... }
+    const seed = (side==="BUY") ? last.long : last.short;
+
+    // Se ainda não houver região, não montamos tiers
+    if (!seed || !Number.isFinite(seed.entryRange?.min) || !Number.isFinite(seed.entryRange?.max)) return null;
+
+    // Nível 2 - Extensão 18P/Nível 3 - Extremo 27P: ±2σ da 2a/3a projeção
+    const twoSigma18 = (side==="BUY") ? p18.down2sigma : p18.up2sigma;
+    const twoSigma27 = (side==="BUY") ? p27.down2sigma : p27.up2sigma;
+
+    const v18 = vol18(); const pts = choosePts(v18);
+
+    // Construção dos degraus (com stops e alvos por tier)
+    const tiers = [];
+
+    // Nível 1 - Zona Principal (região cluster)
+    const ref1 = (seed.entryRange.min + seed.entryRange.max)/2;
+    tiers.push({
+      label: "Nível 1 - Zona Principal (Região)",
+      entry: ref1,
+      stop:  (side==="BUY") ? (seed.entryRange.min - 10) : (seed.entryRange.max + 10),
+      tgt:   (side==="BUY") ? (ref1 + pts) : (ref1 - pts),
+      note:  `Região: ${F2(seed.entryRange.min)}–${F2(seed.entryRange.max)}`
+    });
+
+    // Nível 2 - Extensão 18P (±2σ 18P)
+    if (Number.isFinite(twoSigma18)){
+      const e2 = twoSigma18;
+      tiers.push({
+        label: "Nível 2 - Extensão Média (±2σ 18P)",
+        entry: e2,
+        stop:  (side==="BUY") ? (e2 - 10) : (e2 + 10),
+        tgt:   (side==="BUY") ? (e2 + pts) : (e2 - pts),
+        note:  `18P ${side==="BUY"?"−2σ":"+2σ"}`
+      });
+    }
+
+    // Nível 3 - Extremo 27P (±2σ 27P)
+    if (Number.isFinite(twoSigma27)){
+      const e3 = twoSigma27;
+      tiers.push({
+        label: "Nível 3 - Extremidade (±2σ 27P)",
+        entry: e3,
+        stop:  (side==="BUY") ? (e3 - 10) : (e3 + 10),
+        tgt:   (side==="BUY") ? (e3 + pts) : (e3 - pts),
+        note:  `27P ${side==="BUY"?"−2σ":"+2σ"}`
+      });
+    }
+
+    // Ordena (BUY: de cima p/ baixo / SELL: de baixo p/ cima) só pra visual
+    tiers.sort((a,b)=> (side==="BUY") ? b.entry - a.entry : a.entry - b.entry);
+
+    return { tiers, pts };
+  }
+
+  // Renderiza uma caixinha de tiers dentro do card já existente
+  function injectTiers(side, container){
+    const pack = buildTiers(side);
+    if (!pack) return;
+    const { tiers, pts } = pack;
+
+    const list = tiers.map(t => `
+      <div style="margin:6px 0; padding:8px 10px; border:1px solid #e5e7eb; border-radius:10px; background:#fff;">
+        <div style="font-weight:900; font-size:12px;">${t.label}</div>
+        <div style="font-size:12px; margin-top:4px;">
+          🎯 Entrada: <b>${F2(t.entry)}</b> &nbsp;|&nbsp;
+          🛑 Stop: <b>${F2(t.stop)}</b> &nbsp;|&nbsp;
+          ✅ Alvo curto: <b>${F2(t.tgt)}</b> <span style="opacity:.7">(+/− ${pts} pts)</span><br>
+          <span style="opacity:.7">${t.note}</span>
+        </div>
+      </div>
+    `).join("");
+
+    const box = document.createElement("div");
+    box.innerHTML = `
+      <div style="margin-top:8px; border:1px dashed #cbd5e1; border-radius:12px; padding:8px 10px; background:#f8fafc;">
+        <div style="font-weight:800; font-size:12px; color:#334155; margin-bottom:4px;">
+          Plano em 3 Tiers (${side==="BUY"?"compra":"venda"})
+        </div>
+        ${list}
+        <div style="font-size:11px; color:#64748b; margin-top:6px;">
+          Alvo final: manter parcial até o <b>Justíssimo</b> se a direção favorecer.
+        </div>
+      </div>
+    `;
+    container.appendChild(box);
+  }
+
+  // Pluga no painel assim que ele renderizar
+  const hook = setInterval(() => {
+    const op = document.getElementById("aiOperation");
+    if (!op) return;
+    clearInterval(hook);
+
+    // localiza os dois cards (Compra e Venda) dentro do aiOperation
+    const cards = op.querySelectorAll(".card.card-success, .card.card-danger");
+    if (!cards.length){
+      // fallback: injeta abaixo de todo o bloco
+      injectTiers("BUY", op);
+      injectTiers("SELL", op);
+      return;
+    }
+
+    // 1º card: compra | 2º card: venda (como no seu layout atual)
+    const buyCard  = cards[0];
+    const sellCard = cards[1] || cards[0].nextElementSibling || op;
+
+    injectTiers("BUY",  buyCard);
+    injectTiers("SELL", sellCard);
+  }, 150);
+})();
+</script>
+
+
+<script>
+/* ====== Seletor de Tiers nos cards (BUY/SELL) ====== */
+(() => {
+  const ts = window.tradingSystem;
+  if (!ts) return;
+
+  // helpers
+  const F2 = v => Number.isFinite(v) ? Number(v).toFixed(2) : "--";
+  function vol18(){ const v = ts.analyzeSystemVolatility(); return v?.p18?.volatilityPercent || 2.0; }
+  function choosePts(v){ if (v>=3.0) return 15; if (v<=1.5) return 10; return 12; }
+
+  function buildTiers(side){
+    const ga = ts.analyzeSystemGARCH() || {};
+    const p18= ga.p18 || {}, p27 = ga.p27 || {};
+    const last = ts.generateTradingStrategy?.() || {};
+    const seed = side==="BUY" ? last.long : last.short;
+
+    if (!seed || !Number.isFinite(seed?.entryRange?.min) || !Number.isFinite(seed?.entryRange?.max)) return null;
+
+    const v18 = vol18(); const pts = choosePts(v18);
+    const ref1 = (seed.entryRange.min + seed.entryRange.max)/2;
+
+    const t1 = {
+      key:"t1",
+      label:"Nível 1 - Zona Principal (Região)",
+      entry:ref1,
+      stop: (side==="BUY") ? (seed.entryRange.min - 10) : (seed.entryRange.max + 10),
+      tgt:  (side==="BUY") ? (ref1 + pts) : (ref1 - pts),
+      note:`Região: ${F2(seed.entryRange.min)}–${F2(seed.entryRange.max)}`
+    };
+
+    const sigma18 = (side==="BUY") ? p18.down2sigma : p18.up2sigma;
+    const sigma27 = (side==="BUY") ? p27.down2sigma : p27.up2sigma;
+
+    const tiers = [t1];
+    if (Number.isFinite(sigma18)){
+      tiers.push({
+        key:"t2",
+        label:"Nível 2 - Extensão Média (±2σ 18P)",
+        entry:sigma18,
+        stop:(side==="BUY") ? (sigma18 - 10) : (sigma18 + 10),
+        tgt: (side==="BUY") ? (sigma18 + pts) : (sigma18 - pts),
+        note:`18P ${side==="BUY"?"−2σ":"+2σ"}`
+      });
+    }
+    if (Number.isFinite(sigma27)){
+      tiers.push({
+        key:"t3",
+        label:"Nível 3 - Extremidade (±2σ 27P)",
+        entry:sigma27,
+        stop:(side==="BUY") ? (sigma27 - 10) : (sigma27 + 10),
+        tgt: (side==="BUY") ? (sigma27 + pts) : (sigma27 - pts),
+        note:`27P ${side==="BUY"?"−2σ":"+2σ"}`
+      });
+    }
+
+    // ordena visualmente (BUY: alto→baixo; SELL: baixo→alto)
+    tiers.sort((a,b)=> side==="BUY" ? b.entry - a.entry : a.entry - b.entry);
+    return { tiers, pts };
+  }
+
+  // monta UI de tabs + conteúdo
+  function mountTierUI(side, host){
+    const pack = buildTiers(side);
+    if (!pack || !pack.tiers.length) return;
+    const { tiers, pts } = pack;
+
+    const wrap = document.createElement("div");
+    // tabs
+    const tabs = document.createElement("div");
+    tabs.className = "tier-tabs";
+    // content
+    const box  = document.createElement("div");
+    box.className = "tier-box";
+
+    function renderTier(t){
+      box.innerHTML = `
+        <div class="tier-line">🎯 <b>${t.label}</b></div>
+        <div class="tier-line">Entrada: <b class="tier-mono">${F2(t.entry)}</b>
+          &nbsp;|&nbsp; 🛑 Stop: <b class="tier-mono">${F2(t.stop)}</b>
+          &nbsp;|&nbsp; ✅ Alvo curto: <b class="tier-mono">${F2(t.tgt)}</b>
+          &nbsp;<span class="tier-note">(± ${pts} pts)</span>
+        </div>
+        <div class="tier-note">${t.note}</div>
+        <div class="tier-note">Alvo final: manter parcial até o <b>Justíssimo</b> se a direção favorecer.</div>
+      `;
+    }
+
+    // cria botões de tab
+    tiers.forEach((t,idx) => {
+      const b = document.createElement("button");
+      b.type="button";
+      b.className = "tier-tab" + (idx===0 ? " active" : "");
+      b.textContent = t.label.replace("Tier-","T");
+      b.onclick = () => {
+        // ativa tab
+        tabs.querySelectorAll(".tier-tab").forEach(x=>x.classList.remove("active"));
+        b.classList.add("active");
+        // troca conteúdo
+        renderTier(t);
+      };
+      tabs.appendChild(b);
+    });
+
+    // render inicial = primeiro tier
+    renderTier(tiers[0]);
+
+    // injeta no card
+    wrap.appendChild(tabs);
+    wrap.appendChild(box);
+    host.appendChild(wrap);
+  }
+
+  // posiciona dentro dos cards quando o painel de estratégia estiver pronto
+  function attach(){
+    const op = document.getElementById("aiOperation");
+    if (!op){ setTimeout(attach, 150); return; }
+
+    // evita duplicar
+    if (op.dataset.tiersMounted === "1") return;
+    op.dataset.tiersMounted = "1";
+
+    // tenta pegar os dois cards (verde e vermelho) como já estão
+    const cards = op.querySelectorAll(".card.card-success, .card.card-danger, .insight-card");
+    // fallback seguro: monta em sequência
+    let buyHost  = cards[0] || op;
+    let sellHost = cards[1] || cards[0] || op;
+
+    mountTierUI("BUY",  buyHost);
+    mountTierUI("SELL", sellHost);
+  }
+
+  // roda ao abrir e após re-renderizações comuns do painel
+  attach();
+  const obs = new MutationObserver(()=>attach());
+  obs.observe(document.getElementById("aiStrategyPanel") || document.body, {childList:true, subtree:true});
+})();
+</script>
+
+<script>
+/* ====== Seletor de Tiers nos cards (BUY/SELL) – robusto ====== */
+(() => {
+  const ts = window.tradingSystem;
+  if (!ts) return;
+
+  // helpers
+  const F2 = v => Number.isFinite(v) ? Number(v).toFixed(2) : "--";
+  function vol18(){ const v = ts.analyzeSystemVolatility?.(); return v?.p18?.volatilityPercent || 2.0; }
+  function choosePts(v){ if (v>=3.0) return 15; if (v<=1.5) return 10; return 12; }
+
+  function buildTiers(side){
+    const ga = ts.analyzeSystemGARCH?.() || {};
+    const p18 = ga.p18 || {}, p27 = ga.p27 || {};
+    const strat = ts.generateTradingStrategy?.() || {};
+    const seed  = side==="BUY" ? strat.long : strat.short;
+
+    if (!seed || !Number.isFinite(seed?.entryRange?.min) || !Number.isFinite(seed?.entryRange?.max)) return null;
+
+    const pts  = choosePts(vol18());
+    const ref1 = (seed.entryRange.min + seed.entryRange.max)/2;
+
+    const tiers = [{
+      key:"t1",
+      label:"Nível 1 - Zona Principal (Região)",
+      entry: ref1,
+      stop:  (side==="BUY") ? (seed.entryRange.min - 10) : (seed.entryRange.max + 10),
+      tgt:   (side==="BUY") ? (ref1 + pts) : (ref1 - pts),
+      note:  `Região: ${F2(seed.entryRange.min)}–${F2(seed.entryRange.max)}`
+    }];
+
+    const sigma18 = (side==="BUY") ? p18.down2sigma : p18.up2sigma;
+    const sigma27 = (side==="BUY") ? p27.down2sigma : p27.up2sigma;
+
+    if (Number.isFinite(sigma18)){
+      tiers.push({
+        key:"t2",
+        label:"Nível 2 - Extensão Média (±2σ 18P)",
+        entry:sigma18,
+        stop:(side==="BUY") ? (sigma18 - 10) : (sigma18 + 10),
+        tgt:(side==="BUY") ? (sigma18 + pts) : (sigma18 - pts),
+        note:`18P ${side==="BUY"?"−2σ":"+2σ"}`
+      });
+    }
+    if (Number.isFinite(sigma27)){
+      tiers.push({
+        key:"t3",
+        label:"Nível 3 - Extremidade (±2σ 27P)",
+        entry:sigma27,
+        stop:(side==="BUY") ? (sigma27 - 10) : (sigma27 + 10),
+        tgt:(side==="BUY") ? (sigma27 + pts) : (sigma27 - pts),
+        note:`27P ${side==="BUY"?"−2σ":"+2σ"}`
+      });
+    }
+
+    // ordenação visual (BUY: alto→baixo; SELL: baixo→alto)
+    tiers.sort((a,b)=> side==="BUY" ? b.entry - a.entry : a.entry - b.entry);
+    return { tiers, pts };
+  }
+
+  // monta UI de tabs + conteúdo (BUY/SELL)
+  function mountTierUI(side, host){
+    // evita duplicar
+    const markerId = side==="BUY" ? "tiersBuy" : "tiersSell";
+    if (host.querySelector(`#${markerId}`)) return;
+
+    const pack = buildTiers(side);
+    if (!pack || !pack.tiers.length) return;
+    const { tiers, pts } = pack;
+
+    const wrap = document.createElement("div");
+    wrap.className = "tier-wrap";
+    wrap.id = markerId;
+
+    const tabs = document.createElement("div");
+    tabs.className = "tier-tabs " + (side==="BUY" ? "buy" : "sell");
+
+    const box  = document.createElement("div");
+    box.className  = "tier-box";
+
+    function renderTier(t){
+      box.innerHTML = `
+        <div class="tier-line"><b>${t.label}</b></div>
+        <div class="tier-line">
+          🎯 Entrada: <b class="tier-mono">${F2(t.entry)}</b>
+          &nbsp;|&nbsp; 🛑 Stop: <b class="tier-mono">${F2(t.stop)}</b>
+          &nbsp;|&nbsp; ✅ Alvo curto: <b class="tier-mono">${F2(t.tgt)}</b>
+          &nbsp;<span class="tier-note">(± ${pts} pts)</span>
+        </div>
+        <div class="tier-note">${t.note}</div>
+        <div class="tier-note">Alvo final: manter parcial até o <b>Justíssimo</b> se a direção favorecer.</div>
+      `;
+    }
+
+    tiers.forEach((t, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "tier-tab" + (i===0 ? " active" : "");
+      b.textContent = t.label.replace("Tier-","T");
+      b.addEventListener("click", () => {
+        tabs.querySelectorAll(".tier-tab").forEach(x=>x.classList.remove("active"));
+        b.classList.add("active");
+        renderTier(t);
+      });
+      tabs.appendChild(b);
+    });
+
+    renderTier(tiers[0]);
+    wrap.appendChild(tabs);
+    wrap.appendChild(box);
+    host.appendChild(wrap);
+  }
+
+  function attach(){
+    const op = document.getElementById("aiOperation");
+    if (!op){ setTimeout(attach, 200); return; }
+
+    // Tenta achar 2 cards (compra / venda). No seu layout são .insight-card.
+    const cards = op.querySelectorAll(".insight-card, .card");
+    if (!cards.length){
+      // sem cards: injeta tudo no próprio container
+      mountTierUI("BUY",  op);
+      mountTierUI("SELL", op);
+      return;
+    }
+
+    // 1º card = compra, 2º = venda (como nas suas capturas)
+    const buyHost  = cards[0] || op;
+    const sellHost = cards[1] || op;
+
+    mountTierUI("BUY",  buyHost);
+    mountTierUI("SELL", sellHost);
+  }
+
+  // roda ao carregar e quando o painel re-renderizar
+  attach();
+  const obs = new MutationObserver(()=>attach());
+  obs.observe(document.getElementById("aiStrategyPanel") || document.body, {childList:true, subtree:true});
+})();
+</script>
+
+
+<script>
+/* ===== Tabs T1/T2/T3 – patch mínimo, sem observer ===== */
+(function(){
+  function F2(v){ return (Number.isFinite(v) ? Number(v).toFixed(2) : "--"); }
+  function ptsByVol(v){ return v>=3.0 ? 15 : (v<=1.5 ? 10 : 12); }
+
+  function buildTiers(side, ts){
+    const ga = ts.analyzeSystemGARCH?.() || {};
+    const p18= ga.p18 || {}, p27= ga.p27 || {};
+    const strat = ts.generateTradingStrategy?.() || {};
+    const seed  = side==='BUY' ? strat.long : strat.short;
+
+    const tiers = [];
+    const v18 = ts.analyzeSystemVolatility?.().p18?.volatilityPercent || 2.0;
+    const pts = ptsByVol(v18);
+
+    if (seed && Number.isFinite(seed?.entryRange?.min) && Number.isFinite(seed?.entryRange?.max)){
+      const ref1 = (seed.entryRange.min + seed.entryRange.max)/2;
+      tiers.push({ key:'t1', label:'Nível 1 - Zona Principal (Região)',
+        entry:ref1, stop:(side==='BUY')?(seed.entryRange.min-10):(seed.entryRange.max+10),
+        tgt:(side==='BUY')?(ref1+pts):(ref1-pts),
+        note:`Região: ${F2(seed.entryRange.min)}–${F2(seed.entryRange.max)}` });
+    }
+    const s18 = (side==='BUY') ? p18.down2sigma : p18.up2sigma;
+    const s27 = (side==='BUY') ? p27.down2sigma : p27.up2sigma;
+    if (Number.isFinite(s18)) tiers.push({ key:'t2', label:'Nível 2 - Extensão 18P (±2σ 18P)', entry:s18,
+      stop:(side==='BUY')?s18-10:s18+10, tgt:(side==='BUY')?s18+pts:s18-pts, note:`18P ${side==='BUY'?'−2σ':'+2σ'}` });
+    if (Number.isFinite(s27)) tiers.push({ key:'t3', label:'Nível 3 - Extremo 27P (±2σ 27P)', entry:s27,
+      stop:(side==='BUY')?s27-10:s27+10, tgt:(side==='BUY')?s27+pts:s27-pts, note:`27P ${side==='BUY'?'−2σ':'+2σ'}` });
+
+    if (!tiers.length) return null;
+    tiers.sort((a,b)=> side==='BUY' ? b.entry-a.entry : a.entry-b.entry);
+    return { tiers, pts };
+  }
+
+  function mountTierTabs(side, host, ts){
+    if (!host) return;
+    const id = side==='BUY' ? 'tiersBuy' : 'tiersSell';
+    if (host.querySelector('#'+id)) return; // já existe
+
+    const pack = buildTiers(side, ts);
+    if (!pack) return;
+    const { tiers, pts } = pack;
+
+    const wrap = document.createElement('div'); wrap.className='tier-wrap'; wrap.id=id;
+    const tabs = document.createElement('div'); tabs.className='tier-tabs ' + (side==='BUY'?'buy':'sell');
+    const box  = document.createElement('div'); box.className='tier-box';
+
+    function render(t){
+      box.innerHTML = `
+        <div class="tier-line"><b>${t.label}</b></div>
+        <div class="tier-line">
+          🎯 Entrada: <b class="tier-mono">${F2(t.entry)}</b>
+          &nbsp;|&nbsp; 🛑 Stop: <b class="tier-mono">${F2(t.stop)}</b>
+          &nbsp;|&nbsp; ✅ Alvo curto: <b class="tier-mono">${F2(t.tgt)}</b>
+          &nbsp;<span class="tier-note">(± ${pts} pts)</span>
+        </div>
+        <div class="tier-note">${t.note}</div>
+        <div class="tier-note">Alvo final: manter parcial até o <b>Justíssimo</b> se a direção favorecer.</div>`;
+    }
+
+    tiers.forEach((t,i)=>{
+      const b = document.createElement('button');
+      b.type='button';
+      b.className='tier-tab' + (i===0 ? ' active' : '');
+      b.textContent = t.label.replace('Tier-','T');
+      b.addEventListener('click', ()=>{
+        tabs.querySelectorAll('.tier-tab').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active'); render(t);
+      });
+      tabs.appendChild(b);
+    });
+    render(tiers[0]);
+    wrap.appendChild(tabs);
+    wrap.appendChild(box);
+    host.appendChild(wrap);
+  }
+
+  // --- ENVOLVE a SUA função renderStrategyPanel (sem mudar sua lógica) ---
+  function install(){
+    const ts = window.tradingSystem;
+    if (!ts || typeof ts.renderStrategyPanel !== 'function') { setTimeout(install, 150); return; }
+
+    const original = ts.renderStrategyPanel.bind(ts);
+    ts.renderStrategyPanel = function(){
+      const r = original();  // chama sua renderização original
+      try{
+        const op = document.getElementById('aiOperation');
+        if (!op) return r;
+
+        // tenta achar exatamente os dois cards gerados por você
+        const cards = op.querySelectorAll('.card-grid > .card');
+        const buyHost  = cards[0] || op;
+        const sellHost = cards[1] || op;
+
+        mountTierTabs('BUY',  buyHost,  ts);
+        mountTierTabs('SELL', sellHost, ts);
+      }catch(e){ /* silencia para não travar */ }
+      return r;
+    };
+  }
+  install();
+})();
+</script>
+<style id="tier-card-colors">
+/* fundo suave dos cards de compra/venda */
+#aiOperation .card.card-success{
+  background: linear-gradient(180deg,#ecfdf5,#ffffff);
+  border-color:#86efac;
+}
+#aiOperation .card.card-danger{
+  background: linear-gradient(180deg,#fef2f2,#ffffff);
+  border-color:#fca5a5;
+}
+
+/* Tabs T1/T2/T3 — mantém as cores nas abas ativas */
+#aiStrategyPanel .tier-wrap{margin-top:8px}
+#aiStrategyPanel .tier-tabs{display:flex;gap:6px;margin:8px 0}
+#aiStrategyPanel .tier-tab{
+  cursor:pointer; user-select:none; padding:6px 10px;
+  border:1px solid #e5e7eb; background:#fff; border-radius:999px;
+  font-size:12px; font-weight:800; color:#334155
+}
+#aiStrategyPanel .tier-tab.active{color:#fff; border-color:transparent}
+#aiStrategyPanel .tier-tabs.buy  .tier-tab.active{background:#10b981}  /* verde */
+#aiStrategyPanel .tier-tabs.sell .tier-tab.active{background:#ef4444}  /* vermelho */
+#aiStrategyPanel .tier-box{border:1px dashed #cbd5e1;border-radius:12px;padding:8px 10px;background:#f8fafc}
+#aiStrategyPanel .tier-line{font-size:12px;margin:4px 0;color:#0f172a}
+#aiStrategyPanel .tier-note{font-size:11px;color:#64748b}
+#aiStrategyPanel .tier-mono{font-variant-numeric:tabular-nums}
+
+/* headline dinâmica: ocupa o lugar do “preparar compra/venda” */
+#aiStrategyPanel .tier-headline{
+  margin:6px 0 8px; padding:8px 10px; border:1px solid #e5e7eb;
+  border-radius:10px; background:#f9fafb; font-size:12px;
+}
+#aiStrategyPanel .tier-headline .k{color:#64748b}
+#aiStrategyPanel .tier-headline .v{font-weight:900}
+</style>
+
+<script id="tier-headline-sync">
+(function(){
+  // Utilitários (leem os cálculos do seu próprio sistema)
+  const ts = window.tradingSystem;
+  if (!ts) return;
+
+  const F2 = v => (Number.isFinite(v)? Number(v).toFixed(2) : "--");
+  const vol18 = () => (ts.analyzeSystemVolatility?.().p18?.volatilityPercent || 2.0);
+  const ptsByVol = v => (v>=3 ? 15 : (v<=1.5 ? 10 : 12));
+
+  function computeTiers(side){
+    const ga = ts.analyzeSystemGARCH?.() || {}; const p18=ga.p18||{}, p27=ga.p27||{};
+    const s  = ts.generateTradingStrategy?.() || {}; const seed = side==='BUY'? s.long : s.short;
+    const pts = ptsByVol(vol18());
+    const tiers = [];
+    if (seed && Number.isFinite(seed?.entryRange?.min) && Number.isFinite(seed?.entryRange?.max)){
+      const ref1=(seed.entryRange.min+seed.entryRange.max)/2;
+      tiers.push({key:'t1', label:'Nível 1 - Zona Principal (Região)', entry:ref1,
+                  stop:(side==='BUY')?(seed.entryRange.min-10):(seed.entryRange.max+10),
+                  tgt:(side==='BUY')?(ref1+pts):(ref1-pts)});
+    }
+    const s18=(side==='BUY')?p18.down2sigma:p18.up2sigma;
+    const s27=(side==='BUY')?p27.down2sigma:p27.up2sigma;
+    if (Number.isFinite(s18)) tiers.push({key:'t2', label:'Nível 2 - Extensão Média (±2σ 18P)', entry:s18, stop:(side==='BUY')?s18-10:s18+10, tgt:(side==='BUY')?s18+pts:s18-pts});
+    if (Number.isFinite(s27)) tiers.push({key:'t3', label:'Nível 3 - Extremidade (±2σ 27P)', entry:s27, stop:(side==='BUY')?s27-10:s27+10, tgt:(side==='BUY')?s27+pts:s27-pts});
+    if (!tiers.length) return null;
+    tiers.sort((a,b)=> side==='BUY' ? b.entry-a.entry : a.entry-b.entry);
+    return {tiers, pts};
+  }
+
+  // Gera (se faltar) um bloco de headline logo abaixo do <h4> do card
+  function ensureHeadlineHost(card, side){
+    let head = card.querySelector('.tier-headline');
+    if (!head){
+      head = document.createElement('div');
+      head.className = 'tier-headline';
+      // insere depois do h4
+      const h = card.querySelector('h4') || card.firstChild;
+      h && h.parentNode.insertBefore(head, h.nextSibling);
+    }
+    // pinta o fundo do headline conforme o lado
+    head.style.background = (side==='BUY') ? '#ecfdf5' : '#fef2f2';
+    head.style.borderColor = (side==='BUY') ? '#86efac' : '#fca5a5';
+    return head;
+  }
+
+  // Atualiza a linha “sinal” (texto acima) e mantém o resumo do tier
+  function renderTierIntoCard(card, side, tier){
+    // Headline dinâmico (sinal visível)
+    const head = ensureHeadlineHost(card, side);
+    head.innerHTML = `
+      <span class="k">Análise (</span><b>${tier.label}</b><span class="k">):</span>
+      <span class="k"> Gatilho</span> <span class="v">${F2(tier.entry)}</span> ·
+      <span class="k">Stop</span> <span class="v">${F2(tier.stop)}</span> ·
+      <span class="k">Alvo</span> <span class="v">${F2(tier.tgt)}</span>
+    `;
+
+    // Bloco explicativo (se existe tier-box sob as abas, atualizamos também)
+    const box = card.querySelector('.tier-box');
+    if (box){
+      const pts = ptsByVol(vol18());
+      box.innerHTML = `
+        <div class="tier-line"><b>${tier.label}</b></div>
+        <div class="tier-line">
+          🎯 Entrada: <b class="tier-mono">${F2(tier.entry)}</b> ·
+          🛑 Stop: <b class="tier-mono">${F2(tier.stop)}</b> ·
+          ✅ Alvo curto: <b class="tier-mono">${F2(tier.tgt)}</b>
+          <span class="tier-note">(± ${pts} pts)</span>
+        </div>
+        <div class="tier-note">Alvo final: manter parcial até o <b>Justíssimo</b> se a direção favorecer.</div>
+      `;
+    }
+  }
+
+  // Liga as abas existentes (T1/T2/T3) para mudar a headline e a box
+  function wireTabs(card, side){
+    const tabs = card.querySelectorAll('.tier-tabs .tier-tab');
+    if (!tabs.length) return;
+
+    // Pré-calcula tiers
+    const pack = computeTiers(side); if (!pack) return;
+    const {tiers} = pack;
+    // Map simples por texto (T1/T2/T3)
+    const map = { 'T1': tiers.find(t=>t.key==='t1'),
+                  'T2': tiers.find(t=>t.key==='t2'),
+                  'T3': tiers.find(t=>t.key==='t3') };
+
+    // Render inicial conforme aba ativa
+    const active = Array.from(tabs).find(b=>b.classList.contains('active')) || tabs[0];
+    const key = active.textContent.trim(); if (map[key]) renderTierIntoCard(card, side, map[key]);
+
+    tabs.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        tabs.forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        const k = btn.textContent.trim();
+        const t = map[k];
+        if (t) renderTierIntoCard(card, side, t);
+      }, {once:false});
+    });
+  }
+
+  // Envolve sua renderização para religar as abas sempre que o painel for redesenhado
+  function install(){
+    const ts = window.tradingSystem;
+    if (!ts || typeof ts.renderStrategyPanel !== 'function'){ setTimeout(install,150); return; }
+    const orig = ts.renderStrategyPanel.bind(ts);
+    ts.renderStrategyPanel = function(){
+      const r = orig();
+      try{
+        const op = document.getElementById('aiOperation');
+        if (!op) return r;
+        const cards = op.querySelectorAll('.card-grid > .card');
+        const buy  = cards[0] || null;
+        const sell = cards[1] || null;
+
+        // se os blocos de tabs já existem (montados por patch anterior), apenas “liga” as mudanças
+        if (buy)  wireTabs(buy,  'BUY');
+        if (sell) wireTabs(sell, 'SELL');
+      }catch(_){}
+      return r;
+    };
+  }
+  install();
+})();
+</script>
+<!-- === TIER PRO: análise completa dentro das tabs (substitui bloco antigo) === -->
+<style id="tier-pro-css">
+/* Fundo suave dos cards (mantém) */
+#aiOperation .card.card-success{background:linear-gradient(180deg,#ecfdf5,#ffffff);border-color:#86efac;}
+#aiOperation .card.card-danger{background:linear-gradient(180deg,#fef2f2,#ffffff);border-color:#fca5a5;}
+
+/* Tabs */
+#aiStrategyPanel .tier-wrap{margin-top:8px}
+#aiStrategyPanel .tier-tabs{display:flex;gap:8px;margin:10px 0}
+#aiStrategyPanel .tier-tab{cursor:pointer;user-select:none;padding:8px 12px;border:1px solid #e5e7eb;background:#fff;border-radius:999px;font-size:12px;font-weight:900;color:#334155}
+#aiStrategyPanel .tier-tab.active{color:#fff;border-color:transparent}
+#aiStrategyPanel .tier-tabs.buy  .tier-tab.active{background:#10b981}
+#aiStrategyPanel .tier-tabs.sell .tier-tab.active{background:#ef4444}
+
+/* Painel PRO dentro do Tier (grande) */
+.tier-pro{
+  border:1px solid #e5e7eb;border-radius:12px;background:#fff;
+  padding:12px 14px;margin-top:6px;
+}
+.tier-pro h5{
+  margin:0 0 8px 0;font-size:14px;font-weight:900;color:#0f172a;
+  display:flex;align-items:center;gap:8px;
+}
+.tier-grid{
+  display:grid;grid-template-columns:1fr;gap:6px;
+}
+.tline{font-size:13px;color:#0f172a}
+.tkey{color:#64748b;font-weight:800}
+.tval{font-weight:900;font-variant-numeric:tabular-nums}
+
+/* Notas menores */
+.tnote{font-size:12px;color:#475569;margin-top:6px}
+</style>
+
+<script id="tier-pro-js">
+(function(){
+  const ts = window.tradingSystem; if(!ts) return;
+
+  const F2 = v => (Number.isFinite(v)? Number(v).toFixed(2) : "--");
+  const vol18 = () => (ts.analyzeSystemVolatility?.().p18?.volatilityPercent || 2.0);
+  const ptsByVol = v => (v>=3 ? 15 : (v<=1.5 ? 10 : 12));
+
+  function computeTiers(side){
+    const ga = ts.analyzeSystemGARCH?.()||{};
+    const p18=ga.p18||{}, p27=ga.p27||{};
+    const s  = ts.generateTradingStrategy?.()||{};
+    const seed = side==='BUY' ? s.long : s.short;
+    const pts = ptsByVol(vol18());
+    const tiers = [];
+
+    // T1 (Região)
+    if (seed && Number.isFinite(seed?.entryRange?.min) && Number.isFinite(seed?.entryRange?.max)){
+      const ref=(seed.entryRange.min+seed.entryRange.max)/2;
+      tiers.push({
+        key:'T1', label:'Nível 1 - Zona Principal (Região)',
+        entry:ref,
+        stop:(side==='BUY')?(seed.entryRange.min-10):(seed.entryRange.max+10),
+        tgt:(side==='BUY')?(ref+pts):(ref-pts),
+        note:`Região ${F2(seed.entryRange.min)}–${F2(seed.entryRange.max)}`
+      });
+    }
+    // T2 (±2σ 18P)
+    const s18=(side==='BUY')?p18.down2sigma:p18.up2sigma;
+    if (Number.isFinite(s18)){
+      tiers.push({
+        key:'T2', label:'Nível 2 - Extensão Média (±2σ 18P)',
+        entry:s18,
+        stop:(side==='BUY')?s18-10:s18+10,
+        tgt:(side==='BUY')?s18+pts:s18-pts,
+        note:`18P ${side==='BUY'?'−2σ':'+2σ'}`
+      });
+    }
+    // T3 (±2σ 27P)
+    const s27=(side==='BUY')?p27.down2sigma:p27.up2sigma;
+    if (Number.isFinite(s27)){
+      tiers.push({
+        key:'T3', label:'Nível 3 - Extremidade (±2σ 27P)',
+        entry:s27,
+        stop:(side==='BUY')?s27-10:s27+10,
+        tgt:(side==='BUY')?s27+pts:s27-pts,
+        note:`27P ${side==='BUY'?'−2σ':'+2σ'}`
+      });
+    }
+    if (!tiers.length) return null;
+
+    // ordena para visual (BUY: alto→baixo; SELL: baixo→alto)
+    tiers.sort((a,b)=> side==='BUY' ? b.entry-a.entry : a.entry-b.entry);
+    return {tiers, pts, p18};
+  }
+
+  // Apaga o bloco antigo “circundado”: tudo entre <h4> e a área de tiers
+  function wipeLegacyBlock(card){
+    // Se ainda não foi limpo, mova tudo para um holder e esconda
+    if (!card.querySelector('.legacy-block')){
+      const legacy = document.createElement('div');
+      legacy.className='legacy-block'; legacy.style.display='none';
+      const h = card.querySelector('h4');
+      // move nodos entre o h4 e a tier-wrap (se existir)
+      const until = card.querySelector('.tier-wrap');
+      const toMove = [];
+      let n = h ? h.nextSibling : card.firstChild;
+      while(n && n!==until){ const next=n.nextSibling; toMove.push(n); n=next; }
+      toMove.forEach(node=> legacy.appendChild(node));
+      card.insertBefore(legacy, until || null);
+    }
+  }
+
+  // Constrói o painel PRO (dentro do Tier selecionado)
+  function renderTierPro(card, side, tier, refs){
+    wipeLegacyBlock(card);
+
+    // cria/garante a caixa onde vai a análise PRO
+    let pro = card.querySelector('.tier-pro');
+    if (!pro){
+      pro = document.createElement('div'); pro.className='tier-pro';
+      // injeta logo após a barra de tabs (ou no final do card)
+      const afterTabs = card.querySelector('.tier-wrap') || card;
+      afterTabs.appendChild(pro);
+    }
+
+    // calcula R/R do tier
+    const rr = (Math.abs(tier.tgt - tier.entry) / Math.abs(tier.entry - tier.stop)) || 0;
+
+    // referencias de bandas (usamos p18 para +1σ / −1σ)
+    const up1 = refs?.p18?.up1sigma, dn1 = refs?.p18?.down1sigma;
+
+    pro.innerHTML = `
+      <h5>${side==='BUY'?'🟢 Compra':'🔴 Venda'} — <span>${tier.label}</span></h5>
+      <div class="tier-grid">
+        <div class="tline"><span class="tkey">Gatilho:</span> <span class="tval">${F2(tier.entry)}</span></div>
+        <div class="tline"><span class="tkey">Stop:</span>    <span class="tval">${F2(tier.stop)}</span></div>
+        <div class="tline"><span class="tkey">Alvo curto:</span> <span class="tval">${F2(tier.tgt)}</span>  ·  <span class="tkey">R/R:</span> <span class="tval">1:${rr.toFixed(2)}</span></div>
+        ${Number.isFinite(up1)&&Number.isFinite(dn1) ? `<div class="tline"><span class="tkey">Bandas 18P:</span> +1σ ${F2(up1)}  ·  −1σ ${F2(dn1)}</div>` : ``}
+        <div class="tnote">${tier.note || ''}</div>
+        <div class="tnote">Alvo final: manter parcial até o <b>Justíssimo</b> se a direção favorecer.</div>
+      </div>
+    `;
+  }
+
+  // Liga as abas já existentes; quando trocar, reescreve a análise PRO e mantém topo limpo
+  function wireCard(card){
+    // identifique lado pelo CSS/título
+    const isBuy  = card.classList.contains('card-success') || /compra/i.test(card.textContent);
+    const side   = isBuy ? 'BUY' : 'SELL';
+
+    const pack = computeTiers(side); if (!pack) return;
+    const {tiers, p18} = pack;
+    const tabs = card.querySelectorAll('.tier-tabs .tier-tab');
+
+    // mapeia T1/T2/T3
+    const map = { T1: tiers.find(t=>t.key==='T1'),
+                  T2: tiers.find(t=>t.key==='T2'),
+                  T3: tiers.find(t=>t.key==='T3') };
+
+    // render inicial conforme aba ativa; se não houver, T1
+    const active = Array.from(tabs).find(b=>b.classList.contains('active')) || tabs[0];
+    const key0   = (active?.textContent||'T1').trim();
+    const first  = map[key0] || map.T1 || tiers[0];
+    if (first) renderTierPro(card, side, first, {p18});
+
+    // liga cliques
+    tabs.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        tabs.forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        const k = (btn.textContent||'').trim();
+        const t = map[k] || map.T1 || tiers[0];
+        if (t) renderTierPro(card, side, t, {p18});
+      }, {once:false});
+    });
+  }
+
+  // Hook na sua renderização para rodar SEM alterar sua lógica
+  function install(){
+    if (!ts || typeof ts.renderStrategyPanel !== 'function'){ setTimeout(install,150); return; }
+    const orig = ts.renderStrategyPanel.bind(ts);
+    ts.renderStrategyPanel = function(){
+      const r = orig();
+      try{
+        const op = document.getElementById('aiOperation'); if (!op) return r;
+        const cards = op.querySelectorAll('.card-grid > .card'); // [0]=compra, [1]=venda
+        if (cards[0]) wireCard(cards[0]);
+        if (cards[1]) wireCard(cards[1]);
+      }catch(_){}
+      return r;
+    };
+  }
+  install();
+})();
+</script>
+<!-- === /FINAL PATCH === -->
+
+
+
+
+
+
+
+
+
+<!-- ===== FINAL TIER SYNC — SINGLE CONTROL (no duplicates) ===== -->
+<style id="final-tier-sync-one-css">
+  #aiOperation .card { position: relative; }
+  .tier-tabs { display:flex; gap:8px; margin:10px 0; }
+  .tier-tab { cursor:pointer; user-select:none; padding:8px 12px; border:1px solid #e5e7eb; background:#fff; border-radius:999px; font-size:12px; font-weight:900; color:#334155 }
+  .tier-tab.active { color:#fff; border-color:transparent }
+  .tier-tabs.buy  .tier-tab.active{ background:#10b981 }
+  .tier-tabs.sell .tier-tab.active{ background:#ef4444 }
+  .tier-box{ border:1px dashed #cbd5e1; border-radius:12px; padding:8px 10px; background:#f8fafc }
+  .headline{ margin:6px 0 8px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:10px; background:#f9fafb; font-size:12px; }
+  .headline .k{ color:#64748b } .headline .v{ font-weight:900 }
+  .mono{ font-variant-numeric: tabular-nums; }
+
+  /* Hide any legacy tier blocks injected by older patches */
+  /* (auto-removed by tier-fix) legacy hide rules deleted */
+</style>
+<script id="final-tier-sync-one-js">
+(function(){
+  function ready(fn){ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  ready(function waitTS(){
+    var tries=0, h=setInterval(function(){
+      var ts = window.tradingSystem;
+      if(ts && typeof ts.analyzeSystemGARCH==='function' && typeof ts.generateTradingStrategy==='function'){
+        clearInterval(h); install(ts);
+      }
+      if(++tries>200) clearInterval(h);
+    },100);
+  });
+
+  function F2(v){ return (Number.isFinite(v)? Number(v).toFixed(2) : '--'); }
+  function rr(entry, tgt, stop){ var g=Math.abs(tgt-entry), l=Math.abs(entry-stop); return l>0? g/l : 0; }
+  function vol18(ts){ var v = ts.analyzeSystemVolatility(); return v && v.p18 ? (v.p18.volatilityPercent||2.0) : 2.0; }
+  function ptsByVol(v){ return v>=3.0?15:(v<=1.5?10:12); }
+
+  function buildTiers(ts, side){
+    var ga = ts.analyzeSystemGARCH() || {}, p18 = ga.p18||{}, p27 = ga.p27||{};
+    var strat = ts.generateTradingStrategy() || {}; 
+    var seed  = side==='BUY' ? strat.long : strat.short;
+    var pts = ptsByVol(vol18(ts));
+    var tiers = [];
+
+    if(seed && Number.isFinite(seed.entryRange?.min) && Number.isFinite(seed.entryRange?.max)){
+      var ref = (seed.entryRange.min + seed.entryRange.max)/2;
+      tiers.push({ key:'T1', label:'Nível 1 - Zona Principal (Região)', entry:ref,
+        stop:(side==='BUY')?(seed.entryRange.min-10):(seed.entryRange.max+10),
+        tgt:(side==='BUY')?(ref+pts):(ref-pts),
+        note:'Região '+F2(seed.entryRange.min)+'–'+F2(seed.entryRange.max) });
+    }
+    var s18 = (side==='BUY')? p18.down2sigma : p18.up2sigma;
+    var s27 = (side==='BUY')? p27.down2sigma : p27.up2sigma;
+    if(Number.isFinite(s18)){
+      tiers.push({ key:'T2', label:'Nível 2 - Extensão 18P (±2σ 18P)', entry:s18,
+        stop:(side==='BUY')? (s18-10) : (s18+10),
+        tgt:(side==='BUY')? (s18+pts) : (s18-pts),
+        note:'18P '+ (side==='BUY'?'−2σ':'+2σ') });
+    }
+    if(Number.isFinite(s27)){
+      tiers.push({ key:'T3', label:'Nível 3 - Extremo 27P (±2σ 27P)', entry:s27,
+        stop:(side==='BUY')? (s27-10) : (s27+10),
+        tgt:(side==='BUY')? (s27+pts) : (s27-pts),
+        note:'27P '+ (side==='BUY'?'−2σ':'+2σ') });
+    }
+    if(!tiers.length) return null;
+    tiers.sort(function(a,b){ return side==='BUY' ? (b.entry-a.entry) : (a.entry-b.entry); });
+    return { tiers: tiers, pts: pts, p18: p18 };
+  }
+
+  function removeLegacy(op){
+    var bad = op.querySelectorAll('.tier-wrap, #tiersBuy, #tiersSell, .tier-pro, .tier-headline');
+    bad.forEach(function(n){ n.remove(); });
+  }
+
+  function renderCard(ts, side, host){
+    var pack = buildTiers(ts, side);
+    host.innerHTML = ''; // limpa qualquer conteúdo antigo
+    if(!pack){ host.innerHTML = '<p style="font-size:12px;color:#64748b">Sem dados suficientes para '+(side==='BUY'?'compra':'venda')+'.</p>'; return; }
+    var tiers = pack.tiers, pts = pack.pts;
+
+    var tabs = document.createElement('div'); tabs.className = 'tier-tabs ' + (side==='BUY'?'buy':'sell');
+    var box  = document.createElement('div'); box.className  = 'tier-box';
+    var head = document.createElement('div'); head.className = 'headline';
+
+    var storeKey = side==='BUY' ? 'tierBuySelected' : 'tierSellSelected';
+    var selectedKey = localStorage.getItem(storeKey) || (tiers[0].key);
+
+    function apply(t){
+      localStorage.setItem(storeKey, t.key);
+      head.innerHTML = ''
+        + '<span class="k">Análise (</span><b>'+t.label+'</b><span class="k">):</span> '
+        + '<span class="k">Gatilho</span> <span class="v mono">'+F2(t.entry)+'</span> · '
+        + '<span class="k">Stop</span> <span class="v mono">'+F2(t.stop)+'</span> · '
+        + '<span class="k">Alvo</span> <span class="v mono">'+F2(t.tgt)+'</span> · '
+        + '<span class="k">R/R</span> <span class="v">1:'+rr(t.entry,t.tgt,t.stop).toFixed(2)+'</span>';
+
+      box.innerHTML = ''
+        + '<div style="font-size:12px;margin:4px 0">🎯 Entrada: <b class="mono">'+F2(t.entry)+'</b> '
+        + ' | 🛑 Stop: <b class="mono">'+F2(t.stop)+'</b> '
+        + ' | ✅ Alvo curto: <b class="mono">'+F2(t.tgt)+'</b> '
+        + ' <span style="opacity:.7">(± '+pts+' pts)</span></div>'
+        + (t.note ? '<div style="font-size:11px;color:#64748b">'+t.note+'</div>' : '')
+        + '<div style="font-size:11px;color:#64748b">Alvo final: manter parcial até o <b>Justíssimo</b> se a direção favorecer.</div>';
+    }
+
+    tiers.forEach(function(t){
+      var b = document.createElement('button');
+      b.type='button'; b.className = 'tier-tab' + (t.key===selectedKey?' active':'');
+      b.textContent = t.key;
+      b.addEventListener('click', function(){
+        tabs.querySelectorAll('.tier-tab').forEach(function(x){ x.classList.remove('active'); });
+        b.classList.add('active'); apply(t);
+      });
+      tabs.appendChild(b);
+      if (t.key===selectedKey) apply(t);
+    });
+
+    host.appendChild(head);
+    host.appendChild(tabs);
+    host.appendChild(box);
+  }
+
+  function install(ts){
+    ts.renderStrategyPanel = function(){
+      try{
+        var op  = document.getElementById('aiOperation');
+        var rk  = document.getElementById('aiRisk');
+        var lv  = document.getElementById('aiLevels');
+        if(!op) return;
+
+        // limpa duplicatas antigas
+        removeLegacy(op);
+
+        // cards base
+        op.innerHTML = ''
+          + '<div class="card-grid">'
+          + '  <div class="card card-success" id="cardBUY">'
+          + '    <h4>🟢 COMPRA — 3 MÍNIMAS</h4>'
+          + '  </div>'
+          + '  <div class="card card-danger" id="cardSELL">'
+          + '    <h4>🔴 VENDA — 3 MÁXIMAS</h4>'
+          + '  </div>'
+          + '</div>';
+
+        renderCard(ts, 'BUY',  document.getElementById('cardBUY'));
+        renderCard(ts, 'SELL', document.getElementById('cardSELL'));
+
+        // Gestão de risco + níveis (resumo)
+        if(rk){
+          rk.innerHTML = '<div class="card card-info" style="border-color:#fca5a5; background:linear-gradient(180deg,#fef2f2,#ffffff);">'
+            + '<h4>⚠️ GESTÃO DE RISCO</h4>'
+            + '<p>Stop: 10 pts além da última máxima/mínima do lado da operação.</p>'
+            + '<p>Alvo curto: 10–15 pts (vol 18P). Alvo final: Justíssimo se favorecer.</p>'
+            + '<p>Break-even a +8 pts; reduzir lote se vol 18P > 3.0%.</p>'
+            + '</div>';
+        }
+        if(lv){
+          var g = (ts.analyzeSystemGARCH()||{}).p18 || {};
+          lv.innerHTML = '<div class="nd-wrap">'
+            + '<h4 class="nd-title">🧷 Níveis de Decisão</h4>'
+            + '<div class="nd-row">'
+            + '  <div class="nd-pill"><div class="nd-label red">RESISTÊNCIA FORTE</div><div class="nd-value">'+F2(g.up1sigma)+'</div></div>'
+            + '  <div class="nd-pill"><div class="nd-label green">SUPORTE FORTE</div><div class="nd-value">'+F2(g.down1sigma)+'</div></div>'
+            + '</div></div>';
+        }
+      }catch(e){ console.warn('renderStrategyPanel override error', e); }
+    };
+
+    // remove qualquer injeção de tiers que aparecer depois
+    var scrubber = new MutationObserver(function(muts){
+      var op = document.getElementById('aiOperation'); if(!op) return;
+      removeLegacy(op);
+    });
+    scrubber.observe(document.getElementById('aiStrategyPanel')||document.body, {childList:true, subtree:true});
+
+    function hookAfter(name){
+      if(typeof ts[name] !== 'function') return;
+      var orig = ts[name].bind(ts);
+      ts[name] = function(){ var r=orig.apply(ts, arguments); try{ ts.renderStrategyPanel(); }catch(_){ } return r; };
+    }
+    hookAfter('performAIAnalysis');
+    hookAfter('updateAIDisplay');
+
+    setTimeout(function(){ try{ ts.renderStrategyPanel(); }catch(_){ } }, 300);
+  }
+})();
+</script>
+<!-- ===== /FINAL TIER SYNC — SINGLE CONTROL ===== -->
+
+
+<style id="tier-fix-force-display">
+  /* === tier-fix: garante que os blocos de tier ficam visíveis === */
+  #aiOperation .tier-wrap,
+  #aiOperation #tiersBuy,
+  #aiOperation #tiersSell,
+  #aiOperation .tier-pro,
+  #aiOperation .tier-headline { display: block !important; }
+</style>
+
+<script id="tier-fix-sync-2025-09">
+(function(){
+  function ready(fn){ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+  function F2(v){ return (Number.isFinite(v)? Number(v).toFixed(2) : '--'); }
+  function RR(entry, tgt, stop){ var g=Math.abs(tgt-entry), l=Math.abs(entry-stop); return l>0? (g/l) : 0; }
+  function vol18(ts){ var v = ts.analyzeSystemVolatility?.(); return v && v.p18 ? (v.p18.volatilityPercent||2.0) : 2.0; }
+  function ptsByVol(v){ return v>=3.0 ? 15 : (v<=1.5 ? 10 : 12); }
+
+  function computeTiers(ts, side){
+    var ga = ts.analyzeSystemGARCH?.() || {}; var p18 = ga.p18||{}, p27=ga.p27||{};
+    var s  = ts.generateTradingStrategy?.() || {}; var seed = side==='BUY' ? s.long : s.short;
+    var tiers = []; var pts = ptsByVol(vol18(ts));
+
+    if (seed && Number.isFinite(seed.entryRange?.min) && Number.isFinite(seed.entryRange?.max)){
+      var ref = (seed.entryRange.min + seed.entryRange.max)/2;
+      tiers.push({ key:'T1', label:'Nível 1 - Zona Principal (Região)', entry:ref,
+        stop:(side==='BUY')?(seed.entryRange.min-10):(seed.entryRange.max+10),
+        tgt:(side==='BUY')?(ref+pts):(ref-pts),
+        note:'Região '+F2(seed.entryRange.min)+'–'+F2(seed.entryRange.max) });
+    }
+    var s18 = (side==='BUY')? p18.down2sigma : p18.up2sigma;
+    var s27 = (side==='BUY')? p27.down2sigma : p27.up2sigma;
+    if (Number.isFinite(s18)) tiers.push({ key:'T2', label:'Nível 2 - Extensão 18P (±2σ 18P)', entry:s18,
+      stop:(side==='BUY')? (s18-10) : (s18+10), tgt:(side==='BUY')? (s18+pts) : (s18-pts),
+      note:'18P '+(side==='BUY'?'−2σ':'+2σ') });
+    if (Number.isFinite(s27)) tiers.push({ key:'T3', label:'Nível 3 - Extremo 27P (±2σ 27P)', entry:s27,
+      stop:(side==='BUY')? (s27-10) : (s27+10), tgt:(side==='BUY')? (s27+pts) : (s27-pts),
+      note:'27P '+(side==='BUY'?'−2σ':'+2σ') });
+
+    if (!tiers.length) return null;
+    tiers.sort(function(a,b){ return side==='BUY' ? b.entry-a.entry : a.entry-b.entry; });
+    return {tiers:tiers};
+  }
+
+  function ensureHeadlineHost(card, side){
+    var head = card.querySelector('.tier-headline');
+    if(!head){
+      head = document.createElement('div');
+      head.className = 'tier-headline';
+      var h = card.querySelector('h4') || card.firstChild;
+      if (h && h.parentNode) h.parentNode.insertBefore(head, h.nextSibling);
+      else card.insertBefore(head, card.firstChild);
+    }
+    head.style.background   = (side==='BUY') ? '#ecfdf5' : '#fef2f2';
+    head.style.borderColor  = (side==='BUY') ? '#86efac' : '#fca5a5';
+    return head;
+  }
+
+  function renderInto(card, side, tier){
+    var head = ensureHeadlineHost(card, side);
+    var rr   = RR(tier.entry, tier.tgt, tier.stop);
+    head.innerHTML =
+      '<span class=\"k\">Análise (</span><b>'+ tier.label +'</b><span class=\"k\">):</span> ' +
+      '<span class=\"k\">Gatilho</span> <span class=\"v\">'+ F2(tier.entry) +'</span> · ' +
+      '<span class=\"k\">Stop</span> <span class=\"v\">'+ F2(tier.stop) +'</span> · ' +
+      '<span class=\"k\">Alvo</span> <span class=\"v\">'+ F2(tier.tgt) +'</span> · ' +
+      '<span class=\"k\">R/R</span> <span class=\"v\">1:'+ rr.toFixed(2) +'</span>';
+
+    var box = card.querySelector('.tier-box');
+    if (box){
+      var pts = ptsByVol(vol18(window.tradingSystem||{}));
+      box.innerHTML =
+        '<div class=\"tier-line\"><b>'+ tier.label +'</b></div>' +
+        '<div class=\"tier-line\">🎯 Entrada: <b class=\"tier-mono\">'+ F2(tier.entry) +'</b> ' +
+        '&nbsp;|&nbsp; 🛑 Stop: <b class=\"tier-mono\">'+ F2(tier.stop) +'</b> ' +
+        '&nbsp;|&nbsp; ✅ Alvo curto: <b class=\"tier-mono\">'+ F2(tier.tgt) +'</b> ' +
+        '&nbsp;<span class=\"tier-note\">(± '+ pts +' pts)</span></div>' +
+        (tier.note ? '<div class=\"tier-note\">'+ tier.note +'</div>' : '') +
+        '<div class=\"tier-note\">Alvo final: manter parcial até o <b>Justíssimo</b> se a direção favorecer.</div>';
+    }
+  }
+
+  function wireCard(card){
+    var isBuy = card.classList.contains('card-success') || /compra/i.test(card.textContent);
+    var side  = isBuy ? 'BUY' : 'SELL';
+    var pack  = computeTiers(window.tradingSystem||{}, side);
+    if(!pack) return;
+    var tabs = card.querySelectorAll('.tier-tabs .tier-tab');
+    if(!tabs.length) return;
+    var map = {};
+    pack.tiers.forEach(function(t){ map[t.key] = t; });
+
+    function activeKey(btn){
+      var txt = (btn.textContent||'').trim().toUpperCase();
+      return txt==='T1' ? 'T1' : (txt==='T2' ? 'T2' : 'T3');
+    }
+
+    // initial render
+    var active = Array.prototype.find.call(tabs, function(b){return b.classList.contains('active');}) || tabs[0];
+    var key0   = activeKey(active);
+    renderInto(card, side, map[key0] || pack.tiers[0]);
+
+    // clicks
+    tabs.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        tabs.forEach(function(x){ x.classList.remove('active'); });
+        btn.classList.add('active');
+        var k = activeKey(btn);
+        renderInto(card, side, map[k] || pack.tiers[0]);
+      }, {once:false});
+    });
+  }
+
+  function install(){
+    var ts = window.tradingSystem;
+    if (!ts || typeof ts.renderStrategyPanel !== 'function'){
+      setTimeout(install, 120);
+      return;
+    }
+    var original = ts.renderStrategyPanel.bind(ts);
+    ts.renderStrategyPanel = function(){
+      var r = original();
+      try{
+        var op = document.getElementById('aiOperation');
+        if(!op) return r;
+        var cards = op.querySelectorAll('.card-grid > .card');
+        if(cards[0]) wireCard(cards[0]);
+        if(cards[1]) wireCard(cards[1]);
+      }catch(e){ /* silent */ }
+      return r;
+    };
+  }
+  ready(install);
+})();
+</script>
+
+
+
+
+
+
+
+<script id="fix-a2-daily-final">
+(function(){
+  // -------- helpers (locale-safe) --------
+  function numBR(v){
+    if (v==null || v==='') return NaN;
+    if (typeof v === 'number') return v;
+    var s = (''+v).trim();
+    if (!s) return NaN;
+    if (s.indexOf(',')>-1 && s.indexOf('.')>-1){ s = s.replace(/\./g,'').replace(',', '.'); return parseFloat(s); }
+    if (s.indexOf(',')>-1){ return parseFloat(s.replace(',', '.')); }
+    return parseFloat(s);
+  }
+  function fmtMoneyBR(x){
+    var s = Number(x).toFixed(2);
+    var p = s.split('.'); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+    return p[0] + ',' + p[1];
+  }
+  function fmtPts(x){ return Number(x).toFixed(2).replace('.', ','); } // sem milhar
+
+  function readVWAPD(){ return numBR(document.getElementById('vwapD')?.value); }
+
+  function parseTier(box){
+    var txt = box.textContent || '';
+    var mE = txt.match(/Entrada:\s*([\d\.,]+)/);
+    var mS = txt.match(/Stop:\s*([\d\.,]+)/);
+    var mT = txt.match(/Alvo curto:\s*([\d\.,]+)/);
+    return { entry: numBR(mE && mE[1]), stop: numBR(mS && mS[1]), tgt: numBR(mT && mT[1]) };
+  }
+
+  function detectSide(vals){
+    if (!isFinite(vals.entry) || !isFinite(vals.tgt)) return null;
+    return (vals.tgt >= vals.entry) ? 'BUY' : 'SELL';
+  }
+
+  function cleanHeadline(card){
+    var h = card.querySelector('.tier-headline'); if (!h) return;
+    var s = h.innerHTML || '';
+    s = s.replace(/Extens[aã]o\s*18P/gi, 'Extensão Média')
+         .replace(/Extremo\s*27P/gi, 'Extremidade')
+         .replace(/\s*\([^)]*\)/g, '');  // remove tudo entre parênteses
+    h.innerHTML = s;
+  }
+
+  function colorSigmaAlert(box, side){
+    var color = side==='BUY' ? '#065f46' : '#991b1b';
+    box.querySelectorAll('.tier-note').forEach(function(n){
+      var t=(n.textContent||'').trim();
+      if (/\b(18P|27P)\b.*σ/.test(t) || /Zona de sobre(venda|compra) estatística/i.test(t)){
+        var msg = side==='BUY' ? 'Zona de sobrevenda estatística' : 'Zona de sobrecompra estatística';
+        n.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;color:'+color+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm11-3h-2v-2h2v2zm0-4h-2V8h2v6z"/></svg><span>'+msg+'</span></span>';
+      }
+    });
+  }
+
+  function enforceA2Daily(box, side, vals, vwapD){
+    if (!isFinite(vwapD) || !isFinite(vals.entry) || !isFinite(vals.stop)) return;
+    if (side==='BUY' && vwapD < vals.entry) return;
+    if (side==='SELL' && vwapD > vals.entry) return;
+
+    // remove qualquer A2 existente (Mensal/Semanal antigos)
+    Array.from(box.querySelectorAll('.tier-note.a2')).forEach(n=>n.remove());
+
+    var rr = Math.abs((vwapD - vals.entry) / (vals.entry - vals.stop)) || 0;
+    var delta = vwapD - vals.entry;
+    var sign = delta>=0 ? '+' : '';
+    var div = document.createElement('div');
+    div.className = 'tier-note a2';
+    div.innerHTML = '🎯 Alvo VWAP (A2 – Diária): <b class="tier-mono">'+ fmtMoneyBR(vwapD) +'</b> · Δ='+sign+ fmtPts(Math.abs(delta)) +' pts · R/R=1:'+ rr.toFixed(2);
+    var after = box.querySelector('.tier-note');
+    (after && after.parentNode) ? after.parentNode.insertBefore(div, after.nextSibling) : box.appendChild(div);
+  }
+
+  function apply(){
+    var op = document.getElementById('aiOperation'); if(!op) return;
+    var cards = op.querySelectorAll('.card, .card-grid > .card');
+    var vD = readVWAPD();
+    cards.forEach(function(card){
+      var box = card.querySelector('.tier-box') || card; if(!box) return;
+      var vals = parseTier(box);
+      var side = detectSide(vals) || 'BUY';
+      var fp = [vals.entry, vals.stop, vals.tgt, vD, side, (card.querySelector('.tier-tabs .active, .tier-tabs .is-active')||{}).textContent].join('|');
+      if (card.dataset._a2fp === fp) return;
+      cleanHeadline(card);
+      colorSigmaAlert(box, side);
+      enforceA2Daily(box, side, vals, vD);
+      card.dataset._a2fp = fp;
+    });
+  }
+
+  // run stably
+  var scheduled=false;
+  function schedule(){ if(scheduled) return; scheduled=true; requestAnimationFrame(function(){ scheduled=false; apply(); }); }
+  document.addEventListener('click', function(e){
+    if (e.target?.classList?.contains('tier-tab') || e.target?.closest('.tier-tab')) schedule();
+  }, {passive:true});
+  new MutationObserver(function(){ schedule(); }).observe(document.getElementById('aiStrategyPanel')||document.body, {childList:true, subtree:true});
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', schedule); else schedule();
+})();
+</script>
 
 </body>
+<!-- Indicadores de Proximidade (Preço Atual) -->
+<script>
+function getProximityStatus(currentPrice, entryPrice) {
+  const distance = Math.abs(currentPrice - entryPrice);
+  if (distance <= 5) return "🎯 MUITO PRÓXIMO";
+  if (distance <= 10) return "⚠️ PRÓXIMO";
+  if (distance <= 20) return "📍 DISTANTE";
+  return "🔍 MUITO DISTANTE";
+}
+</script>
+
+<!-- Estilos adicionais para a visualização -->
+<style>
+  .proximity-badge {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: #f3f4f6;
+    color: #374151;
+    font-weight: 700;
+  }
+  .tier-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .tier-levels {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .level-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #f9fafb;
+  }
+  .level-item.entry { border-left: 3px solid #3b82f6; }
+  .level-item.stop { border-left: 3px solid #ef4444; }
+  .level-item.target { border-left: 3px solid #10b981; }
+  .level-label { font-size: 12px; color: #6b7280; font-weight: 600; }
+  .level-value { font-weight: 900; font-variant-numeric: tabular-nums; }
+  .level-detail {
+    font-size: 10px;
+    color: #9ca3af;
+    margin-left: 8px;
+  }
+  .tier-explanation, .tier-action {
+    font-size: 12px;
+    padding: 8px;
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+  .tier-explanation {
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+    color: #1e40af;
+  }
+  .tier-action {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+  }
+  .proximity {
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .tier-pro {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    padding: 12px 14px;
+    margin-top: 6px;
+  }
+  .tier-pro h5 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 900;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tier-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .tline {
+    font-size: 13px;
+    color: #0f172a;
+  }
+  .tkey {
+    color: #64748b;
+    font-weight: 800;
+  }
+  .tval {
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+  }
+  .tnote {
+    font-size: 12px;
+    color: #475569;
+    margin-top: 6px;
+  }
+</style>
