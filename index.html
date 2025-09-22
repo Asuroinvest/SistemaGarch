@@ -708,7 +708,13 @@
           system: this.selectedSystem,
           loginTime: Date.now()
         }));
-        
+        // Persistência: tenant e versão usados pelo dashboard
+        try {
+          const tenant = this.buildTenantId(email);
+          sessionStorage.setItem('tenantId', tenant);
+          sessionStorage.setItem('versionTag', 'default');
+          console.log('Tenant definido para o dashboard:', tenant);
+        } catch (e) { console.warn('Não foi possível definir tenantId:', e); }
         console.log('SessÃ£o criada:', this.sessionData);
       }
       
@@ -745,7 +751,17 @@
         return Math.max(0, this.lockoutUntil - Date.now());
       }
       
-      // UI helpers
+      
+
+      buildTenantId(email) {
+        // Prefer ?tenant= in URL (e.g., index.html?tenant=cnpj-123)
+        const qp = new URLSearchParams(location.search);
+        const t = qp.get('tenant');
+        const raw = t && t.trim() ? t.trim() : (email ? email.split('@')[0] : 'genesis-trading');
+        return raw.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+      }
+
+// UI helpers
       showError(message) {
         const errorDiv = document.getElementById('errorMessage');
         const successDiv = document.getElementById('successMessage');

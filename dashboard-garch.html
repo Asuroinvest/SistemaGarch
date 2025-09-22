@@ -6117,6 +6117,540 @@ lv.innerHTML = `
 })();
 </script>
 
+
+<!-- ===== Intraday Enhancements Patch v2 ===== -->
+<script>
+(function(){
+  if (window.__intradayEnhancementsPatchedV2__) return;
+  window.__intradayEnhancementsPatchedV2__ = true;
+  try { console.log("[Intraday Patch] v2 loaded"); } catch(e){}
+
+  // ---- Polyfills ----
+  if (typeof Math.erf !== "function"){
+    // Abramowitz & Stegun approximation
+    Math.erf = function(x){
+      const sign = (x>=0)?1:-1; x=Math.abs(x);
+      const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+      const t=1/(1+p*x);
+      const y=1-((((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t)*Math.exp(-x*x);
+      return sign*y;
+    };
+  }
+
+  // ---- Helpers ----
+  function _phi(x){ return 0.5*(1+Math.erf(x/Math.SQRT2)); }
+  function _z(level, ref, sigmaPct){ 
+    if(!isFinite(level)||!isFinite(ref)||!isFinite(sigmaPct)||sigmaPct<=0) return NaN;
+    return (level/ref - 1) / (sigmaPct/100);
+  }
+  function _pTouch(level, ref, sigmaPct, side){
+    const z = _z(level, ref, sigmaPct);
+    if(!isFinite(z)) return 0;
+    return (side==='BUY') ? (1 - _phi(z)) : _phi(z);
+  }
+  function _evPoints(entry, tgt, stop, pWin){
+    if(![entry,tgt,stop,pWin].every(isFinite)) return 0;
+    const reward = Math.abs(tgt - entry);
+    const risk   = Math.abs(entry - stop);
+    const p      = Math.max(0, Math.min(1, pWin));
+    return p*reward - (1-p)*risk;
+  }
+  function _regionQuality(levels, vwapD, vwapS, vwapM){
+    const lv = (levels||[]).filter(isFinite);
+    if(lv.length<2) return 40;
+    const spread = Math.max(...lv) - Math.min(...lv);
+    const tight   = Math.max(0, 1 - spread/20);
+    const vwapRef = [vwapD, vwapS, vwapM].filter(isFinite);
+    let vCons = 0;
+    if (vwapRef.length){
+      const ref = vwapRef.reduce((a,b)=>a+b,0)/vwapRef.length;
+      const dist = Math.abs(((ref - (lv[0]+lv[lv.length-1])/2) / ref))*100;
+      vCons = Math.max(0, 1 - dist/0.6);
+    }
+    return Math.round(100 * (0.65*tight + 0.35*vCons));
+  }
+  function _num(v){
+    if(v==null) return NaN;
+    if(typeof v === 'number') return v;
+    const t = String(v).replace(/\s+/g,'').replace(/\./g,'').replace(',', '.');
+    const n = parseFloat(t);
+    return isFinite(n)?n:NaN;
+  }
+  function _getVWAP(id){
+    try{
+      const el = document.getElementById(id);
+      if(!el) return NaN;
+      return _num(el.value ?? el.textContent);
+    }catch(e){ return NaN; }
+  }
+
+  function findCards(){
+    const buy = document.getElementById('cardBUY')  || document.querySelector('#aiOperation .card.card-success') || document.querySelector('.card.buy') || document.querySelector('.card-success');
+    const sell= document.getElementById('cardSELL') || document.querySelector('#aiOperation .card.card-danger')  || document.querySelector('.card.sell')|| document.querySelector('.card-danger');
+    return {buy, sell};
+  }
+
+  function getSystem(){
+    const sys = window.system || window.tradingSystem || window.aiSystem || window.TradingSystem || window.app || null;
+    return sys;
+  }
+
+  function calcSigmaPct(sys){
+    const p = (sys && sys.currentIntradayP) || 18;
+    let s = NaN;
+    if(sys && typeof sys.calculateStdDevReturns === 'function'){
+      s = sys.calculateStdDevReturns(p);
+    } else if (typeof window.calculateStdDevReturns === 'function'){
+      s = window.calculateStdDevReturns(p);
+    }
+    return {period: p, sigmaPct: isFinite(s)?(s*100):NaN};
+  }
+
+  function lastClose(sys){
+    if(sys && typeof sys.lastClose === 'function') return sys.lastClose();
+    if(typeof window.lastClose === 'function') return window.lastClose();
+    const el = document.querySelector('[data-last-close], #lastClose, .last-close');
+    if(el) return _num(el.textContent||el.value);
+    return NaN;
+  }
+
+  function renderCardStats(card, side, entry, target, stop, opts){
+    if(!card) return;
+    card.querySelectorAll('[data-block="intraday-stats"]').forEach(n=>n.remove());
+    const {period, sigmaPct} = opts;
+    const px = opts.priceRef;
+
+    const pEntry = _pTouch(entry, px, sigmaPct, side);
+    const pTgt   = _pTouch(target, entry, sigmaPct, side);
+    const pStop  = _pTouch(stop,   entry, sigmaPct, side==='BUY'?'SELL':'BUY');
+    const pWin   = Math.max(0, Math.min(1, pTgt / (pTgt + pStop + 1e-9)));
+    const ev     = _evPoints(entry, target, stop, pWin);
+
+    const box   = document.createElement('div');
+    box.setAttribute('data-block','intraday-stats');
+    box.style.marginTop = '8px';
+    box.style.border = '1px solid #e5e7eb';
+    box.style.borderRadius = '10px';
+    box.style.padding = '8px 10px';
+    box.style.background = '#fff';
+    box.innerHTML = `
+      <div style="font-size:12px; font-weight:900; margin-bottom:6px;">📊 Probabilidades (intraday ${period}P)</div>
+      <div style="font-size:12px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px;">
+        <div>🪙 <b>P(Entrada)</b>: ${(pEntry*100).toFixed(0)}%</div>
+        <div>🎯 <b>P(Alvo)</b>: ${(pTgt*100).toFixed(0)}%</div>
+        <div>🛑 <b>P(Stop)</b>: ${(pStop*100).toFixed(0)}%</div>
+        <div>✅ <b>P(Win)</b>: ${(pWin*100).toFixed(0)}%</div>
+      </div>
+      <div style="font-size:12px; margin-top:6px;">
+        💰 <b>EV</b>: ${ev>=0?'+':''}${Math.round(ev)} pts
+        &nbsp;|&nbsp; σ${period} = ${isFinite(sigmaPct)?sigmaPct.toFixed(2):'–'}%
+      </div>
+    `;
+    card.appendChild(box);
+  }
+
+  function parseCardNumbers(card){
+    // tenta achar entrada/alvo/stop no texto do card
+    const txt = (card && card.textContent || '').toLowerCase();
+    const mEntry = /entrada[:\s]*([0-9\.,]+)/i.exec(txt);
+    const mMeta  = /(meta|alvo)[:\s]*([0-9\.,]+)/i.exec(txt);
+    const mStop  = /(stop|stoploss|stop loss)[:\s]*([0-9\.,]+)/i.exec(txt);
+    return {
+      entry: _num(mEntry && mEntry[1]),
+      target: _num(mMeta && mMeta[2]),
+      stop: _num(mStop && mStop[2])
+    };
+  }
+
+  function attachQualityTag(card, levels, vD, vS, vM){
+    const qs = _regionQuality(levels, vD, vS, vM);
+    const head = card.querySelector('.headline') || card.querySelector('h4, h3, .card-title') || card;
+    const tag = document.createElement('span');
+    tag.style.fontSize = '11px'; tag.style.color = '#334155'; tag.setAttribute('data-block','intraday-stats');
+    tag.innerHTML = ` &nbsp;·&nbsp; ⭐ <b>${qs}</b> qualidade`;
+    head.appendChild(tag);
+  }
+
+  function runOnce(){
+    const {buy, sell} = findCards();
+    if(!buy && !sell) return false;
+    const sys = getSystem();
+    const sigmaInfo = calcSigmaPct(sys);
+    const priceRef = lastClose(sys);
+    if(!isFinite(priceRef)) return false;
+    const vD = _getVWAP('vwapD'), vS=_getVWAP('vwapS'), vM=_getVWAP('vwapM');
+
+    if (buy){
+      const {entry, target, stop} = parseCardNumbers(buy);
+      if([entry,target,stop].every(isFinite)){
+        renderCardStats(buy, 'BUY', entry, target, stop, {period:sigmaInfo.period, sigmaPct:sigmaInfo.sigmaPct, priceRef});
+        attachQualityTag(buy, [entry, entry], vD, vS, vM);
+      }
+    }
+    if (sell){
+      const {entry, target, stop} = parseCardNumbers(sell);
+      if([entry,target,stop].every(isFinite)){
+        renderCardStats(sell, 'SELL', entry, target, stop, {period:sigmaInfo.period, sigmaPct:sigmaInfo.sigmaPct, priceRef});
+        attachQualityTag(sell, [entry, entry], vD, vS, vM);
+      }
+    }
+    return true;
+  }
+
+  // Try immediately and re-try a few times (for SPA hydration)
+  function schedule(){
+    setTimeout(runOnce, 500);
+    setTimeout(runOnce, 1500);
+    setTimeout(runOnce, 3000);
+    setTimeout(runOnce, 6000);
+  }
+
+  if(document.readyState === 'complete' || document.readyState === 'interactive'){
+    schedule();
+  }else{
+    document.addEventListener('DOMContentLoaded', schedule);
+  }
+
+  // Also re-run when the user clicks in the AI operation area (likely after recompute)
+  document.addEventListener('click', function(ev){
+    const el = ev.target;
+    if(!el) return;
+    if(el.closest && el.closest('#aiOperation, .ai-operation, .recompute, .apply, button')){
+      setTimeout(runOnce, 300);
+      setTimeout(runOnce, 1200);
+    }
+  });
+})();
+</script>
+<!-- ===== /Intraday Enhancements Patch v2 ===== -->
+
+
+<!-- ===== Intraday Bars Visualization Patch (v3b: inside stats box) ===== -->
+<script>
+(function(){
+  if(window.__intradayBarsV3b__) return; window.__intradayBarsV3b__=true;
+
+  function _num(v){ if(v==null) return NaN; if(typeof v==='number') return v; const t=String(v).replace(/\s+/g,'').replace(/\./g,'').replace(',', '.'); const n=parseFloat(t); return isFinite(n)?n:NaN; }
+  if (typeof Math.erf !== "function"){
+    Math.erf = function(x){
+      const sign = (x>=0)?1:-1; x=Math.abs(x);
+      const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+      const t=1/(1+p*x);
+      const y=1-((((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t)*Math.exp(-x*x);
+      return sign*y;
+    };
+  }
+  function _phi(x){ return 0.5*(1+Math.erf(x/Math.SQRT2)); }
+  function _z(level, ref, sigmaPct){ if(!isFinite(level)||!isFinite(ref)||!isFinite(sigmaPct)||sigmaPct<=0) return NaN; return (level/ref - 1) / (sigmaPct/100); }
+  function _pTouch(level, ref, sigmaPct, side){ const z=_z(level,ref,sigmaPct); if(!isFinite(z)) return 0; return (side==='BUY') ? (1-_phi(z)) : _phi(z); }
+  function _evPoints(entry, tgt, stop, pWin){ const reward=Math.abs(tgt-entry), risk=Math.abs(entry-stop); const p=Math.max(0,Math.min(1,pWin)); return p*reward-(1-p)*risk; }
+
+  function findCards(){
+    const buy = document.getElementById('cardBUY')  || document.querySelector('#aiOperation .card.card-success') || document.querySelector('.card.buy') || document.querySelector('.card-success');
+    const sell= document.getElementById('cardSELL') || document.querySelector('#aiOperation .card.card-danger')  || document.querySelector('.card.sell')|| document.querySelector('.card-danger');
+    return {buy, sell};
+  }
+  function parseCardNumbers(card){
+    const txt = (card && card.textContent || '');
+    const mEntry = /Entrada[:\s]*([0-9\.,]+)/i.exec(txt);
+    const mMeta  = /(Meta|Alvo)[:\s]*([0-9\.,]+)/i.exec(txt);
+    const mStop  = /(Stop(?:\s*Loss)?)[:\s]*([0-9\.,]+)/i.exec(txt);
+    return { entry:_num(mEntry && mEntry[1]), target:_num(mMeta && mMeta[2]), stop:_num(mStop && mStop[2]) };
+  }
+  function lastClose(){
+    if(typeof window.lastClose==='function') return window.lastClose();
+    const el = document.querySelector('[data-last-close], #lastClose, .last-close');
+    if(el) return _num(el.textContent||el.value);
+    return NaN;
+  }
+  function calcSigmaPct(){
+    const p = (window.system && window.system.currentIntradayP) || 18;
+    let s = NaN;
+    if(window.system && typeof window.system.calculateStdDevReturns==='function'){
+      s = window.system.calculateStdDevReturns(p);
+    }else if(typeof window.calculateStdDevReturns==='function'){
+      s = window.calculateStdDevReturns(p);
+    }
+    return {period:p, sigmaPct: isFinite(s)?(s*100):NaN};
+  }
+
+  function ensureBars(container, stats){
+    if(!container) return;
+    // render DENTRO do bloco intraday-stats, logo abaixo do texto de EV
+    // se não existir intraday-stats, usa o card inteiro
+    const host = container.querySelector('[data-block="intraday-stats"]') || container;
+    // remove antigos
+    host.querySelectorAll('[data-block="intraday-bars"]').forEach(n=>n.remove());
+
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-block','intraday-bars');
+    wrap.style.marginTop = '6px';
+
+    function bar(label, val, color){
+      const outer = document.createElement('div');
+      outer.style.fontSize = '11px';
+      outer.style.margin = '2px 0 8px 0';
+      const row  = document.createElement('div');
+      row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center';
+      const lab  = document.createElement('span'); lab.textContent = label;
+      const pct  = document.createElement('span'); pct.textContent = (val*100).toFixed(0)+'%';
+      row.appendChild(lab); row.appendChild(pct);
+      const inner = document.createElement('div');
+      inner.style.height = '10px'; inner.style.background = '#e2e8f0'; inner.style.borderRadius = '4px'; inner.style.overflow='hidden';
+      const fill = document.createElement('div');
+      fill.style.height='100%'; fill.style.width=(val*100).toFixed(0)+'%'; fill.style.background = color;
+      inner.appendChild(fill);
+      outer.appendChild(row);
+      outer.appendChild(inner);
+      return outer;
+    }
+
+    wrap.appendChild(bar("🎯 P(Alvo)", stats.pTgt, stats.ev>=0?"#10b981":"#22c55e"));
+    wrap.appendChild(bar("🛑 P(Stop)", stats.pStop, "#ef4444"));
+    wrap.appendChild(bar("✅ P(Win)",  stats.pWin, stats.ev>=0?"#10b981":"#ef4444"));
+
+    const evLine = document.createElement('div');
+    evLine.style.fontSize = '11px'; evLine.style.marginTop = '4px';
+    evLine.innerHTML = "💰 EV: "+(stats.ev>=0?'+':'')+Math.round(stats.ev)+" pts";
+    wrap.appendChild(evLine);
+
+    host.appendChild(wrap);
+  }
+
+  function computeAndRender(){
+    const {buy, sell} = findCards();
+    if(!buy && !sell) return false;
+    const px = lastClose();
+    const {period, sigmaPct} = calcSigmaPct();
+    if(!isFinite(px) || !isFinite(sigmaPct) || sigmaPct<=0) return false;
+
+    function run(card, side){
+      const {entry, target, stop} = parseCardNumbers(card);
+      if([entry,target,stop].every(isFinite)){
+        const pTgt=_pTouch(target, entry, sigmaPct, side);
+        const pStop=_pTouch(stop,   entry, sigmaPct, side==='BUY'?'SELL':'BUY');
+        const pWin=Math.max(0,Math.min(1,pTgt/(pTgt+pStop+1e-9)));
+        const ev=_evPoints(entry, target, stop, pWin);
+        ensureBars(card, {pTgt, pStop, pWin, ev});
+      }
+    }
+    if(buy) run(buy, 'BUY');
+    if(sell) run(sell, 'SELL');
+    return true;
+  }
+
+  function schedule(){
+    setTimeout(computeAndRender, 800);
+    setTimeout(computeAndRender, 1800);
+    setTimeout(computeAndRender, 3800);
+    setTimeout(computeAndRender, 6800);
+  }
+  if(document.readyState==='complete' || document.readyState==='interactive'){ schedule(); }
+  else { document.addEventListener('DOMContentLoaded', schedule); }
+
+  document.addEventListener('click', function(ev){
+    if(ev.target && ev.target.closest && ev.target.closest('#aiOperation, .ai-operation, .recompute, .apply, button')){
+      setTimeout(computeAndRender, 500);
+      setTimeout(computeAndRender, 1500);
+    }
+  });
+})();
+</script>
+<!-- ===== /Intraday Bars Visualization Patch (v3b) ===== -->
+
+
+<!-- SheetJS XLSX (necessário para ler planilhas) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<!-- ========= PERSISTÊNCIA: Supabase + Cache (inserido pelo ChatGPT) ========= -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+// ===== 1) CONFIGURE AQUI =====
+const SUPABASE_URL = "https://ywpxtzodpjgavswejqqt.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4";
+const TENANT_ID = (sessionStorage.getItem("tenantId") || "genesis-trading");
+const VERSION_TAG = "default";
+
+// ===== 2) Cliente Supabase =====
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Health check
+async function supabaseHealthCheck(){
+  try{
+    const { data, error } = await supabase.from('dol_fechamentos').select('id').limit(1);
+    if (error) {
+      console.error('❌ Supabase SELECT falhou:', error);
+    } else {
+      console.log('✅ Supabase conectado. Registros na tabela (amostra):', (data||[]).length);
+    }
+  } catch(e){
+    console.error('❌ Erro inesperado na verificação do Supabase:', e);
+  }
+}
+window.addEventListener('load', supabaseHealthCheck);
+
+
+// ===== 3) Utilitários =====
+async function sha256FromArrayBuffer(buf) {
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+const cacheKey = (tenant, tag) => `dol_fechamentos:${tenant}:${tag}`;
+
+// Tiny IndexedDB helpers (no external lib). Falls back to localStorage.
+const DB_NAME = 'garch-cache', STORE = 'kv';
+function idbOpen(){ return new Promise((res,rej)=>{ try{ const req=indexedDB.open(DB_NAME,1); req.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE); }; req.onsuccess=e=>res(e.target.result); req.onerror=e=>rej(e.target.error||e); } catch(err){ rej(err);} }); }
+function idbSet(k,v){ return idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(v,k); tx.oncomplete=()=>res(true); tx.onerror=()=>rej(tx.error);})); }
+function idbGet(k){ return idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(STORE,'readonly'); const rq=tx.objectStore(STORE).get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);})); }
+
+async function cacheSave(tenant, tag, arr){
+  const key = cacheKey(tenant, tag);
+  try { await idbSet(key, arr); } catch(e){ try{ localStorage.setItem(key, JSON.stringify(arr)); }catch{} }
+}
+async function cacheLoad(tenant, tag){
+  const key = cacheKey(tenant, tag);
+  try { const v = await idbGet(key); if (v!==undefined) return v; } catch(e){}
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
+}
+
+// ===== 4) Persistência com UPSERT (ignora duplicatas) =====
+(function patchPersistence(){
+  const proto = (window.TradingSystemWithAI && window.TradingSystemWithAI.prototype);
+  if (!proto) {
+    console.warn("TradingSystemWithAI não encontrado. O patch de persistência só ativa quando a classe existir.");
+  }
+
+  function safeLog(){ try { (proto && proto.log) ? proto.log.apply(this, arguments) : console.log.apply(console, arguments); } catch(_){} }
+  function updateDataCount(n){
+    const el = document.getElementById('dataCount');
+    if (el) el.textContent = String(n);
+  }
+
+  async function upsertDataset(prices, fileHash){
+    const payload = [{
+      tenant_id: TENANT_ID,
+      version_tag: VERSION_TAG,
+      file_hash: fileHash,
+      rows: prices.length,
+      data: prices
+    }];
+    const { error: e2 } = await supabase
+      .from('dol_fechamentos')
+      .upsert(payload, { onConflict: 'tenant_id,version_tag,file_hash', ignoreDuplicates: true, returning: 'minimal' });
+    if (e2) throw e2;
+  }
+
+  if (proto) {
+    proto.saveToDB = async function(prices, fileHash) {
+      try {
+        await upsertDataset(prices, fileHash);
+        await cacheSave(TENANT_ID, VERSION_TAG, prices);
+        safeLog('💾 Dados salvos (nuvem + cache).');
+      } catch (err) {
+        console.error('Erro ao salvar no Supabase:', err?.code, err?.message, err?.details || err);
+        safeLog('⚠️ Falha ao salvar no banco — mantendo cache local.');
+        await cacheSave(TENANT_ID, VERSION_TAG, prices);
+      }
+    };
+
+    proto.loadFromDB = async function() {
+      try {
+        const { data, error } = await supabase
+          .from('dol_fechamentos')
+          .select('data, imported_at, rows')
+          .eq('tenant_id', TENANT_ID).eq('version_tag', VERSION_TAG)
+          .order('imported_at', { ascending: false })
+          .limit(1);
+        if (!error && data && data.length) {
+          const prices = data[0].data;
+          this.priceData = prices.slice();
+          updateDataCount(prices.length);
+          safeLog(`🔄 Carregado do banco (${prices.length} registros).`);
+          return true;
+        }
+        const cached = await cacheLoad(TENANT_ID, VERSION_TAG);
+        if (cached && cached.length) {
+          this.priceData = cached.slice();
+          updateDataCount(cached.length);
+          safeLog(`📦 Carregado do cache local (${cached.length} registros).`);
+          return true;
+        }
+        safeLog('ℹ️ Nenhum dataset persistido encontrado.');
+        return false;
+      } catch (err) {
+        console.warn('Falha ao carregar da nuvem, tentando cache…', err);
+        const cached = await cacheLoad(TENANT_ID, VERSION_TAG);
+        if (cached && cached.length) {
+          this.priceData = cached.slice();
+          updateDataCount(cached.length);
+          safeLog(`📦 Carregado do cache local (${cached.length} registros).`);
+          return true;
+        }
+        return false;
+      }
+    };
+
+    const _init = proto.init;
+    proto.init = async function(){
+      if (_init) _init.call(this);
+      try { await this.loadFromDB(); } catch(e) { console.warn(e); }
+    };
+  }
+
+  // Engata no input file
+  window.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.getElementById('fileUpload');
+    if (!fileInput) return;
+
+    fileInput.addEventListener('change', async (ev) => {
+      const file = ev.target.files?.[0];
+      if (!file) return;
+      if (!window.XLSX) { alert("Biblioteca XLSX não encontrada."); return; }
+
+      const buf = await file.arrayBuffer();
+      const fileHash = await sha256FromArrayBuffer(buf);
+      const wb = XLSX.read(buf, { type: 'array' });
+      const wsName = wb.SheetNames[0];
+      const ws = wb.Sheets[wsName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+
+      let prices = [];
+      const header = rows[0]?.map(h => (h||'').toString().toLowerCase().trim());
+      let idx = header ? header.indexOf('fechamento') : -1;
+      if (idx >= 0) {
+        prices = rows.slice(1).map(r => parseFloat(r[idx])).filter(v => Number.isFinite(v));
+      } else {
+        prices = rows.slice(0).map(r => parseFloat(r[0])).filter(v => Number.isFinite(v));
+      }
+
+      // Tenta usar app existente
+      let runtime = (window.__appInstance || window._lastAppInstance) || null;
+      if (!runtime && window.TradingSystemWithAI) {
+        for (const k in window) if (window[k] && window[k] instanceof TradingSystemWithAI) { runtime = window[k]; break; }
+      }
+
+      try{
+        await upsertDataset(prices, fileHash);
+        await cacheSave(TENANT_ID, VERSION_TAG, prices);
+        if (runtime) {
+          runtime.priceData = prices.slice();
+          (runtime.updateDataCount || updateDataCount).call(runtime, prices.length);
+          (runtime.log || console.log)(`✅ Importado ${prices.length} registros.`);
+try{ window.dispatchEvent(new CustomEvent("dataset:saved",{ detail:{ tenant: TENANT_ID, version: VERSION_TAG, length: prices.length }})); }catch(_){ }
+        } else {
+          console.warn("Instância da app não encontrada; salvo no banco/cache e atualizei contadores.");
+updateDataCount(prices.length);
+try{ window.dispatchEvent(new CustomEvent("dataset:saved",{ detail:{ tenant: TENANT_ID, version: VERSION_TAG, length: prices.length }})); }catch(_){}
+        }
+      } catch(e){
+        console.error("Falha ao inserir no Supabase:", e?.code, e?.message, e?.details || e);
+        alert("Falha ao salvar no Supabase. Veja o console para detalhes.");
+      }
+    });
+  });
+})();
+</script>
+<!-- ========= FIM DO BLOCO DE PERSISTÊNCIA ========= -->
 </body>
 <!-- Indicadores de Proximidade (Preço Atual) -->
 <script>
