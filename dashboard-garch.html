@@ -6468,7 +6468,7 @@ lv.innerHTML = `
 // ===== 1) CONFIGURE AQUI =====
 const SUPABASE_URL = "https://ywpxtzodpjgavswejqqt.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4";
-const TENANT_ID = (sessionStorage.getItem("tenantId") || "genesis-trading");
+const TENANT_ID = (sessionStorage.getItem("tenantId") || new URLSearchParams(location.search).get("tenant") || "genesis-trading");
 const VERSION_TAG = "default";
 
 // ===== 2) Cliente Supabase =====
@@ -6684,6 +6684,55 @@ window.addEventListener('dataset:saved', (e) => {
   // try { app.recalcularIndicadores?.(); } catch(_) {}
   // try { app.renderDashboard?.(); } catch(_) {}
 });
+</script>
+
+<script>
+// Patch tardio: garante que TradingSystemWithAI receba save/load mesmo se o script de persistência rodou antes da classe existir.
+(function ensureLatePatch(){
+  async function supaUpsert(prices, fileHash){
+    const payload = [{ tenant_id: TENANT_ID, version_tag: (window.VERSION_TAG || "default"), file_hash: fileHash, rows: prices.length, data: prices }];
+    const { error } = await supabase.from('dol_fechamentos')
+      .upsert(payload, { onConflict: 'tenant_id,version_tag,file_hash', ignoreDuplicates: true, returning: 'minimal' });
+    if (error) throw error;
+    await cacheSave(TENANT_ID, (window.VERSION_TAG || "default"), prices);
+  }
+
+  async function supaLoad(ctx){
+    try{
+      const { data, error } = await supabase
+        .from('dol_fechamentos')
+        .select('data, imported_at, rows')
+        .eq('tenant_id', TENANT_ID).eq('version_tag', (window.VERSION_TAG || "default"))
+        .order('imported_at', { ascending: false })
+        .limit(1);
+      if (!error && data && data.length){
+        const prices = data[0].data;
+        if (ctx) { ctx.priceData = prices.slice(); (ctx.updateDataCount||function(){}) (prices.length); (ctx.log||console.log)(`🔄 Carregado do banco (${prices.length} registros).`); }
+        else { try{ document.getElementById('dataCount').textContent = String(prices.length); }catch(_){} console.log(`🔄 Carregado do banco (${prices.length} registros).`); }
+        return true;
+      }
+      return false;
+    }catch(e){ console.warn('LatePatch load falhou', e); return false; }
+  }
+
+  function tryPatch(){
+    const C = window.TradingSystemWithAI;
+    if (!C || !C.prototype) return false;
+    const p = C.prototype;
+    if (!p.saveToDB)  p.saveToDB  = async function(prices, fileHash){ try{ await supaUpsert(prices, fileHash); (this.log||console.log)('💾 Dados salvos (late-patch).'); }catch(e){ console.error(e); } };
+    if (!p.loadFromDB) p.loadFromDB = async function(){ return supaLoad(this); };
+    if (!window.__supaLatePatched){ window.__supaLatePatched = true; console.log('🔁 Persistência: late-patch aplicado.'); }
+    // Se já existir instância, carregue
+    const inst = window.__appInstance || window._lastAppInstance;
+    if (inst && inst.loadFromDB) { inst.loadFromDB(); }
+    return true;
+  }
+
+  if (!tryPatch()){
+    const iv = setInterval(()=>{ if (tryPatch()) clearInterval(iv); }, 300);
+    setTimeout(()=> clearInterval(iv), 10000); // para em 10s
+  }
+})();
 </script>
 </body>
 <!-- Indicadores de Proximidade (Preço Atual) -->
