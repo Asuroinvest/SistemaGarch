@@ -6651,6 +6651,40 @@ try{ window.dispatchEvent(new CustomEvent("dataset:saved",{ detail:{ tenant: TEN
 })();
 </script>
 <!-- ========= FIM DO BLOCO DE PERSISTÊNCIA ========= -->
+
+<!-- Hook para ligar a instância da app ao patch de persistência e reagir a eventos -->
+<script>
+(function hook(){
+  if (window.__appInstance) return;
+  try {
+    if (window.TradingSystemWithAI) {
+      for (const k in window) {
+        const v = window[k];
+        try {
+          if (v && v instanceof window.TradingSystemWithAI) {
+            window.__appInstance = v;
+            window._lastAppInstance = v;
+            console.log('⚡ App ligada ao patch de persistência');
+            return;
+          }
+        } catch(e){}
+      }
+    }
+  } catch(e){}
+  setTimeout(hook, 500);
+})();
+
+// Quando os dados forem salvos (Supabase + cache), atualize a UI/computes
+window.addEventListener('dataset:saved', (e) => {
+  const app = window.__appInstance || window._lastAppInstance;
+  if (!app) return;
+  try { app.updateDataCount?.(e.detail.length); } catch(_) {}
+  try { (app.log || console.log)(`📊 Dataset salvo (${e.detail.length}) para ${e.detail.tenant}/${e.detail.version}`); } catch(_) {}
+  // Cole aqui chamadas de recalcular/renderizar se existirem no seu app:
+  // try { app.recalcularIndicadores?.(); } catch(_) {}
+  // try { app.renderDashboard?.(); } catch(_) {}
+});
+</script>
 </body>
 <!-- Indicadores de Proximidade (Preço Atual) -->
 <script>
