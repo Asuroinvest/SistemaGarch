@@ -6460,37 +6460,59 @@ lv.innerHTML = `
 
 
 <script>
+// ===== Autoload robusto: aguarda a biblioteca, garante cliente e carrega os dados =====
 (function(){
-  function autoloadNow(){
-    try {
-      const TENANT = (sessionStorage.getItem('tenantId') || 'genesis-trading');
-      const VERS = (window.VERSION_TAG || sessionStorage.getItem('versionTag') || 'default');
-      if (window.supabase && typeof window.supabase.from === 'function') {
-        supabase.from('dol_fechamentos')
-          .select('data, rows, imported_at')
-          .eq('tenant_id', TENANT).eq('version_tag', VERS)
-          .order('imported_at', { ascending:false })
-          .limit(1)
-          .then(({data,error})=>{
-            if(!error && data && data.length){
-              const rows = data[0].rows || (data[0].data ? data[0].data.length : 0);
-              try { document.getElementById('dataCount').textContent = String(rows); } catch(_){}
-              try { window.dispatchEvent(new CustomEvent('dataset:loaded',{ detail:{ tenant:TENANT, version:VERS, length:rows }})); } catch(_){ }
-              console.log('Autoload dashboard:', TENANT, VERS, rows);
-              // Se a app existir, peça para recalcular/renderizar
-              const app = window.__appInstance || window._lastAppInstance;
-              if (app && typeof app.loadFromDB === 'function') { app.loadFromDB(); }
-            } else {
-              console.log('Autoload: sem dados para tenant atual.');
-            }
-          });
-      } else {
-        console.warn('Autoload: supabase client não encontrado.');
-      }
-    } catch(e){ console.warn('Autoload falhou:', e); }
+  function when(cond, cb, timeoutMs, stepMs){
+    const t0 = Date.now(), step = stepMs || 150, timeout = timeoutMs || 12000;
+    const id = setInterval(() => {
+      let ok = false;
+      try { ok = !!cond(); } catch(_){ ok = false; }
+      if (ok || (Date.now() - t0) > timeout) { clearInterval(id); try { cb(); } catch(_){ } }
+    }, step);
   }
-  if (document.readyState === 'complete' || document.readyState === 'interactive') autoloadNow();
-  else document.addEventListener('DOMContentLoaded', autoloadNow);
+  function ensureClient(){
+    try {
+      if (typeof supabase !== 'undefined' && supabase && typeof supabase.from === 'function') return supabase;
+    } catch(_){}
+    try {
+      if (window.supabase && typeof window.supabase.createClient === 'function') {
+        if (!window.__supaClient && typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined') {
+          window.__supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        return window.__supaClient;
+      }
+    } catch(_){}
+    return null;
+  }
+  function autoload(){
+    const client = ensureClient();
+    if (!client) { console.warn('Autoload: Supabase client ainda não disponível.'); return; }
+    const TENANT = (sessionStorage.getItem('tenantId') || 'genesis-trading');
+    const VERS = (window.VERSION_TAG || sessionStorage.getItem('versionTag') || 'default');
+    client.from('dol_fechamentos')
+      .select('data, rows, imported_at')
+      .eq('tenant_id', TENANT).eq('version_tag', VERS)
+      .order('imported_at', { ascending:false })
+      .limit(1)
+      .then(({data,error})=>{
+        if(!error && data && data.length){
+          const rows = data[0].rows || (data[0].data ? data[0].data.length : 0);
+          try { document.getElementById('dataCount').textContent = String(rows); } catch(_){}
+          try { window.dispatchEvent(new CustomEvent('dataset:loaded',{ detail:{ tenant:TENANT, version:VERS, length:rows }})); } catch(_){ }
+          console.log('Autoload OK:', TENANT, VERS, rows);
+          // Se a app existir, peça para carregar completamente
+          const app = window.__appInstance || window._lastAppInstance;
+          if (app && typeof app.loadFromDB === 'function') { try { app.loadFromDB(); } catch(_){ } }
+        } else {
+          console.log('Autoload: sem dados para tenant atual.');
+        }
+      });
+  }
+  function start(){
+    when(() => !!ensureClient(), autoload, 15000, 150);
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') start();
+  else document.addEventListener('DOMContentLoaded', start);
 })();
 </script>
 
