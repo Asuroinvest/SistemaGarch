@@ -6460,59 +6460,68 @@ lv.innerHTML = `
 
 
 <script>
-// ===== Autoload robusto: aguarda a biblioteca, garante cliente e carrega os dados =====
+// ===== Autoload com loader dinâmico do Supabase =====
 (function(){
-  function when(cond, cb, timeoutMs, stepMs){
-    const t0 = Date.now(), step = stepMs || 150, timeout = timeoutMs || 12000;
-    const id = setInterval(() => {
-      let ok = false;
-      try { ok = !!cond(); } catch(_){ ok = false; }
-      if (ok || (Date.now() - t0) > timeout) { clearInterval(id); try { cb(); } catch(_){ } }
-    }, step);
+  // Garante que as credenciais existam no escopo global
+  window.SUPABASE_URL = window.SUPABASE_URL || "https://ywpxtzodpjgavswejqqt.supabase.co";
+  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4";
+
+  function loadScript(src){
+    return new Promise(function(resolve, reject){
+      var s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = function(){ resolve(); };
+      s.onerror = function(){ reject(new Error('Falha ao carregar ' + src)); };
+      document.head.appendChild(s);
+    });
   }
-  function ensureClient(){
+
+  async function ensureSupabaseLib(){
+    if (window.supabase && typeof window.supabase.createClient === 'function') return;
+    try { await loadScript('https://unpkg.com/@supabase/supabase-js@2'); }
+    catch(e){
+      console.warn('CDN unpkg falhou, tentando jsdelivr…', e);
+      await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+    }
+  }
+
+  async function ensureClient(){
+    await ensureSupabaseLib();
+    if (!window.__supaClient) {
+      window.__supaClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    }
+    return window.__supaClient;
+  }
+
+  async function autoload(){
     try {
-      if (typeof supabase !== 'undefined' && supabase && typeof supabase.from === 'function') return supabase;
-    } catch(_){}
-    try {
-      if (window.supabase && typeof window.supabase.createClient === 'function') {
-        if (!window.__supaClient && typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined') {
-          window.__supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-        return window.__supaClient;
+      const client = await ensureClient();
+      const TENANT = (sessionStorage.getItem('tenantId') || 'genesis-trading');
+      const VERS = (window.VERSION_TAG || sessionStorage.getItem('versionTag') || 'default');
+      const { data, error } = await client
+        .from('dol_fechamentos')
+        .select('data, rows, imported_at')
+        .eq('tenant_id', TENANT).eq('version_tag', VERS)
+        .order('imported_at', { ascending:false })
+        .limit(1);
+      if (!error && data && data.length) {
+        const rows = data[0].rows || (data[0].data ? data[0].data.length : 0);
+        try { document.getElementById('dataCount').textContent = String(rows); } catch(_){}
+        try { window.dispatchEvent(new CustomEvent('dataset:loaded',{ detail:{ tenant:TENANT, version:VERS, length:rows }})); } catch(_){ }
+        console.log('Autoload OK:', TENANT, VERS, rows);
+        const app = window.__appInstance || window._lastAppInstance;
+        if (app && typeof app.loadFromDB === 'function') { try { app.loadFromDB(); } catch(_){} }
+      } else {
+        console.log('Autoload: sem dados para tenant atual.');
       }
-    } catch(_){}
-    return null;
+    } catch (e) {
+      console.warn('Autoload falhou:', e);
+    }
   }
-  function autoload(){
-    const client = ensureClient();
-    if (!client) { console.warn('Autoload: Supabase client ainda não disponível.'); return; }
-    const TENANT = (sessionStorage.getItem('tenantId') || 'genesis-trading');
-    const VERS = (window.VERSION_TAG || sessionStorage.getItem('versionTag') || 'default');
-    client.from('dol_fechamentos')
-      .select('data, rows, imported_at')
-      .eq('tenant_id', TENANT).eq('version_tag', VERS)
-      .order('imported_at', { ascending:false })
-      .limit(1)
-      .then(({data,error})=>{
-        if(!error && data && data.length){
-          const rows = data[0].rows || (data[0].data ? data[0].data.length : 0);
-          try { document.getElementById('dataCount').textContent = String(rows); } catch(_){}
-          try { window.dispatchEvent(new CustomEvent('dataset:loaded',{ detail:{ tenant:TENANT, version:VERS, length:rows }})); } catch(_){ }
-          console.log('Autoload OK:', TENANT, VERS, rows);
-          // Se a app existir, peça para carregar completamente
-          const app = window.__appInstance || window._lastAppInstance;
-          if (app && typeof app.loadFromDB === 'function') { try { app.loadFromDB(); } catch(_){ } }
-        } else {
-          console.log('Autoload: sem dados para tenant atual.');
-        }
-      });
-  }
-  function start(){
-    when(() => !!ensureClient(), autoload, 15000, 150);
-  }
-  if (document.readyState === 'complete' || document.readyState === 'interactive') start();
-  else document.addEventListener('DOMContentLoaded', start);
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') autoload();
+  else document.addEventListener('DOMContentLoaded', autoload);
 })();
 </script>
 
