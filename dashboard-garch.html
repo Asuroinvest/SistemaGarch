@@ -6460,68 +6460,70 @@ lv.innerHTML = `
 
 
 <script>
-// ===== Autoload com loader dinâmico do Supabase =====
+// ===== Autoload com fallback REST (sem depender do cliente) =====
 (function(){
-  // Garante que as credenciais existam no escopo global
-  window.SUPABASE_URL = window.SUPABASE_URL || "https://ywpxtzodpjgavswejqqt.supabase.co";
-  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4";
+  const TENANT = (sessionStorage.getItem('tenantId') || 'genesis-trading');
+  const VERS   = (window.VERSION_TAG || sessionStorage.getItem('versionTag') || 'default');
+  const URL    = (window.SUPABASE_URL || (typeof SUPABASE_URL!=='undefined' ? SUPABASE_URL : ""));
+  const KEY    = (window.SUPABASE_ANON_KEY || (typeof SUPABASE_ANON_KEY!=='undefined' ? SUPABASE_ANON_KEY : ""));
 
-  function loadScript(src){
-    return new Promise(function(resolve, reject){
-      var s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      s.onload = function(){ resolve(); };
-      s.onerror = function(){ reject(new Error('Falha ao carregar ' + src)); };
-      document.head.appendChild(s);
+  async function fetchViaRest(){
+    if (!URL || !KEY) { console.warn('Autoload REST: URL/KEY não configurados.'); return null; }
+    const qs = new URLSearchParams({
+      select: 'data,rows,imported_at,tenant_id,version_tag',
+      'tenant_id': `eq.${TENANT}`,
+      'version_tag': `eq.${VERS}`,
+      order: 'imported_at.desc',
+      limit: '1'
+    }).toString();
+    const endpoint = `${URL}/rest/v1/dol_fechamentos?${qs}`;
+    const res = await fetch(endpoint, {
+      headers: { 'apikey': KEY, 'Authorization': `Bearer ${KEY}` }
     });
-  }
-
-  async function ensureSupabaseLib(){
-    if (window.supabase && typeof window.supabase.createClient === 'function') return;
-    try { await loadScript('https://unpkg.com/@supabase/supabase-js@2'); }
-    catch(e){
-      console.warn('CDN unpkg falhou, tentando jsdelivr…', e);
-      await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+    if (!res.ok) {
+      console.warn('Autoload REST: resposta não OK', res.status);
+      return null;
     }
-  }
-
-  async function ensureClient(){
-    await ensureSupabaseLib();
-    if (!window.__supaClient) {
-      window.__supaClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-    }
-    return window.__supaClient;
+    const json = await res.json();
+    return (Array.isArray(json) && json.length) ? json[0] : null;
   }
 
   async function autoload(){
+    // 1) Tenta via supabase-js se já existir um cliente
     try {
-      const client = await ensureClient();
-      const TENANT = (sessionStorage.getItem('tenantId') || 'genesis-trading');
-      const VERS = (window.VERSION_TAG || sessionStorage.getItem('versionTag') || 'default');
-      const { data, error } = await client
-        .from('dol_fechamentos')
-        .select('data, rows, imported_at')
-        .eq('tenant_id', TENANT).eq('version_tag', VERS)
-        .order('imported_at', { ascending:false })
-        .limit(1);
-      if (!error && data && data.length) {
-        const rows = data[0].rows || (data[0].data ? data[0].data.length : 0);
-        try { document.getElementById('dataCount').textContent = String(rows); } catch(_){}
-        try { window.dispatchEvent(new CustomEvent('dataset:loaded',{ detail:{ tenant:TENANT, version:VERS, length:rows }})); } catch(_){ }
-        console.log('Autoload OK:', TENANT, VERS, rows);
-        const app = window.__appInstance || window._lastAppInstance;
-        if (app && typeof app.loadFromDB === 'function') { try { app.loadFromDB(); } catch(_){} }
-      } else {
-        console.log('Autoload: sem dados para tenant atual.');
+      if (window.supabase && typeof window.supabase.from === 'function') {
+        const { data, error } = await window.supabase
+          .from('dol_fechamentos')
+          .select('data,rows,imported_at')
+          .eq('tenant_id', TENANT).eq('version_tag', VERS)
+          .order('imported_at', { ascending:false })
+          .limit(1);
+        if (!error && data && data.length) {
+          return { rows: data[0].rows || (data[0].data ? data[0].data.length : 0) };
+        }
       }
-    } catch (e) {
-      console.warn('Autoload falhou:', e);
+    } catch(e){ /* segue pro REST */ }
+
+    // 2) Fallback REST direto (não depende do cliente)
+    const row = await fetchViaRest();
+    if (row) {
+      return { rows: row.rows || (row.data ? row.data.length : 0) };
     }
+    return null;
   }
 
-  if (document.readyState === 'complete' || document.readyState === 'interactive') autoload();
-  else document.addEventListener('DOMContentLoaded', autoload);
+  function applyUI(meta){
+    if (!meta) return;
+    try { document.getElementById('dataCount').textContent = String(meta.rows||0); } catch(_){}
+    try { window.dispatchEvent(new CustomEvent('dataset:loaded',{ detail:{ tenant:TENANT, version:VERS, length:meta.rows||0 }})); } catch(_){ }
+    console.log('Autoload (REST/JS) OK:', TENANT, VERS, meta.rows||0);
+    const app = window.__appInstance || window._lastAppInstance;
+    try { if (app && typeof app.loadFromDB === 'function') app.loadFromDB(); } catch(_){}
+  }
+
+  function start(){ autoload().then(applyUI).catch(e=>console.warn('Autoload erro:', e)); }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') start();
+  else document.addEventListener('DOMContentLoaded', start);
 })();
 </script>
 
