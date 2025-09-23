@@ -6708,12 +6708,15 @@ window.addEventListener('dataset:saved', (e) => {
       if (!error && data && data.length){
         const prices = data[0].data;
         if (ctx) { ctx.priceData = prices.slice(); (ctx.updateDataCount||function(){}) (prices.length); (ctx.log||console.log)(`🔄 Carregado do banco (${prices.length} registros).`); }
-        else { try{ document.getElementById('dataCount').textContent = String(prices.length); }catch(_){} console.log(`🔄 Carregado do banco (${prices.length} registros).`); }
+        else { try{ document.getElementById('dataCount').textContent = String(prices.length); }catch(_){} console.log(`🔄 Carregado do banco (${prices.length} registros).`);
+try{ window.dispatchEvent(new CustomEvent('dataset:loaded',{ detail:{ tenant: TENANT_ID, version: (window.VERSION_TAG||'default'), length: prices.length }})); }catch(_){ } }
         return true;
       }
       return false;
     }catch(e){ console.warn('LatePatch load falhou', e); return false; }
   }
+
+  function tryPatch(){
 
   function tryPatch(){
     const C = window.TradingSystemWithAI;
