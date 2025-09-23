@@ -556,7 +556,7 @@
           },
 		  'fabio.cabrera.ig@gmail.com': { 
             password: 'Fabio#2025', 
-            name: 'F·bio Cabrera', 
+            name: 'Fbio Cabrera', 
             role: 'admin', 
             status: 'active',
             systems: ['garch', 'quant'] // acesso aos dois sistemas
@@ -715,13 +715,23 @@
           system: this.selectedSystem,
           loginTime: Date.now()
         }));
+        
+        // ===== Genesis: todos os usu√°rios compartilham o mesmo dataset =====
         try {
+          sessionStorage.setItem('tenantId', 'genesis-trading');
+          sessionStorage.setItem('versionTag', 'default');
+          window.VERSION_TAG = 'default';
+          console.log('Tenant fixado (login): genesis-trading');
+        } catch(e) { console.warn('Falha ao fixar tenant no login:', e); }
+        // Redireciona sempre para o dashboard GARCH
+        try { window.location.href = './dashboard-garch.html'; } catch(_) {}
+try {
           const tenant = this.resolveTenantId(email);
           sessionStorage.setItem('tenantId', tenant);
           sessionStorage.setItem('versionTag', 'default');
           window.VERSION_TAG = 'default';
           console.log('Tenant (login):', tenant);
-        } catch (e) { console.warn('N„o foi possÌvel definir tenantId no login:', e); }
+        } catch (e) { console.warn('No foi possvel definir tenantId no login:', e); }
         console.log('Sess√£o criada:', this.sessionData);
       }
       
