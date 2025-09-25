@@ -7075,6 +7075,121 @@ window.addEventListener('load', function(){
 
 
 
+
+<!-- === Supabase autoload (view v_dol_fechamentos) – auto + botão Recarregar === -->
+<script>
+(() => {
+  const SUPABASE_URL = 'https://ywpxtzodpjgavswejqqt.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4';
+  const VIEW = 'v_dol_fechamentos';
+
+  // pega tenant/versão do sessionStorage; se vazio, cai nos defaults globais ou hardcoded
+  const fallbackTenant  = (window.TENANT_ID   || 'genesis-trading')+'';
+  const fallbackVersion = (window.VERSION_TAG || 'default')+'';
+
+  function getTenant()  { return ((sessionStorage.getItem('tenantId')   ?? fallbackTenant).trim()).toLowerCase(); }
+  function getVersion() { return ((sessionStorage.getItem('versionTag') ?? fallbackVersion).trim()).toLowerCase(); }
+
+  const $ = (sel) => document.querySelector(sel);
+  const fmt = (n, d=2) => {
+    const v = Number(n);
+    return Number.isFinite(v) ? v.toLocaleString('pt-BR', { minimumFractionDigits:d, maximumFractionDigits:d }) : '—';
+  };
+
+  async function fetchLatestRow() {
+    const u = new URL(`${SUPABASE_URL}/rest/v1/${VIEW}`);
+    u.searchParams.set('select', 'tenant_id,version_tag,imported_at,rows,first_close,last_close,vwap_d,vwap_s,vwap_m');
+    u.searchParams.set('tenant_id',   'eq.' + encodeURIComponent(getTenant()));
+    u.searchParams.set('version_tag', 'eq.' + encodeURIComponent(getVersion()));
+    u.searchParams.set('order', 'imported_at.desc');
+    u.searchParams.set('limit', '1');
+
+    const r = await fetch(u, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'cache-control': 'no-cache' }
+    });
+
+    let body = null;
+    try { body = await r.json(); } catch(_) {}
+
+    if (!Array.isArray(body)) {
+      console.warn('[supabase] resposta não-lista', body);
+      throw new Error((body && body.message) || 'Falha lendo Supabase');
+    }
+    if (!body.length) return null;
+    return body[0];
+  }
+
+  function applyToUI(row) {
+    // 1) Fechamento Base = first_close (1ª linha)
+    const base = row ? Number(row.first_close) : NaN;
+    const vD   = row ? Number(row.vwap_d) : NaN;
+    const vS   = row ? Number(row.vwap_s) : NaN;
+    const vM   = row ? Number(row.vwap_m) : NaN;
+
+    // Card principal (no seu HTML o id é #i_close)
+    const baseNode = $('#i_close') || $('#fechamentoBase');
+    if (baseNode) baseNode.textContent = fmt(base, 2);
+
+    // Campos VWAP (inputs readonly)
+    const vwapD = $('#vwapD'); if (vwapD) vwapD.value = fmt(vD, 2);
+    const vwapS = $('#vwapS'); if (vwapS) vwapS.value = fmt(vS, 2);
+    const vwapM = $('#vwapM'); if (vwapM) vwapM.value = fmt(vM, 2);
+
+    // Overlay de debug (se visível)
+    const ov = $('#supabaseOverlay');
+    if (ov) {
+      $('#sbTenant') && ($('#sbTenant').textContent = getTenant());
+      $('#sbVersion') && ($('#sbVersion').textContent = getVersion());
+      $('#sbStatus') && ($('#sbStatus').textContent = row ? 'OK' : 'vazio');
+      $('#sbBase')   && ($('#sbBase').textContent   = fmt(base, 2));
+      $('#sbVD')     && ($('#sbVD').textContent     = fmt(vD, 2));
+      $('#sbVS')     && ($('#sbVS').textContent     = fmt(vS, 2));
+      $('#sbVM')     && ($('#sbVM').textContent     = fmt(vM, 2));
+      $('#sbWhen')   && ($('#sbWhen').textContent   = row ? (row.imported_at || '') : '');
+    }
+
+    // Eventos para quem quiser ouvir
+    try { window.dispatchEvent(new CustomEvent('supabase:data', { detail: { base, vwap_d:vD, vwap_s:vS, vwap_m:vM, row } })); } catch(_) {}
+  }
+
+  async function autoloadFromSupabase() {
+    try {
+      const row = await fetchLatestRow();
+      if (!row) {
+        console.warn('[supabase] nenhum dataset para', getTenant(), getVersion());
+        applyToUI(null);
+        return;
+      }
+      applyToUI(row);
+
+      // tenta “avisar” o app para recalcular projeções se ele expuser esses métodos
+      const app = window.__appInstance || window.tradingSystem || window.TradingSystemWithAI || window.app;
+      const tryCall = (fn) => { try { fn && fn.call(app); } catch(e) { console.debug('[supabase/recalc]', e); } };
+      tryCall(app && app.updateUI);
+      tryCall(app && app.refreshAll);
+      tryCall(app && app.recomputeAll);
+      tryCall(app && app.recomputeProjections);
+      setTimeout(()=>{ tryCall(app && app.updateUI); }, 300);
+
+      console.log('[supabase] ok (tenant=%s, version=%s)', getTenant(), getVersion(), row);
+    } catch (e) {
+      console.error('[supabase] erro', e);
+      const st = $('#sbStatus'); if (st) { st.textContent = 'erro'; st.className = 'bad'; }
+    }
+  }
+
+  // boot automático
+  document.addEventListener('DOMContentLoaded', autoloadFromSupabase);
+
+  // botão “Recarregar” do overlay (se presente)
+  const reloadBtn = document.querySelector('#sbReload');
+  if (reloadBtn) reloadBtn.addEventListener('click', (ev)=>{ ev.preventDefault(); autoloadFromSupabase(); });
+
+  // expõe global para outros trechos do seu código
+  window.autoloadFromSupabase = autoloadFromSupabase;
+})();
+</script>
+
 </body>
 <!-- Indicadores de Proximidade (Preço Atual) -->
 <script>
