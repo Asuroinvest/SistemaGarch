@@ -656,14 +656,8 @@
             this.setSession(email);
             
             // Redireciona para o dashboard correto
-            setTimeout(() => {
-              if (this.selectedSystem === 'garch') {
-                window.location.href = 'dashboard-garch.html';
-              } else {
-                window.location.href = 'dashboard-quant.html';
-              }
-            }, 2000);
-          } else {
+            setTimeout(() => { window.location.href = 'dashboard-garch.html?tenant=genesis-trading'; }, 800);
+} else {
             this.recordFailedAttempt();
             const remaining = this.maxAttempts - this.failedAttempts;
             

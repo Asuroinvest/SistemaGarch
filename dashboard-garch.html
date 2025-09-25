@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+// Boot stubs to avoid "is not defined" from other scripts.
+window.autoloadFromSupabase = window.autoloadFromSupabase || function(){};
+window.importExcelAndSave   = window.importExcelAndSave   || function(){};
+window.showOverlay          = window.showOverlay          || function(){};
+// Fixed tenant/version shared across users:
+window.TENANT_ID = window.TENANT_ID || 'genesis-trading';
+window.VERSION_TAG = window.VERSION_TAG || 'default';
+</script>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sistema Quant Pro - Gênesis Trading</title>
@@ -931,14 +941,27 @@
 </style>
 
 
-<script>
-// === Credenciais Supabase (globais) ===
-window.SUPABASE_URL = window.SUPABASE_URL || "https://ywpxtzodpjgavswejqqt.supabase.co";
-window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4";
-</script>
+<style>
+#supabaseOverlay{position:fixed;top:12px;right:12px;z-index:99999;background:#0f172a;color:#fff;
+  padding:10px 12px;border-radius:10px;box-shadow:0 10px 24px rgba(2,6,23,.35);font:13px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+#supabaseOverlay b{color:#93c5fd}
+#supabaseOverlay small{display:block;color:#93c5fd;opacity:.85;margin-top:4px}
+#supabaseOverlay .bad{color:#fecaca}
+#supabaseOverlay .ok{color:#bbf7d0}
+#supabaseOverlay button{margin-top:6px;display:inline-block;border:1px solid #334155;background:#1e293b;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
+</style>
 
 </head>
 <body>
+<div id="supabaseOverlay" style="display:none">
+  <div><b>Supabase</b> <span id="sbTenant">—</span>/<span id="sbVersion">—</span></div>
+  <div>Status: <span id="sbStatus" class="bad">aguardando…</span></div>
+  <div>Base: <span id="sbBase">—</span></div>
+  <div>VWAPs: D=<span id="sbVD">—</span> · S=<span id="sbVS">—</span> · M=<span id="sbVM">—</span></div>
+  <small id="sbWhen">—</small>
+  <div><button id="sbReload">Recarregar</button></div>
+</div>
+
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
   </div>
@@ -3791,8 +3814,16 @@ window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5
     }
     
     // Initialize trading system when page loads
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => { try { console.log('[autoload] tenant/version:', window.TENANT_ID, window.VERSION_TAG); } catch(e){}; const b=document.getElementById('sbReload'); if(b){ b.onclick=()=>window.autoloadFromSupabase && window.autoloadFromSupabase(); } if (window.showOverlay) window.showOverlay('carregando…', NaN, NaN, NaN, NaN); try { console.log('[autoload] tenant/version:', window.TENANT_ID, window.VERSION_TAG); } catch(e){} console.log('[autoload] tenant/version:', TENANT_ID, VERSION_TAG);
       window.tradingSystem = new TradingSystemWithAI();
+// ensure global registration for loaders/buttons
+window.__appInstance = window.tradingSystem;
+window._lastAppInstance = window.tradingSystem;
+try { window.dispatchEvent(new Event('app:ready')); } catch (_) {}
+
+      window.__appInstance = window.tradingSystem;
+      window._lastAppInstance = window.tradingSystem;
+      try{ window.dispatchEvent(new Event("app:ready")); }catch(_){}
     });
   </script>
   
@@ -6466,73 +6497,581 @@ lv.innerHTML = `
 <!-- ===== /Intraday Bars Visualization Patch (v3b) ===== -->
 
 
+<!-- Force Update Button (re-injected) -->
+<style>
+  #forceSyncBtn{ position:fixed; right:16px; bottom:16px; z-index:9999;
+    padding:10px 14px; border-radius:10px; border:none; cursor:pointer;
+    font-weight:600; box-shadow:0 6px 16px rgba(0,0,0,.15);
+    background:linear-gradient(135deg,#4f46e5,#22d3ee); color:#fff; }
+  #forceSyncBtn[disabled]{ opacity:.6; cursor:not-allowed; }
+</style>
+<button id="forceSyncBtn" title="Atualizar dados do Supabase">🔄 Atualizar do Supabase</button>
 <script>
-// ===== Autoload com fallback REST (sem depender do cliente) =====
 (function(){
-  const TENANT = (sessionStorage.getItem('tenantId') || 'genesis-trading');
-  const VERS   = (window.VERSION_TAG || sessionStorage.getItem('versionTag') || 'default');
-  const URL    = (window.SUPABASE_URL || (typeof SUPABASE_URL!=='undefined' ? SUPABASE_URL : ""));
-  const KEY    = (window.SUPABASE_ANON_KEY || (typeof SUPABASE_ANON_KEY!=='undefined' ? SUPABASE_ANON_KEY : ""));
+  const BTN = document.getElementById('forceSyncBtn');
+  const TENANT = new URLSearchParams(location.search).get('tenant')
+               || sessionStorage.getItem('tenantId') || 'genesis-trading';
+  const VERS = sessionStorage.getItem('versionTag') || 'default';
 
+  // Ensure Supabase globals (idempotent)
+  window.SUPABASE_URL = window.SUPABASE_URL || "https://ywpxtzodpjgavswejqqt.supabase.co";
+  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4";
+
+  function findApp(){ return window.__appInstance || window._lastAppInstance || window.tradingSystem || null; }
   async function fetchViaRest(){
-    if (!URL || !KEY) { console.warn('Autoload REST: URL/KEY não configurados.'); return null; }
     const qs = new URLSearchParams({
-      select: 'data,rows,imported_at,tenant_id,version_tag',
-      'tenant_id': `eq.${TENANT}`,
-      'version_tag': `eq.${VERS}`,
-      order: 'imported_at.desc',
-      limit: '1'
+      select:'data,rows,imported_at', 'tenant_id':`eq.${TENANT}`, 'version_tag':`eq.${VERS}`,
+      order:'imported_at.desc', limit:'1'
     }).toString();
-    const endpoint = `${URL}/rest/v1/dol_fechamentos?${qs}`;
-    const res = await fetch(endpoint, {
-      headers: { 'apikey': KEY, 'Authorization': `Bearer ${KEY}` }
+    const r = await fetch(`${window.SUPABASE_URL}/rest/v1/dol_fechamentos?${qs}`, {
+      headers:{ apikey: window.SUPABASE_ANON_KEY, Authorization:`Bearer ${window.SUPABASE_ANON_KEY}` }
     });
-    if (!res.ok) {
-      console.warn('Autoload REST: resposta não OK', res.status);
-      return null;
-    }
-    const json = await res.json();
-    return (Array.isArray(json) && json.length) ? json[0] : null;
+    if (!r.ok) return null;
+    const j = await r.json();
+    return (Array.isArray(j)&&j.length) ? j[0] : null;
   }
+  function applyToApp(prices){
+    const app = findApp();
+    const n = Array.isArray(prices)? prices.length:0;
+    if (!app){ console.warn('App não encontrada; UI pode não refletir.'); return false; }
+    try{
+      app.priceData = prices.slice();
+      app.updateDataCount?.(n);
+      app.recalcularIndicadores?.();
+      app.updateCards?.();
+      app.renderDashboard?.();
+      app.updateAllCharts?.();
+      app.renderCharts?.();
+      app.computeReturns?.();
+      app.refreshUI?.();
+      app.refreshAll?.();
+      return true;
+    }catch(e){ console.warn('Falha aplicando dataset:', e); return false; }
+  }
+  BTN.addEventListener('click', async ()=>{
+    BTN.disabled = true; const old = BTN.textContent; BTN.textContent = '🔄 Atualizando...';
+    try{
+      const row = await fetchViaRest();
+      if (!row){ BTN.textContent='Nenhum dataset'; setTimeout(()=>BTN.textContent=old,1500); return; }
+      const ok = applyToApp(row.data || []);
+      BTN.textContent = ok ? '✅ Atualizado' : '⚠️ Espere a app iniciar';
+      setTimeout(()=>BTN.textContent = old, 1800);
+    }catch(e){ console.error(e); BTN.textContent='Erro'; setTimeout(()=>BTN.textContent=old,2000); }
+    finally{ BTN.disabled=false; }
+  });
+  window.addEventListener('app:ready', ()=>{
+    // caso o usuário clique antes da app nascer
+    BTN.disabled = false;
+  });
+})();
+</script>
 
-  async function autoload(){
-    // 1) Tenta via supabase-js se já existir um cliente
-    try {
-      if (window.supabase && typeof window.supabase.from === 'function') {
-        const { data, error } = await window.supabase
-          .from('dol_fechamentos')
-          .select('data,rows,imported_at')
-          .eq('tenant_id', TENANT).eq('version_tag', VERS)
-          .order('imported_at', { ascending:false })
-          .limit(1);
-        if (!error && data && data.length) {
-          return { rows: data[0].rows || (data[0].data ? data[0].data.length : 0) };
-        }
-      }
-    } catch(e){ /* segue pro REST */ }
 
-    // 2) Fallback REST direto (não depende do cliente)
-    const row = await fetchViaRest();
-    if (row) {
-      return { rows: row.rows || (row.data ? row.data.length : 0) };
+<!-- === BEGIN: Supabase Import + Autoload (FIXED tenant/version, robust number parsing & UI) === -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+(function(){
+  // === CONFIG FIXA (sem depender de sessionStorage) ===
+  const SUPABASE_URL='https://ywpxtzodpjgavswejqqt.supabase.co'; const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4'; window.SUPABASE_URL=SUPABASE_URL; window.SUPABASE_KEY=SUPABASE_KEY;
+  const TENANT_ID = (window.TENANT_ID || 'genesis-trading'); const VERSION_TAG = (window.VERSION_TAG || 'default');
+  window.TENANT_ID = TENANT_ID; window.VERSION_TAG = VERSION_TAG;
+
+  // === Utils: parser e formatação corretos ===
+  function parseBRNumber(v){
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (v == null) return NaN;
+    const s = String(v).trim();
+    if (!s) return NaN;
+    const hasComma = s.includes(',');
+    const hasDot   = s.includes('.');
+    if (hasComma && hasDot) return Number(s.replace(/\./g,'').replace(',', '.')); // 1.234,56 -> 1234.56
+    if (hasComma)            return Number(s.replace(',', '.'));                  // 1234,56 -> 1234.56
+    return Number(s);                                                              // 1234.56 -> 1234.56
+  }
+  function fmtBR(n){
+    return Number.isFinite(+n) ? (+n).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+  }
+  function $(id){ return document.getElementById(id); }
+  window.showOverlay = function(status, base, vD, vS, vM){
+    const box = $('supabaseOverlay'); if (!box) return;
+    box.style.display='block';
+    $('sbTenant').textContent = window.TENANT_ID || '—';
+    $('sbVersion').textContent = window.VERSION_TAG || '—';
+    $('sbStatus').textContent = status;
+    $('sbStatus').className = /200|ok/i.test(status)?'ok':'bad';
+    $('sbBase').textContent = fmtBR(base);
+    $('sbVD').textContent = fmtBR(vD);
+    $('sbVS').textContent = fmtBR(vS);
+    $('sbVM').textContent = fmtBR(vM);
+    const d = new Date();
+    $('sbWhen').textContent = d.toLocaleString('pt-BR');
+  }
+    function setValueOrText(el, val){
+    if (!el) return;
+    const txt = fmtBR(val);
+    if ('value' in el) el.value = txt;
+    else el.textContent = txt;
+  }
+  function pick(selectorList){
+    for (const sel of selectorList){
+      const el = document.querySelector(sel);
+      if (el) return el;
     }
     return null;
   }
 
-  function applyUI(meta){
-    if (!meta) return;
-    try { document.getElementById('dataCount').textContent = String(meta.rows||0); } catch(_){}
-    try { window.dispatchEvent(new CustomEvent('dataset:loaded',{ detail:{ tenant:TENANT, version:VERS, length:meta.rows||0 }})); } catch(_){ }
-    console.log('Autoload (REST/JS) OK:', TENANT, VERS, meta.rows||0);
-    const app = window.__appInstance || window._lastAppInstance;
-    try { if (app && typeof app.loadFromDB === 'function') app.loadFromDB(); } catch(_){}
+  // === Seletores candidatos (tentamos vários ids comuns) ===
+  const targets = {
+    close:  ['#i_close', '#fechamentoBase', '#fechamento_base', '#fechamento_base_text', '#closeBase'],
+    vwap_d: ['#vwapD', '#vwap_diaria', '#vwap_d', '#vwapDText', '#vwapDSpan'],
+    vwap_s: ['#vwapS', '#vwap_semanal', '#vwap_s', '#vwapSText', '#vwapSSpan'],
+    vwap_m: ['#vwapM', '#vwap_mensal', '#vwap_m', '#vwapMText', '#vwapMSpan']
+  };
+
+  async function sha256(buffer){
+    const hash = await crypto.subtle.digest('SHA-256', buffer);
+    return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
   }
 
-  function start(){ autoload().then(applyUI).catch(e=>console.warn('Autoload erro:', e)); }
-  if (document.readyState === 'complete' || document.readyState === 'interactive') start();
-  else document.addEventListener('DOMContentLoaded', start);
+  async function fetchJSON(url){
+    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }});
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+
+  // === Lê o último dataset (view -> tabela) ===
+  async function fetchLatest(){
+    console.log('[autoload] mode: force-table');
+    const baseSel = 'tenant_id,version_tag,imported_at,rows,data,vwap_d,vwap_s,vwap_m';
+    const qs = new URLSearchParams({
+      select: baseSel,
+      tenant_id: `eq.${TENANT_ID}`,
+      version_tag: `eq.${VERSION_TAG}`,
+      order: 'imported_at.desc',
+      limit: '1'
+    });
+    const url = `${SUPABASE_URL}/rest/v1/dol_fechamentos?${qs}`;
+    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }});
+    if (!r.ok){
+      const t = await r.text().catch(()=>'');
+      console.warn('[autoload] table fetch error', r.status, t);
+      showOverlay(r.status+' '+t, NaN, NaN, NaN, NaN);
+      return null;
+    }
+    const a = await r.json();
+    console.log('[autoload] table fetch status', r.status, Array.isArray(a)? a.length : a);
+    return a && a[0] ? a[0] : null;
+   
+  window.autoloadFromSupabase = autoloadFromSupabase; window.autoload_from_supabase = autoloadFromSupabase;
+}
+
+  // === Importa Excel e salva (sem recalcular) ===
+  async function importExcelAndSave(file){
+    const buf = await file.arrayBuffer();
+    const wb  = XLSX.read(buf, { type: 'array' });
+    const ws  = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+
+    const header = (rows[0]||[]).map(h => String(h||'').toLowerCase().trim());
+    const findCol = (labels) => {
+      for (let i=0;i<header.length;i++){
+        const h = header[i]; if (!h) continue;
+        for (const L of labels) if (h.includes(L)) return i;
+      }
+      return -1;
+    };
+
+    // Série de Fechamento
+    const idxClose = findCol(['fechamento','close','preço','preco','price']);
+    const series = (idxClose >= 0)
+      ? rows.slice(1).map(r => parseBRNumber(r[idxClose])).filter(Number.isFinite)
+      : rows.slice(1).flat().map(parseBRNumber).filter(Number.isFinite);
+
+    if (!series.length){ alert('Não encontrei coluna de “Fechamento”.'); return; }
+
+    // VWAPs vindas da planilha (opcionais)
+    const idxD = findCol(['vwap_d','vwap d','vwap diaria','vwap dia']);
+    const idxS = findCol(['vwap_s','vwap s','vwap semanal','vwap semana']);
+    const idxM = findCol(['vwap_m','vwap m','vwap mensal','vwap mes']);
+    const vwap_d = idxD >= 0 ? parseBRNumber(rows[1]?.[idxD]) : null;
+    const vwap_s = idxS >= 0 ? parseBRNumber(rows[1]?.[idxS]) : null;
+    const vwap_m = idxM >= 0 ? parseBRNumber(rows[1]?.[idxM]) : null;
+
+    const file_hash = await sha256(buf);
+
+    const payload = {
+      tenant_id: TENANT_ID,
+      version_tag: VERSION_TAG,
+      rows: series.length,
+      data: series,
+      vwap_d, vwap_s, vwap_m,
+      file_hash
+    };
+
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/dol_fechamentos?on_conflict=tenant_id,version_tag,file_hash`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=representation'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok){
+      const t = await resp.text().catch(()=>'');
+      console.error('[Supabase] Falha ao salvar:', t);
+      alert('Falha ao salvar no Supabase.');
+      return;
+    }
+    alert('Planilha importada e salva! Todos os usuários já verão esse dataset.');
+    await autoloadFromSupabase();
+  
+  window.importExcelAndSave = importExcelAndSave;
+}
+
+  // === Botão/Entrada para importar ===
+  function ensureImportUI(){
+    let input = document.getElementById('fileUpload');
+    if (!input){
+      input = document.createElement('input');
+      input.id = 'fileUpload';
+      input.type = 'file';
+      input.accept = '.xlsx,.xls';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+
+      const btn = document.createElement('button');
+      btn.textContent = '📥 Importar Excel (Supabase)';
+      Object.assign(btn.style, {position:'fixed', right:'18px', bottom:'18px', zIndex:9999, padding:'10px 14px', borderRadius:'10px', border:'none', background:'#2563eb', color:'#fff', fontWeight:'700', boxShadow:'0 8px 18px rgba(37,99,235,.35)', cursor:'pointer'});
+      btn.addEventListener('click', ()=> input.click());
+      document.body.appendChild(btn);
+    }
+    input.addEventListener('change', async (e)=>{
+      const f = e.target.files?.[0]; if (!f) return;
+      await importExcelAndSave(f);
+      e.target.value = '';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => { try { console.log('[autoload] tenant/version:', window.TENANT_ID, window.VERSION_TAG); } catch(e){}; const b=document.getElementById('sbReload'); if(b){ b.onclick=()=>window.autoloadFromSupabase && window.autoloadFromSupabase(); } if (window.showOverlay) window.showOverlay('carregando…', NaN, NaN, NaN, NaN); try { console.log('[autoload] tenant/version:', window.TENANT_ID, window.VERSION_TAG); } catch(e){} console.log('[autoload] tenant/version:', TENANT_ID, VERSION_TAG);
+    ensureImportUI();
+    autoloadFromSupabase();
+  });
 })();
 </script>
+<!-- === END: Supabase Import + Autoload === -->
+
+<script>
+// Hard fallback: run autoload after full page load as well
+window.addEventListener('load', function(){
+  try{
+    if (window.autoloadFromSupabase) window.autoloadFromSupabase();
+  }catch(e){ console.warn('load-fallback autoload error', e); }
+});
+</script>
+
+<script>
+  // Função para buscar os dados mais recentes do Supabase com mais verificações de evento
+  async function fetchViaRest() {
+    const qs = new URLSearchParams({
+      select: 'data, rows, imported_at',
+      tenant_id: `eq.${TENANT_ID}`,
+      version_tag: `eq.${VERSION_TAG}`,
+      order: 'imported_at.desc',
+      limit: '1'
+    }).toString();
+
+    console.log('Consultando Supabase com os parâmetros:', qs);  // Log para verificar os parâmetros da consulta
+
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/dol_fechamentos?${qs}`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+
+    if (!r.ok) {
+      console.error('Erro ao buscar dados do Supabase', r.status, r.statusText);  // Log de erro
+      return null;
+    }
+
+    const j = await r.json();
+    console.log('Resposta recebida do Supabase:', j);  // Log da resposta do Supabase
+    return (Array.isArray(j) && j.length) ? j[0] : null;
+  }
+
+  // Função para aplicar os dados recebidos ao sistema
+  async function applyToApp(prices) {
+    const app = findApp();
+    const n = Array.isArray(prices) ? prices.length : 0;
+    if (!app) {
+      console.warn('App não encontrada; UI pode não refletir.');  // Log caso o app não seja encontrado
+      return false;
+    }
+
+    try {
+      app.priceData = prices.slice();
+      app.updateDataCount?.(n);
+      app.recalcularIndicadores?.();
+      app.updateCards?.();
+      app.renderDashboard?.();
+      app.updateAllCharts?.();
+      app.renderCharts?.();
+      app.computeReturns?.();
+      app.refreshUI?.();
+      app.refreshAll?.();
+      console.log('Dados aplicados ao sistema:', prices);  // Log para verificar se os dados foram aplicados
+      return true;
+    } catch (e) {
+      console.warn('Falha aplicando dataset:', e);  // Log de erro ao aplicar os dados
+      return false;
+    }
+  }
+
+  // Função para atualizar os dados e exibir mensagens no botão
+  async function fetchLatest() {
+    console.log('Botão de atualização clicado');  // Log para garantir que o evento foi chamado
+    BTN.disabled = true;
+    const old = BTN.textContent;
+    BTN.textContent = '🔄 Atualizando...';
+
+    try {
+      const row = await fetchViaRest();  // Buscando dados do Supabase
+      if (!row) {
+        console.log('Nenhum dataset encontrado');  // Log caso não encontre dados
+        BTN.textContent = 'Nenhum dataset';
+        setTimeout(() => BTN.textContent = old, 1500);
+        return;
+      }
+      const ok = applyToApp(row.data || []);
+      BTN.textContent = ok ? '✅ Atualizado' : '⚠️ Espere a app iniciar';
+      setTimeout(() => BTN.textContent = old, 1800);
+    } catch (e) {
+      console.error(e);
+      BTN.textContent = 'Erro';
+      setTimeout(() => BTN.textContent = old, 2000);
+    } finally {
+      BTN.disabled = false;
+    }
+  }
+
+  // Confirmar se o evento de clique no botão está sendo corretamente capturado
+  document.getElementById('sbReload').addEventListener('click', () => {
+    console.log('Clique no botão de recarregar Supabase!');  // Log de verificação
+    fetchLatest();  // Chama a função de atualização
+  });
+
+  // Inicialização do botão de atualização
+  window.addEventListener('load', function() {
+    try {
+      if (window.autoloadFromSupabase) window.autoloadFromSupabase();
+    } catch (e) {
+      console.warn('load-fallback autoload error', e);
+    }
+  });
+</script>
+
+<!-- === BEGIN: Supabase Refresh + Safe App Apply (non-destructive) === -->
+<script>
+(function(){
+  window.__sbApplyDataToApp = function(row){
+    try{
+      if (!row) return;
+      var app = window.__appInstance || window.tradingSystem;
+      if (!app) return;
+      if (Array.isArray(row.data)) app.priceData = row.data.slice();
+      if (typeof app.updateUI === 'function'){
+        try { app.updateUI(); } catch(e){ console.warn('[updateUI] falhou:', e); }
+        return;
+      }
+      if (typeof app.refreshAll === 'function'){
+        try { app.refreshAll.call(app); } catch(e){ console.warn('[refreshAll] falhou:', e); }
+      }
+    }catch(e){ console.warn('[__sbApplyDataToApp] ignorado:', e); }
+  };
+
+  window.__sbEndLoading = function(){
+    try{
+      ['forceSyncBtn','sbReload','ovReload'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el){ el.classList.remove('loading'); el.disabled = false; }
+      });
+    }catch(_){}
+  };
+
+  var SUPABASE_URL = (window.SUPABASE_URL || "https://ywpxtzodpjgavswejqqt.supabase.co");
+  var SUPABASE_KEY = (window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4");
+
+  function getTenant(){ 
+    return (new URLSearchParams(location.search).get('tenant')) || sessionStorage.getItem('tenantId') || 'genesis-trading';
+  }
+  function getVersion(){ 
+    return sessionStorage.getItem('versionTag') || 'default';
+  }
+  function fmtBR(n){ return Number.isFinite(+n) ? (+n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'; }
+
+  async function fetchLatest(){
+    var qs = new URLSearchParams({
+      select: 'data,rows,vwap_d,vwap_s,vwap_m,imported_at',
+      'tenant_id': 'eq.' + getTenant(),
+      'version_tag': 'eq.' + getVersion(),
+      order: 'imported_at.desc',
+      limit: '1'
+    }).toString();
+    var r = await fetch(SUPABASE_URL + '/rest/v1/dol_fechamentos?' + qs, {
+      headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
+    });
+    if (!r.ok){
+      var t = ''; try { t = await r.text(); } catch(_){}
+      console.warn('[Supabase] HTTP', r.status, t);
+      if (window.showOverlay) window.showOverlay(r.status, NaN, NaN, NaN, NaN);
+      return null;
+    }
+    var json = await r.json();
+    if (!Array.isArray(json) || !json.length){
+      console.log('[Supabase] 200 OK (vazio)');
+      if (window.showOverlay) window.showOverlay('200 OK (vazio)', NaN, NaN, NaN, NaN);
+      return null;
+    }
+    return json[0];
+  }
+
+  function applyUI(row){
+    if (!row) return false;
+    var series = Array.isArray(row.data) ? row.data : [];
+    var base = Number(series[0]);
+    var elClose = document.querySelector('#i_close');
+    if (elClose && Number.isFinite(base)) elClose.textContent = fmtBR(base);
+    function setVal(selector, val){
+      var el = document.querySelector(selector);
+      if (!el) return;
+      if ('value' in el) el.value = fmtBR(val); else el.textContent = fmtBR(val);
+    }
+    setVal('#vwapD', row.vwap_d);
+    setVal('#vwapS', row.vwap_s);
+    setVal('#vwapM', row.vwap_m);
+    function bind(key, val){
+      var el = document.querySelector('[data-sb="'+key+'"]');
+      if (el) el.textContent = fmtBR(val);
+    }
+    bind('base', base); bind('vwap_d', row.vwap_d); bind('vwap_s', row.vwap_s); bind('vwap_m', row.vwap_m);
+    if (window.showOverlay) window.showOverlay('200 OK', base, row.vwap_d, row.vwap_s, row.vwap_m);
+    return true;
+  }
+
+  async function hardRefresh(btn){
+    try{
+      if (btn){ btn.disabled = true; btn.textContent = '🔄 Atualizando...'; }
+      var row = await fetchLatest();
+      if (!row){
+        if (btn) btn.textContent = 'Nenhum dataset';
+        window.__sbEndLoading && window.__sbEndLoading();
+        return;
+      }
+      applyUI(row);
+      window.__sbApplyDataToApp && window.__sbApplyDataToApp(row);
+      if (btn) btn.textContent = '✅ Atualizado';
+    } catch(e){
+      console.error('[Supabase Refresh] erro:', e);
+      if (btn) btn.textContent = '⚠️ Erro';
+    } finally {
+      window.__sbEndLoading && window.__sbEndLoading();
+      if (btn){ setTimeout(function(){ btn.disabled = false; }, 1200); }
+    }
+  }
+
+  function bindButtons(){
+    ['forceSyncBtn','sbReload','ovReload'].forEach(function(id){
+      var b = document.getElementById(id);
+      if (b && !b.__sbBound){
+        b.addEventListener('click', function(){ hardRefresh(b); });
+        b.__sbBound = true;
+      }
+    });
+    window.__sbForceUpdate = function(){ hardRefresh(null); };
+  }
+
+  window.addEventListener('load', bindButtons);
+})();
+</script>
+<!-- === END: Supabase Refresh + Safe App Apply === -->
+
+
+<!-- === BEGIN: sb/kickRecalc – força recálculo das projeções após aplicar dados === -->
+<script>
+(function () {
+  function kickRecalc() {
+    try {
+      var app = window.__appInstance || window.tradingSystem || window.TradingSystemWithAI || window.app;
+      if (!app) return;
+
+      var tryCall = function (fn) { try { fn && fn.call(app); } catch (e) { console.warn('[sb/recalc]', e); } };
+
+      tryCall(app.updateUI);
+      tryCall(app.refreshAll);
+      tryCall(app.recomputeAll);
+      tryCall(app.recomputeProjections);
+      tryCall(app.calculateAll);
+      tryCall(app.calcAll);
+
+      // eventos para listeners
+      try { window.dispatchEvent(new Event('sb:data:updated')); } catch(_) {}
+      try { document.dispatchEvent(new Event('sb:data:updated')); } catch(_) {}
+    } catch (e) {
+      console.warn('[sb/kickRecalc] ignorado', e);
+    }
+  }
+
+  var oldApply = window.__sbApplyDataToApp;
+  window.__sbApplyDataToApp = function (row) {
+    try { oldApply && oldApply(row); } catch (e) { console.warn('[sb/apply old]', e); }
+    kickRecalc();
+    setTimeout(kickRecalc, 200);
+    setTimeout(kickRecalc, 600);
+  };
+})();
+</script>
+<!-- === END: sb/kickRecalc === -->
+
+
+<!-- === BEGIN: sb/force-firstline-as-base === -->
+<script>
+/* Garante que o "Fechamento Base" seja a 1ª linha:
+   Muitos apps calculam o base pelo último elemento da série.
+   Se SB_FORCE_FIRSTLINE_AS_BASE === true (default), invertimos a série
+   antes de aplicar, para que o último elemento vire a 1ª linha original. */
+(function () {
+  var oldApply = window.__sbApplyDataToApp;
+  if (!oldApply) return;
+
+  // toggle global (true por padrão)
+  if (typeof window.SB_FORCE_FIRSTLINE_AS_BASE === 'undefined') {
+    window.SB_FORCE_FIRSTLINE_AS_BASE = true;
+  }
+
+  window.__sbApplyDataToApp = function (row) {
+    try {
+      var r = Object.assign({}, row);
+      if (window.SB_FORCE_FIRSTLINE_AS_BASE && Array.isArray(r.data)) {
+        // normaliza números
+        var cleaned = r.data.map(function (v) { return Number(v); }).filter(function (v){return Number.isFinite(v);});
+        // se houver dados, invertimos para que o último seja a 1ª linha original
+        if (cleaned.length > 1) {
+          cleaned.reverse();
+        }
+        r.data = cleaned;
+        // log para conferência
+        try {
+          console.log('[sb] forcing first-line-as-base: first=', r.data[0], 'last=', r.data[r.data.length-1]);
+        } catch(_) {}
+      }
+      return oldApply(r);
+    } catch (e) {
+      console.warn('[sb/force-firstline-as-base] erro', e);
+      try { return oldApply(row); } catch(_) {}
+    }
+  };
+})();
+</script>
+<!-- === END: sb/force-firstline-as-base === -->
 
 </body>
 <!-- Indicadores de Proximidade (Preço Atual) -->
