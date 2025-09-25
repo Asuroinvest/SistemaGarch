@@ -7073,6 +7073,105 @@ window.addEventListener('load', function(){
 </script>
 <!-- === END: sb/force-firstline-as-base === -->
 
+<script>
+/* ---------- Supabase: leitura da VIEW v_dol_fechamentos (1 registro + recente) ---------- */
+(function () {
+  // Reutiliza suas credenciais já definidas no HTML. Coloque aqui se ainda não houver:
+  const SUPABASE_URL = window.SUPABASE_URL || 'https://ywpxtzodpjgavswejqqt.supabase.co';
+  const SUPABASE_KEY = window.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cHh0em9kcGpnYXZzd2VqcXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1NzA3NTcsImV4cCI6MjA3NDE0Njc1N30.7sbIadtxRJJWtID2RLtfmRQxQAVoP3sd8ry3xlY68M4';
+
+  // Utilitário de sanitização
+  function clean(v, def) {
+    return ((v ?? def) + '').trim().toLowerCase();
+  }
+
+  async function fetchLatestFromSupabase() {
+    const tenant   = clean(sessionStorage.getItem('tenantId'),   'genesis-trading');
+    const version  = clean(sessionStorage.getItem('versionTag'), 'default');
+
+    const url =
+      `${SUPABASE_URL}/rest/v1/v_dol_fechamentos`
+      + `?select=tenant_id,version_tag,imported_at,rows,first_close,last_close,vwap_d,vwap_s,vwap_m`
+      + `&tenant_id=eq.${encodeURIComponent(tenant)}`
+      + `&version_tag=eq.${encodeURIComponent(version)}`
+      + `&order=imported_at.desc&limit=1`;
+
+    const r = await fetch(url, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    });
+
+    let body;
+    try { body = await r.json(); } catch (e) { body = null; }
+
+    // PostgREST às vezes retorna 200 com obj de erro — trate aqui:
+    if (!Array.isArray(body)) {
+      console.warn('[Supabase] resposta não-lista:', body);
+      throw new Error((body && body.message) || 'Falha lendo Supabase');
+    }
+    if (!body.length) {
+      console.warn('[Supabase] nenhum dataset para', { tenant, version });
+      return null;
+    }
+
+    const row = body[0];
+    const rows     = Number(row.rows);
+    const base     = Number(row.first_close);   // 1ª linha (o que você quer!)
+    const last     = Number(row.last_close);    // última linha (diagnóstico)
+    const vwap_d   = Number(row.vwap_d);
+    const vwap_s   = Number(row.vwap_s);
+    const vwap_m   = Number(row.vwap_m);
+
+    console.log(`[Supabase] ok rows: ${rows} base(1ª): ${base}  VWAPS:`, { vD: vwap_d, vS: vwap_s, vM: vwap_m });
+
+    return { tenant, version, rows, base, last, vwap_d, vwap_s, vwap_m, imported_at: row.imported_at };
+  }
+
+  // Hook único que você pode chamar no clique do botão "Atualizar do Supabase"
+  async function autoloadFromSupabase() {
+    try {
+      const data = await fetchLatestFromSupabase();
+      if (!data) return; // nenhum dataset
+
+      // 1) Fechamento base = primeira linha
+      if (typeof window.applyFirstCloseAsBase === 'function') {
+        window.applyFirstCloseAsBase(data.base, data.last);  // se seu app tiver esse hook
+      } else if (typeof window.setBaseClose === 'function') {
+        window.setBaseClose(data.base);
+      }
+
+      // 2) VWAPs
+      if (typeof window.setVWAPs === 'function') {
+        window.setVWAPs({ d: data.vwap_d, s: data.vwap_s, m: data.vwap_m });
+      }
+
+      // 3) Dispara evento para quem quiser ouvir
+      window.dispatchEvent(new CustomEvent('supabase:data', { detail: data }));
+
+      // 4) Badge/Toast opcional
+      if (typeof window.showSupabaseToast === 'function') {
+        window.showSupabaseToast(`Base: ${data.base.toLocaleString('pt-BR',{minimumFractionDigits:2})} | VWAPs D:${data.vwap_d} S:${data.vwap_s} M:${data.vwap_m}`);
+      }
+    } catch (err) {
+      console.error('[Supabase] erro:', err);
+      if (typeof window.showSupabaseToast === 'function') {
+        window.showSupabaseToast('Erro ao atualizar do Supabase (ver console).');
+      }
+    }
+  }
+
+  // Expõe/override a função global usada pelo botão
+  window.autoloadFromSupabase = autoloadFromSupabase;
+
+  // Se existir um botão com esse ID, conecta automaticamente
+  const btn = document.querySelector('#btn-atualizar-supabase, [data-action="refresh-supabase"]');
+  if (btn) btn.addEventListener('click', autoloadFromSupabase);
+
+  // Opcional: carregamento automático ao abrir se quiser
+  // autoloadFromSupabase();
+})();
+</script>
+
+
 </body>
 <!-- Indicadores de Proximidade (Preço Atual) -->
 <script>
