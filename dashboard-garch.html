@@ -7345,4 +7345,15 @@ function getProximityStatus(currentPrice, entryPrice) {
     color: #475569;
     margin-top: 6px;
   }
+  /* Remover risco preto dos inputs de VWAP */
+  #vwapD, #vwapS, #vwapM {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;           /* se quiser manter altura igual: use '1px solid transparent' */
+  }
+  #vwapD:focus, #vwapS:focus, #vwapM:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  
 </style>
