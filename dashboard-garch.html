@@ -6649,6 +6649,28 @@ lv.innerHTML = `
 
     if (!series.length){ alert('Não encontrei coluna de “Fechamento”.'); return; }
 
+    // === OHLC (diário) a partir da planilha ===
+    const idxOpen = findCol(['abertura','open']);
+    const idxHigh = findCol(['máxima','maxima','high','máximo','maximo']);
+    const idxLow  = findCol(['mínima','minima','low','mínimo','minimo']);
+    let abertura = null, maxima = null, minima = null, fechamento = null;
+    // varre de baixo pra cima para achar a última linha com valores válidos
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i] || [];
+      const o = idxOpen>=0 ? parseBRNumber(r[idxOpen]) : NaN;
+      const h = idxHigh>=0 ? parseBRNumber(r[idxHigh]) : NaN;
+      const l = idxLow >=0 ? parseBRNumber(r[idxLow])  : NaN;
+      const c = idxClose>=0 ? parseBRNumber(r[idxClose]) : NaN;
+      if (Number.isFinite(h) && Number.isFinite(l) && (Number.isFinite(c) || (series && series.length))) {
+        abertura = Number.isFinite(o) ? o : null;
+        maxima = h; minima = l; fechamento = Number.isFinite(c) ? c : series[0];
+        break;
+      }
+    }
+    if (Number.isFinite(maxima) && Number.isFinite(minima) && Number.isFinite(fechamento)) {
+      window.__lastOHLC = { high: +maxima, low: +minima, close: +fechamento };
+    }
+
     // VWAPs vindas da planilha (opcionais)
     const idxD = findCol(['vwap_d','vwap d','vwap diaria','vwap dia']);
     const idxS = findCol(['vwap_s','vwap s','vwap semanal','vwap semana']);
@@ -6664,6 +6686,10 @@ lv.innerHTML = `
       version_tag: VERSION_TAG,
       rows: series.length,
       data: series,
+      abertura: (Number.isFinite(abertura) ? abertura : null),
+      maxima: (Number.isFinite(maxima) ? maxima : null),
+      minima: (Number.isFinite(minima) ? minima : null),
+      fechamento: (Number.isFinite(fechamento) ? fechamento : (series[series.length-1] ?? null)),
       vwap_d, vwap_s, vwap_m,
       file_hash
     };
@@ -6838,6 +6864,17 @@ window.addEventListener('load', function(){
       var app = window.__appInstance || window.tradingSystem;
       if (!app) return;
       if (Array.isArray(row.data)) app.priceData = row.data.slice();
+            // OHLC do registro (quando disponível)
+      try {
+        if (Number.isFinite(+row.maxima) && Number.isFinite(+row.minima)) {
+          var cval = Number.isFinite(+row.fechamento) ? +row.fechamento : (Array.isArray(app.priceData) && app.priceData.length ? +app.priceData[app.priceData.length-1] : null);
+          if (cval != null) {
+            window.__lastOHLC = { high: +row.maxima, low: +row.minima, close: cval };
+            if (!Array.isArray(app.ohlcData)) app.ohlcData = [];
+            app.ohlcData.push({ open: Number.isFinite(+row.abertura) ? +row.abertura : null, high: +row.maxima, low: +row.minima, close: cval });
+          }
+        }
+      } catch(_){ }
       if (typeof app.updateUI === 'function'){
         try { app.updateUI(); } catch(e){ console.warn('[updateUI] falhou:', e); }
         return;
@@ -7041,7 +7078,7 @@ async function sbFetchLatestNormalized(tenant, version, anonKey, baseUrl) {
 
   // 1) Try the TABLE first (has 'data' array used by the dashboard)
   const qsTable = new URLSearchParams({
-    select: 'data,rows,imported_at',
+    select: 'data,rows,imported_at,abertura,maxima,minima,fechamento',
     tenant_id: `eq.${tenant}`,
     version_tag: `eq.${version}`,
     order: 'imported_at.desc',
@@ -7094,6 +7131,25 @@ function applyRowToAppNormalized(result) {
   if (result.source === 'table' && Array.isArray(row.data)) {
     app.priceData = row.data.slice();
   }
+
+  // Se vierem colunas escalares de OHLC, priorize-as para pivô
+  try {
+    if (result && result.row) {
+      const r = result.row;
+      const hasOHLC = (r && Number.isFinite(+r.maxima) && Number.isFinite(+r.minima) && (Number.isFinite(+r.fechamento) || (Array.isArray(app.priceData) && app.priceData.length)));
+      if (hasOHLC) {
+        const c = Number.isFinite(+r.fechamento) ? +r.fechamento : (+app.priceData[app.priceData.length-1]);
+        const ohlc = {
+          open:  Number.isFinite(+r.abertura) ? +r.abertura : null,
+          high:  +r.maxima,
+          low:   +r.minima,
+          close: c
+        };
+        window.__lastOHLC = { high: ohlc.high, low: ohlc.low, close: ohlc.close };
+        try { if (!Array.isArray(app.ohlcData)) app.ohlcData = []; app.ohlcData.push(ohlc); } catch(_) {}
+      }
+    }
+  } catch(_) {}
 
   // App UI hooks (best-effort)
   try { app.updateDataCount?.(Array.isArray(app.priceData) ? app.priceData.length : 0); } catch(_) {}
@@ -7168,7 +7224,68 @@ function applyRowToAppNormalized(result) {
     return null;
   }
 
-  function applyToUI(row){
+  
+    async function ensureOHLCFromSupabase(row){
+      try{
+        if (row && Number.isFinite(+row.maxima) && Number.isFinite(+row.minima)) {
+          return { high:+row.maxima, low:+row.minima, close: Number.isFinite(+row.fechamento) ? +row.fechamento : null };
+        }
+        // need to fetch from table
+        const cfg = resolveConfig();
+        const tenant = (row && row.tenant_id) || (window.TENANT_ID || window.__tenant_id || 'genesis-trading');
+        const version = (row && row.version_tag) || (window.VERSION_TAG || window.__version_tag || 'default');
+        const qs = new URLSearchParams({
+          select: 'abertura,maxima,minima,fechamento,imported_at',
+          tenant_id: `eq.${tenant}`,
+          version_tag: `eq.${version}`,
+          order: 'imported_at.desc',
+          limit: '1'
+        }).toString();
+        const resp = await fetch(cfg.url.replace(/\/$/, '') + '/rest/v1/dol_fechamentos?' + qs, {
+          headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key, Accept: 'application/json' }
+        });
+        if (resp.ok){
+          const arr = await resp.json();
+          if (Array.isArray(arr) && arr.length){
+            const r = arr[0];
+            return { high:+r.maxima, low:+r.minima, close: Number.isFinite(+r.fechamento)? +r.fechamento : null };
+          }
+        }
+      } catch(e){ console.warn('ensureOHLCFromSupabase err', e); }
+      return null;
+    }
+    
+function applyToUI(row){
+  (async () => {
+    // Garante OHLC real mesmo quando a view não traz as colunas
+    try{
+      const ensured = await ensureOHLCFromSupabase(row);
+      if (ensured && Number.isFinite(+ensured.high) && Number.isFinite(+ensured.low) && Number.isFinite(+ensured.close)){
+        var app = window.__appInstance || window.tradingSystem || window.app || null;
+        window.__lastOHLC = { high:+ensured.high, low:+ensured.low, close:+ensured.close };
+        try { if (app){ if (!Array.isArray(app.ohlcData)) app.ohlcData = []; app.ohlcData.push({ open:null, high:+ensured.high, low:+ensured.low, close:+ensured.close }); } } catch(_){}
+        try { if (typeof execute === 'function') setTimeout(execute, 0); } catch(_) {}
+      }
+    } catch(e){ console.warn('applyToUI ensureOHLC', e); }
+  })();
+  // OHLC direto do Supabase (priorizar para pivôs)
+  try {
+    if (row && (Number.isFinite(+row.maxima) && Number.isFinite(+row.minima))) {
+      var app = window.__appInstance || window.tradingSystem || window.app || null;
+      var closeVal = Number.isFinite(+row.fechamento) ? +row.fechamento : (app && Array.isArray(app.priceData) && app.priceData.length ? +app.priceData[app.priceData.length-1] : null);
+      if (closeVal != null) {
+        window.__lastOHLC = { high: +row.maxima, low: +row.minima, close: closeVal };
+        try {
+          if (app) {
+            if (!Array.isArray(app.ohlcData)) app.ohlcData = [];
+            app.ohlcData.push({ open: Number.isFinite(+row.abertura) ? +row.abertura : null, high: +row.maxima, low: +row.minima, close: closeVal });
+          }
+        } catch(_){ }
+      }
+    }
+  } catch(_){ }
+
+
     // 1) Preferir pipelines existentes, sem sobrescrever nada
     try { if (typeof window.applyUI === 'function') window.applyUI(row); } catch(e){ console.warn('[force-final2] applyUI', e); }
     try { if (typeof window.applyRowToAppNormalized === 'function') window.applyRowToAppNormalized(row); } catch(e){ console.warn('[force-final2] applyRowToAppNormalized', e); }
@@ -7207,7 +7324,7 @@ function applyRowToAppNormalized(result) {
       if (!cfg.url || !cfg.key){ console.warn('[force-final2] faltando SUPABASE_URL/KEY'); return; }
       const tenant  = sessionStorage.getItem('tenantId')   || (window.TENANT_ID || 'genesis-trading');
       const version = sessionStorage.getItem('versionTag') || (window.VERSION_TAG || 'default');
-      const tables  = ['v_dol_fechamentos_current','v_dol_fechamentos','dol_fechamentos'];
+      const tables = ['dol_fechamentos','v_dol_fechamentos_current','v_dol_fechamentos'];
       let row = null;
       for (const t of tables){
         row = await fetchOne(t, cfg, tenant, version);
@@ -7235,7 +7352,451 @@ function applyRowToAppNormalized(result) {
 <!-- === /FORCE FINAL === -->
 
 
+
+<!-- Script para calcular os Pivot Points e os percentuais de 0,5% e 1% -->
+<script>
+  // Função para calcular os Pivot Points
+  function calcularPivotPoints(maxima, minima, fechamento) {
+    const P = (maxima + minima + fechamento) / 3;
+    const S1 = 2 * P - maxima;
+    const R1 = 2 * P - minima;
+    const S2 = P - (R1 - S1);
+    const R2 = P + (R1 - S1);
+    return { P, S1, R1, S2, R2 };
+  }
+
+  // Função para calcular os percentuais de 0,5% e 1%
+  function calcularPercentuais(fechamento) {
+    const up_05 = fechamento * 1.005;
+    const up_1 = fechamento * 1.01;
+    const down_05 = fechamento * 0.995;
+    const down_1 = fechamento * 0.99;
+
+    return {
+      up_05: up_05.toFixed(2),
+      up_1: up_1.toFixed(2),
+      down_05: down_05.toFixed(2),
+      down_1: down_1.toFixed(2)
+    };
+  }
+
+  // Função para atualizar os valores de Pivot Points e percentuais
+  function atualizarValores(fechamento) {
+    const { P, S1, R1, S2, R2 } = calcularPivotPoints(5000, 4950, fechamento); // Exemplo de máximas, mínimas e fechamento
+    const perc = calcularPercentuais(fechamento);
+
+    // Atualizando os valores na interface existente (com base no layout original)
+    document.getElementById('pivotP').innerText = P.toFixed(2);
+    document.getElementById('pivotS1').innerText = S1.toFixed(2);
+    document.getElementById('pivotR1').innerText = R1.toFixed(2);
+    document.getElementById('pivotS2').innerText = S2.toFixed(2);
+    document.getElementById('pivotR2').innerText = R2.toFixed(2);
+    document.getElementById('up05').innerText = perc.up_05;
+    document.getElementById('up1').innerText = perc.up_1;
+    document.getElementById('down05').innerText = perc.down_05;
+    document.getElementById('down1').innerText = perc.down_1;
+  }
+
+  // Exemplo de fechamento para atualização dos valores
+  const fechamento = 5000; // Exemplo de valor de fechamento
+  atualizarValores(fechamento);
+</script>
+
+<script>
+/* ===== PIVOT POINTS + NÍVEIS PERCENTUAIS (CÁLCULO CORRIGIDO) ===== */
+(function(){
+  if(window.__pivotConfluenceInstalled__) return;
+  window.__pivotConfluenceInstalled__ = true;
+
+  // Helpers
+  function F2(v){ return Number.isFinite(v) ? Number(v).toFixed(2) : '--'; }
+
+  // Busca dados OHLC da última barra
+  function getLastBarData(){
+    const ts = window.tradingSystem || window.__appInstance;
+    // 0) Prioridade: valores salvos (Supabase/planilha)
+    if (window.__lastOHLC && Number.isFinite(+window.__lastOHLC.high) && Number.isFinite(+window.__lastOHLC.low) && Number.isFinite(+window.__lastOHLC.close)){
+      return { high:+window.__lastOHLC.high, low:+window.__lastOHLC.low, close:+window.__lastOHLC.close };
+    }
+    if(!ts || !Array.isArray(ts.priceData) || ts.priceData.length < 1) return null;
+    // 1) OHLC do app
+    if(ts.ohlcData && Array.isArray(ts.ohlcData) && ts.ohlcData.length > 0){
+      const lastBar = ts.ohlcData[ts.ohlcData.length - 1];
+      if(lastBar && Number.isFinite(+lastBar.high) && Number.isFinite(+lastBar.low) && Number.isFinite(+lastBar.close)){
+        return { high:+lastBar.high, low:+lastBar.low, close:+lastBar.close };
+      }
+    }
+    // 2) Fallback: deriva H/L de últimos fechamentos (mantido para compatibilidade)
+    const lookback = Math.min(5, ts.priceData.length);
+    const recentPrices = ts.priceData.slice(-lookback);
+    return { high: Math.max(...recentPrices), low: Math.min(...recentPrices), close: recentPrices[recentPrices.length - 1] };
+  }
+
+  // Cálculo de Pivot Points (fórmula clássica)
+  function calcPivots(high, low, close){
+    if(!Number.isFinite(high) || !Number.isFinite(low) || !Number.isFinite(close)) 
+      return null;
+
+    const PP = (high + low + close) / 3;
+    const range = (high - low);
+    const R1 = (2 * PP) - low;
+    const R2 = PP + range;
+    const R3 = PP + 2 * range;
+    const R4 = PP + 3 * range;
+    const S1 = (2 * PP) - high;
+    const S2 = PP - range;
+    const S3 = PP - 2 * range;
+    const S4 = PP - 3 * range;
+    return { PP, R1, R2, R3, R4, S1, S2, S3, S4 };
+  }
+
+  // Níveis Percentuais
+  function calcPercentLevels(close){
+    if(!Number.isFinite(close)) return null;
+    return {
+      plus_1: close * 1.01,
+      plus_05: close * 1.005,
+      minus_05: close * 0.995,
+      minus_1: close * 0.99
+    };
+  }
+
+  // Análise de Confluência
+  function analyzeConfluence(pivots, pctLevels, currentPrice){
+    if(!pivots || !pctLevels) return { strength: 0, zones: [] };
+
+    const tolerance = currentPrice * 0.003;
+    const allLevels = [
+      { name: 'PP', value: pivots.PP, weight: 5 },
+      { name: 'R1', value: pivots.R1, weight: 4 },
+      { name: 'R2', value: pivots.R2, weight: 3 },
+      { name: 'R3', value: pivots.R3, weight: 2 },
+      { name: 'S1', value: pivots.S1, weight: 4 },
+      { name: 'S2', value: pivots.S2, weight: 3 },
+      { name: 'S3', value: pivots.S3, weight: 2 },
+      { name: '+1%', value: pctLevels.plus_1, weight: 3 },
+      { name: '+0.5%', value: pctLevels.plus_05, weight: 2 },
+      { name: '-0.5%', value: pctLevels.minus_05, weight: 2 },
+      { name: '-1%', value: pctLevels.minus_1, weight: 3 }
+    ];
+
+    const zones = [];
+    allLevels.forEach(level1 => {
+      const cluster = [level1];
+      let totalWeight = level1.weight;
+
+      allLevels.forEach(level2 => {
+        if(level1 !== level2 && Math.abs(level1.value - level2.value) <= tolerance){
+          cluster.push(level2);
+          totalWeight += level2.weight;
+        }
+      });
+
+      if(cluster.length >= 2){
+        const avgPrice = cluster.reduce((sum, l) => sum + l.value, 0) / cluster.length;
+        const strength = Math.min(100, totalWeight * 5);
+
+        zones.push({
+          price: avgPrice,
+          strength: strength,
+          count: cluster.length,
+          names: cluster.map(l => l.name).join(', '),
+          distance: Math.abs(currentPrice - avgPrice),
+          type: avgPrice > currentPrice ? 'RES' : 'SUP'
+        });
+      }
+    });
+
+    zones.sort((a, b) => b.strength - a.strength);
+    const overallStrength = zones.length > 0
+      ? Math.round(zones.slice(0, 3).reduce((sum, z) => sum + z.strength, 0) / Math.min(3, zones.length))
+      : 0;
+
+    return { strength: overallStrength, zones: zones.slice(0, 5) };
+  }
+
+  // Renderiza painel
+  function renderPanel(pivots, pctLevels, confluence, currentPrice, barData){
+    const existing = document.getElementById('pivotPanel');
+    if(existing) existing.remove();
+
+    const panel = document.createElement('div');
+    panel.id = 'pivotPanel';
+    panel.className = 'panel';
+    panel.style.cssText = 'margin-top:16px; overflow:hidden;';
+
+    const borderColor = confluence.strength >= 70 ? '#10b981' : 
+                       confluence.strength >= 50 ? '#f59e0b' : '#6366f1';
+
+    const gradientBg = confluence.strength >= 70 ? 'linear-gradient(135deg, #ecfdf5, #f0fdf4)' :
+                       confluence.strength >= 50 ? 'linear-gradient(135deg, #fffbeb, #fef3c7)' :
+                       'linear-gradient(135deg, #eff6ff, #dbeafe)';
+
+    panel.innerHTML = `
+      <style>
+        #pivotPanel .pivot-grid { 
+          display: grid; 
+          grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
+          gap: 10px; 
+          margin-bottom: 12px; 
+        }
+        #pivotPanel .pct-grid { 
+          display: grid; 
+          grid-template-columns: repeat(2, 1fr); 
+          gap: 12px; 
+          margin-bottom: 14px; 
+        }
+        #pivotPanel .level-card {
+          background: #ffffff;
+          border-radius: 12px;
+          padding: 12px 10px;
+          text-align: center;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        }
+        #pivotPanel .level-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+        }
+        #pivotPanel .level-label {
+          font-size: 10px;
+          font-weight: 900;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 6px;
+        }
+        #pivotPanel .level-value {
+          font-size: 16px;
+          font-weight: 900;
+          font-variant-numeric: tabular-nums;
+          margin-bottom: 4px;
+        }
+        #pivotPanel .level-dist {
+          font-size: 9px;
+          color: #94a3af;
+          font-weight: 600;
+        }
+        #pivotPanel .zone-card {
+          border-radius: 12px;
+          padding: 12px 14px;
+          margin-bottom: 8px;
+          transition: all 0.3s ease;
+        }
+        #pivotPanel .zone-card:hover {
+          transform: translateX(4px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        #pivotPanel .calc-info {
+          font-size: 10px;
+          color: #64748b;
+          padding: 8px 10px;
+          background: rgba(255,255,255,0.5);
+          border-radius: 8px;
+          margin-bottom: 12px;
+          font-family: monospace;
+        }
+        @media (max-width: 768px) {
+          #pivotPanel .pivot-grid { grid-template-columns: repeat(3, 1fr); }
+          #pivotPanel .pct-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+      </style>
+
+      <div style="border: 2px solid ${borderColor}; border-radius: 16px; padding: 16px; background: ${gradientBg};">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 900; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${borderColor}" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Pivot Points + Níveis
+          </h3>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 10px; color: #64748b; font-weight: 700;">Confluência:</span>
+            <span style="font-size: 14px; padding: 6px 12px; border-radius: 999px; background: ${borderColor}; color: #fff; font-weight: 900;">
+              ${confluence.strength}%
+            </span>
+          </div>
+        </div>
+
+        <!-- Info de cálculo -->
+        <div class="calc-info">
+          <strong>Base do cálculo:</strong> H=${F2(barData.high)} | L=${F2(barData.low)} | C=${F2(barData.close)}
+          <br><strong>PP = (H + L + C) / 3 = ${F2(pivots.PP)}</strong>
+        </div>
+
+        <!-- Pivots Grid -->
+        <div style="background: rgba(255,255,255,0.6); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+          <div style="font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Pivot Points Clássicos
+          </div>
+          <div class="pivot-grid">
+            ${createLevelCard('R3', pivots.R3, currentPrice, '#dc2626')}
+            ${createLevelCard('R2', pivots.R2, currentPrice, '#ef4444')}
+            ${createLevelCard('R1', pivots.R1, currentPrice, '#f87171')}
+            ${createLevelCard('PP', pivots.PP, currentPrice, '#6366f1')}
+            ${createLevelCard('S1', pivots.S1, currentPrice, '#4ade80')}
+            ${createLevelCard('S2', pivots.S2, currentPrice, '#22c55e')}
+            ${createLevelCard('S3', pivots.S3, currentPrice, '#16a34a')}
+          </div>
+        </div>
+
+        <!-- Níveis Percentuais -->
+        <div style="background: rgba(255,255,255,0.6); border-radius: 12px; padding: 12px; margin-bottom: ${confluence.zones.length > 0 ? '14px' : '0'};">
+          <div style="font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Níveis Percentuais do Fechamento
+          </div>
+          <div class="pct-grid">
+            ${createLevelCard('+1%', pctLevels.plus_1, currentPrice, '#f59e0b')}
+            ${createLevelCard('+0.5%', pctLevels.plus_05, currentPrice, '#fbbf24')}
+            ${createLevelCard('-0.5%', pctLevels.minus_05, currentPrice, '#fbbf24')}
+            ${createLevelCard('-1%', pctLevels.minus_1, currentPrice, '#f59e0b')}
+          </div>
+        </div>
+
+        ${confluence.zones.length > 0 ? renderConfluenceZones(confluence.zones, borderColor, currentPrice) : ''}
+      </div>
+    `;
+
+    return panel;
+  }
+
+  function createLevelCard(label, value, currentPrice, color){
+    const dist = ((value / currentPrice - 1) * 100);
+    const arrow = value > currentPrice ? '↑' : '↓';
+    
+    return `
+      <div class="level-card" style="border-left: 3px solid ${color};">
+        <div class="level-label">${label}</div>
+        <div class="level-value" style="color: ${color};">${F2(value)}</div>
+        <div class="level-dist">${arrow} ${Math.abs(dist).toFixed(2)}%</div>
+      </div>
+    `;
+  }
+
+  function renderConfluenceZones(zones, borderColor, currentPrice){
+    return `
+      <div style="border-top: 2px dashed ${borderColor}; padding-top: 14px;">
+        <div style="font-size: 12px; font-weight: 900; margin-bottom: 10px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="${borderColor}">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Zonas de Confluência Detectadas
+        </div>
+        ${zones.map(z => {
+          const zoneColor = z.type === 'RES' ? '#fef2f2' : '#f0fdf4';
+          const zoneBorder = z.type === 'RES' ? '#fca5a5' : '#86efac';
+          const zoneText = z.type === 'RES' ? '#991b1b' : '#166534';
+          
+          return `
+            <div class="zone-card" style="background: ${zoneColor}; border: 1px solid ${zoneBorder};">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:13px; font-weight:900; color:${zoneText};">
+                  ${z.type} ${F2(z.price)}
+                </span>
+                <span style="font-size:11px; font-weight:700; color:#64748b;">Força: ${z.strength}%</span>
+              </div>
+              <div style="height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden; margin-bottom:8px;">
+                <div style="height:100%; width:${z.strength}%; background:linear-gradient(90deg,#6366f1,#8b5cf6); transition:width 0.6s ease;"></div>
+              </div>
+              <div style="font-size:11px; color:#475569; line-height:1.5;">
+                <div style="margin-bottom:4px;"><strong>${z.count} níveis convergentes:</strong> ${z.names}</div>
+                <div style="color:#64748b;">📍 Distância: ${Math.round(z.distance)} pts (${((z.distance/currentPrice)*100).toFixed(2)}%)</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // Execução principal
+  function execute(){
+    const ts = window.tradingSystem || window.__appInstance;
+    if(!ts) return;
+
+    const barData = getLastBarData();
+    if(!barData) {
+      console.warn('[Pivot Points] Dados insuficientes');
+      return;
+    }
+
+    const pivots = calcPivots(barData.high, barData.low, barData.close);
+    const pctLevels = calcPercentLevels(barData.close);
+    
+    if(!pivots || !pctLevels) return;
+
+    const confluence = analyzeConfluence(pivots, pctLevels, barData.close);
+    const panel = renderPanel(pivots, pctLevels, confluence, barData.close, barData);
+
+    const targetPanel = document.getElementById('aiStrategyPanel') || 
+                       document.querySelector('#ai-analysis-panel') ||
+                       document.querySelector('main .panel');
+    
+    if(targetPanel && targetPanel.parentNode){
+      targetPanel.parentNode.insertBefore(panel, targetPanel.nextSibling);
+    }
+
+    // Badge de confluência
+    if(confluence.strength >= 70){
+      document.querySelectorAll('#aiOperation .card').forEach(card => {
+        const existing = card.querySelector('.conf-badge');
+        if(existing) existing.remove();
+
+        const badge = document.createElement('div');
+        badge.className = 'conf-badge';
+        badge.style.cssText = 'background:linear-gradient(135deg,#10b981,#059669); color:#fff; font-size:11px; font-weight:800; padding:5px 10px; border-radius:999px; margin-top:8px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 8px rgba(16,185,129,0.3);';
+        badge.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Confluência Forte: ${confluence.strength}%
+        `;
+        card.appendChild(badge);
+      });
+    }
+
+    console.log('[Pivot Points] Calculados:', {
+      base: barData,
+      pivots: pivots,
+      confluence: confluence.strength + '%'
+    });
+  }
+
+  // Setup
+  function setup(){
+    const ts = window.tradingSystem || window.__appInstance;
+    if(!ts) return setTimeout(setup, 500);
+
+    ['performAIAnalysis', 'refreshAll', 'analyze'].forEach(fn => {
+      if(typeof ts[fn] === 'function'){
+        const orig = ts[fn].bind(ts);
+        ts[fn] = function(){
+          const r = orig.apply(this, arguments);
+          setTimeout(execute, 400);
+          return r;
+        };
+      }
+    });
+
+    setTimeout(execute, 1200);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', setup);
+  }else{
+    setup();
+  }
+
+  window.recalcPivots = execute;
+  console.log('[Pivot Points] Sistema carregado - Cálculo corrigido');
+})();
+  </script>
+
+
 </body>
+
 <!-- Indicadores de Proximidade (Preço Atual) -->
 <script>
 function getProximityStatus(currentPrice, entryPrice) {
