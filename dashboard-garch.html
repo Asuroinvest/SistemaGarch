@@ -967,6 +967,25 @@ window.VERSION_TAG = window.VERSION_TAG || 'default';
 .grid.grid-cols-3 > * { min-width: 0; }
 </style>
 
+
+<style id="confluence-mobile-and-pivot-fixes">
+/* ---- MOBILE/PIVOT FIXES ---- */
+/* evita overflow em grids de 3 colunas (ex.: Pivots) */
+@media (max-width: 1024px){
+  .grid.grid-cols-3{ grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+}
+@media (max-width: 640px){
+  .grid.grid-cols-3{ grid-template-columns: 1fr !important; }
+}
+/* segurança geral para qualquer grid/carta não ultrapassar a coluna */
+.grid.grid-cols-3 > *, .cards > * { min-width: 0 !important; }
+.card{ max-width: 100%; overflow: hidden; }
+/* Ajuste extra em telas muito pequenas */
+@media (max-width: 420px){
+  .cards{ grid-template-columns: 1fr !important; }
+}
+</style>
+
 </head>
 <body>
 <div id="supabaseOverlay" style="display:none">
@@ -7892,6 +7911,64 @@ function execute(){
 })();
   </script>
 
+
+
+<script id="sanitize-confluence-labels">
+// Remove "undefined" de descrições de confluência e melhora rótulos em tempo real
+(function(){
+  const LABEL_MAP = {
+    'PP':'PP',
+    'R1':'R1','R2':'R2','R3':'R3',
+    'S1':'S1','S2':'S2','S3':'S3',
+    '+0.5%':'+0.5%','+1%':'+1%','-0.5%':'-0.5%','-1%':'-1%',
+    'VWAP D':'VWAP D','VWAP S':'VWAP S','VWAP M':'VWAP M',
+    'MAX 1P':'Máx 1P','MAX 2P':'Máx 2P','MAX 3P':'Máx 3P',
+    'MIN 1P':'Mín 1P','MIN 2P':'Mín 2P','MIN 3P':'Mín 3P'
+  };
+
+  function cleanText(t){
+    if(!t) return t;
+    // tira "undefined" solto e vírgulas sobrando
+    t = t.replace(/\bundefined\b,?\s*/gi, '');
+    t = t.replace(/\s*,\s*,/g, ', ');
+    t = t.replace(/\s*,\s*$/,'');
+    // normaliza cabeçalho "undefined níveis convergentes"
+    t = t.replace(/undefined\s+níveis convergentes/gi, 'Níveis convergentes');
+    return t;
+  }
+
+  function normalizeLabels(el){
+    // se houver data-tags, reescreve com mapa (opcional)
+    const tags = el.getAttribute && el.getAttribute('data-tags');
+    if(tags){
+      const list = tags.split(',').map(s=>s.trim()).filter(Boolean).map(s=>LABEL_MAP[s] || s);
+      el.textContent = list.join(', ');
+      return;
+    }
+    el.textContent = cleanText(el.textContent);
+  }
+
+  function sweep(){
+    // limpa textos indefinidos
+    document.querySelectorAll('*').forEach(el=>{
+      if(el.childNodes && el.childNodes.length===1 && el.childNodes[0].nodeType===3){
+        const before = el.textContent;
+        const after  = cleanText(before);
+        if(after !== before){ el.textContent = after; }
+      }
+      // tenta normalizar listas de níveis quando marcadas
+      if(el.matches && (el.matches('.levels, .confluence-levels, .zone-levels') || el.hasAttribute('data-tags'))){
+        normalizeLabels(el);
+      }
+    });
+  }
+
+  // roda agora e sempre que DOM mudar
+  const mo = new MutationObserver(()=>sweep());
+  mo.observe(document.body, {subtree:true, childList:true, characterData:true});
+  sweep();
+})();
+</script>
 
 </body>
 
