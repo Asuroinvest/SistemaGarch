@@ -952,29 +952,19 @@ window.VERSION_TAG = window.VERSION_TAG || 'default';
 </style>
 
 
-<style id="responsive-pivot-fixes">
-/* === CSS-only fixes: não altera nenhum cálculo/JS === */
-
-/* Grades de cards mais fluidas (pivôs, percentuais, etc.) */
-.cards{
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
-}
+<style id="mobile-grid-overrides">
+/* === Mobile overrides específicos para utilitários Tailwind === */
+/* Força quebrar a grade de 3 colunas para 2 e 1 em telas menores,
+   sem alterar nenhum JS/cálculo. */
 @media (max-width: 1024px){
-  .cards{ grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .grid.grid-cols-3{ grid-template-columns: repeat(2, minmax(140px, 1fr)) !important; }
 }
 @media (max-width: 640px){
-  .cards{ grid-template-columns: 1fr; }
+  .grid.grid-cols-3{ grid-template-columns: 1fr !important; }
 }
 
-/* Evita cortes laterais em telas pequenas */
-.content-area, .panel { overflow-x: hidden; }
-.card{ min-width: 0; }
-.value{ font-variant-numeric: tabular-nums; }
-
-/* Linhas de "Base do cálculo" e textos longos quebram corretamente */
-.panel .label, .panel .hint, .panel .muted{ word-break: break-word; }
+/* Segurança: evita overflow dos cards na grid */
+.grid.grid-cols-3 > * { min-width: 0; }
 </style>
 
 </head>
