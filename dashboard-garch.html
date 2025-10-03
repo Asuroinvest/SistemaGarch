@@ -951,6 +951,32 @@ window.VERSION_TAG = window.VERSION_TAG || 'default';
 #supabaseOverlay button{margin-top:6px;display:inline-block;border:1px solid #334155;background:#1e293b;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
 </style>
 
+
+<style id="responsive-pivot-fixes">
+/* === CSS-only fixes: não altera nenhum cálculo/JS === */
+
+/* Grades de cards mais fluidas (pivôs, percentuais, etc.) */
+.cards{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1024px){
+  .cards{ grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}
+@media (max-width: 640px){
+  .cards{ grid-template-columns: 1fr; }
+}
+
+/* Evita cortes laterais em telas pequenas */
+.content-area, .panel { overflow-x: hidden; }
+.card{ min-width: 0; }
+.value{ font-variant-numeric: tabular-nums; }
+
+/* Linhas de "Base do cálculo" e textos longos quebram corretamente */
+.panel .label, .panel .hint, .panel .muted{ word-break: break-word; }
+</style>
+
 </head>
 <body>
 <div id="supabaseOverlay" style="display:none">
@@ -7462,58 +7488,120 @@ function applyToUI(row){
   }
 
   // Análise de Confluência
-  function analyzeConfluence(pivots, pctLevels, currentPrice){
-    if(!pivots || !pctLevels) return { strength: 0, zones: [] };
+  
+function analyzeConfluence(pivots, pctLevels, currentPrice, extras){
+  if(!pivots || !pctLevels) return { strength: 0, zones: [] };
+  const tolerance = currentPrice * 0.003; // 0.3%
+  const MAX_PER_SIDE = 4;
 
-    const tolerance = currentPrice * 0.003;
-    const allLevels = [
-      { name: 'PP', value: pivots.PP, weight: 5 },
-      { name: 'R1', value: pivots.R1, weight: 4 },
-      { name: 'R2', value: pivots.R2, weight: 3 },
-      { name: 'R3', value: pivots.R3, weight: 2 },
-      { name: 'S1', value: pivots.S1, weight: 4 },
-      { name: 'S2', value: pivots.S2, weight: 3 },
-      { name: 'S3', value: pivots.S3, weight: 2 },
-      { name: '+1%', value: pctLevels.plus_1, weight: 3 },
-      { name: '+0.5%', value: pctLevels.plus_05, weight: 2 },
-      { name: '-0.5%', value: pctLevels.minus_05, weight: 2 },
-      { name: '-1%', value: pctLevels.minus_1, weight: 3 }
-    ];
+  // 1) Pivôs + Percentuais
+  const base = [
+    { name:'PP',  value:+pivots.PP,  weight:5 },
+    { name:'R1',  value:+pivots.R1,  weight:4 },
+    { name:'R2',  value:+pivots.R2,  weight:3 },
+    { name:'R3',  value:+pivots.R3,  weight:2 },
+    { name:'S1',  value:+pivots.S1,  weight:4 },
+    { name:'S2',  value:+pivots.S2,  weight:3 },
+    { name:'S3',  value:+pivots.S3,  weight:2 },
+    { name:'+1%',   value:+pctLevels.plus_1,   weight:3 },
+    { name:'+0.5%', value:+pctLevels.plus_05,  weight:2 },
+    { name:'-0.5%', value:+pctLevels.minus_05, weight:2 },
+    { name:'-1%',   value:+pctLevels.minus_1,  weight:3 },
+  ].filter(l => Number.isFinite(l.value));
 
+  // 2) Extras: VWAPs + Projeções (com pesos)
+  try{
+    if (extras && extras.vwaps){
+      if (Number.isFinite(+extras.vwaps.d)) base.push({ name:'VWAP D', value:+extras.vwaps.d, weight:5 });
+      if (Number.isFinite(+extras.vwaps.s)) base.push({ name:'VWAP S', value:+extras.vwaps.s, weight:4 });
+      if (Number.isFinite(+extras.vwaps.m)) base.push({ name:'VWAP M', value:+extras.vwaps.m, weight:3 });
+    }
+    if (extras && extras.proj){
+      const mx = extras.proj.maxima || [], mn = extras.proj.minima || [];
+      if (Number.isFinite(+mx[0])) base.push({ name:'Máx 1P', value:+mx[0], weight:7 });
+      if (Number.isFinite(+mx[1])) base.push({ name:'Máx 2P', value:+mx[1], weight:7 });
+      if (Number.isFinite(+mx[2])) base.push({ name:'Máx 3P', value:+mx[2], weight:7 });
+      if (Number.isFinite(+mn[0])) base.push({ name:'Mín 1P', value:+mn[0], weight:7 });
+      if (Number.isFinite(+mn[1])) base.push({ name:'Mín 2P', value:+mn[1], weight:7 });
+      if (Number.isFinite(+mn[2])) base.push({ name:'Mín 3P', value:+mn[2], weight:7 });
+    }
+  }catch(e){ console.warn('extras confluence', e); }
+
+  // 3) Ordena e separa lados
+  const levels = base.sort((a,b)=>a.value-b.value);
+  const uppers = levels.filter(l=>l.value > currentPrice);
+  const lowers = levels.filter(l=>l.value < currentPrice);
+
+  // 4) Cluster por lado (janela com centro ponderado, sem repetição)
+  function clusterSide(arr){
     const zones = [];
-    allLevels.forEach(level1 => {
-      const cluster = [level1];
-      let totalWeight = level1.weight;
-
-      allLevels.forEach(level2 => {
-        if(level1 !== level2 && Math.abs(level1.value - level2.value) <= tolerance){
-          cluster.push(level2);
-          totalWeight += level2.weight;
-        }
-      });
-
-      if(cluster.length >= 2){
-        const avgPrice = cluster.reduce((sum, l) => sum + l.value, 0) / cluster.length;
-        const strength = Math.min(100, totalWeight * 5);
-
-        zones.push({
-          price: avgPrice,
-          strength: strength,
-          count: cluster.length,
-          names: cluster.map(l => l.name).join(', '),
-          distance: Math.abs(currentPrice - avgPrice),
-          type: avgPrice > currentPrice ? 'RES' : 'SUP'
-        });
+    let i=0;
+    while(i<arr.length){
+      let wsum=0, vwsum=0, items=[], center=arr[i].value, j=i;
+      while(j<arr.length){
+        const lv = arr[j];
+        if (Math.abs(lv.value - center) <= tolerance){
+          items.push(lv); wsum += lv.weight; vwsum += lv.value*lv.weight;
+          center = vwsum/wsum; j++;
+        }else break;
       }
-    });
-
-    zones.sort((a, b) => b.strength - a.strength);
-    const overallStrength = zones.length > 0
-      ? Math.round(zones.slice(0, 3).reduce((sum, z) => sum + z.strength, 0) / Math.min(3, zones.length))
-      : 0;
-
-    return { strength: overallStrength, zones: zones.slice(0, 5) };
+      i = j; // avança direto — evita duplicatas
+      if (items.length >= 2){
+        const price = +(vwsum/wsum).toFixed(2);
+        const names = items.map(x=>x.name).join(', ');
+        const strength = Math.min(100, Math.round(wsum*5));
+        zones.push({ price, names, strength });
+      }
+    }
+    // Dedupe por (lado, preço) mantendo maior força
+    const map = new Map();
+    for(const z of zones){
+      const key = z.price.toFixed(2);
+      if(!map.has(key) || z.strength > map.get(key).strength) map.set(key, z);
+    }
+    return Array.from(map.values());
   }
+
+  let res = clusterSide(uppers).map(z=>({...z, type:'RES', distance: Math.abs(z.price-currentPrice)}));
+  let sup = clusterSide(lowers).map(z=>({...z, type:'SUP', distance: Math.abs(z.price-currentPrice)}));
+
+  // 5) Fallback: se faltarem clusters em um lado, preenche com níveis isolados mais fortes
+  function fallbackSingles(arr, side){
+    const scored = arr.map(l => ({
+      price: +l.value,
+      names: l.name,
+      strength: Math.min(60, l.weight*5), // singles têm força capada
+      type: side,
+      distance: Math.abs(+l.value-currentPrice)
+    }));
+    scored.sort((a,b)=> b.strength - a.strength || a.distance - b.distance);
+    return scored.slice(0, 2); // no máx 2 singles
+  }
+  if (res.length === 0 && uppers.length){
+    res = fallbackSingles(uppers, 'RES');
+  }
+  if (sup.length === 0 && lowers.length){
+    sup = fallbackSingles(lowers, 'SUP');
+  }
+
+  // 6) Seleção balanceada e sem remover RES por preço
+  res.sort((a,b)=> b.strength - a.strength || a.distance - b.distance);
+  sup.sort((a,b)=> b.strength - a.strength || a.distance - b.distance);
+  res = res.slice(0, MAX_PER_SIDE);
+  sup = sup.slice(0, MAX_PER_SIDE);
+
+  // Dedupe final por (type+price) — preserva lados diferentes no mesmo preço
+  const seen = new Set();
+  const zones = [...res, ...sup].filter(z=>{
+    const key = z.type + ':' + z.price.toFixed(2);
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  }).sort((a,b)=> b.strength - a.strength || a.distance - b.distance).slice(0, 8);
+
+  const overall = zones.length ? Math.round(zones.slice(0,3).reduce((s,z)=>s+z.strength,0)/Math.min(3,zones.length)) : 0;
+  return { strength: overall, zones };
+}
+
 
   // Renderiza painel
   function renderPanel(pivots, pctLevels, confluence, currentPrice, barData){
@@ -7712,7 +7800,27 @@ function applyToUI(row){
   }
 
   // Execução principal
-  function execute(){
+  
+  // ===== Helpers para VWAPs e Projeções (UI + globals) =====
+  function __parsePrice(x){
+    if(x == null) return NaN;
+    if (typeof x === 'number') return x;
+    const s = (''+x).replace(/[^0-9.,-]/g,'').replace('.', '').replace(',', '.');
+    const v = parseFloat(s);
+    return isFinite(v) ? v : NaN;
+  }
+  function __readVWAPs(){
+    const g = (window.__lastVWAP || {});
+    const vwapD = __parsePrice(document.getElementById('vwapD')?.value) || __parsePrice(g.d) || __parsePrice(document.getElementById('sbVD')?.textContent);
+    const vwapS = __parsePrice(document.getElementById('vwapS')?.value) || __parsePrice(g.s) || __parsePrice(document.getElementById('sbVS')?.textContent);
+    const vwapM = __parsePrice(document.getElementById('vwapM')?.value) || __parsePrice(g.m) || __parsePrice(document.getElementById('sbVM')?.textContent);
+    return { d: vwapD, s: vwapS, m: vwapM };
+  }
+  function __readProjections(){
+    const txt = id => __parsePrice(document.getElementById(id)?.textContent);
+    return { maxima: [txt('max_9p'), txt('max_18p'), txt('max_27p')], minima: [txt('min_9p'), txt('min_18p'), txt('min_27p')] };
+  }
+function execute(){
     const ts = window.tradingSystem || window.__appInstance;
     if(!ts) return;
 
@@ -7727,7 +7835,7 @@ function applyToUI(row){
     
     if(!pivots || !pctLevels) return;
 
-    const confluence = analyzeConfluence(pivots, pctLevels, barData.close);
+    const confluence = analyzeConfluence(pivots, pctLevels, barData.close, { vwaps: __readVWAPs(), proj: __readProjections() });
     const panel = renderPanel(pivots, pctLevels, confluence, barData.close, barData);
 
     const targetPanel = document.getElementById('aiStrategyPanel') || 
