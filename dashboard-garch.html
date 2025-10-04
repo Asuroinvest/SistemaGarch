@@ -986,6 +986,63 @@ window.VERSION_TAG = window.VERSION_TAG || 'default';
 }
 </style>
 
+
+<style id="pp-like-percent-css">
+  /* === Pivots com o mesmo grid dos Níveis Percentuais === */
+  /* a classe .pp-cards será adicionada via JS no grid dos Pivots */
+
+  /* desktop continua 3 colunas */
+  @media (min-width: 1024px){
+    .pp-cards{
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+      gap: 12px !important;
+    }
+  }
+
+  /* tablet/mobile: 2 colunas */
+  @media (max-width: 1024px){
+    .pp-cards{
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+      gap: 12px !important;
+    }
+  }
+
+  /* mobile pequeno: 1 coluna */
+  @media (max-width: 640px){
+    .pp-cards{
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  /* Segurança: evita overflow e padroniza o tamanho dos cards */
+  .pp-cards > *{ min-width: 0 !important; margin: 0 !important; }
+  .pp-cards .card{ max-width: 100% !important; overflow: hidden !important; }
+</style>
+
+
+<style id="pivots-mobile-fix">
+  /* Pivots: 3 colunas no desktop, 2 no mobile/tablet (igual aos Níveis Percentuais) */
+  .pp-cards{
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (max-width: 768px){
+    .pp-cards{
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+  @media (max-width: 420px){
+    .pp-cards{
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+  .pp-cards > *{ min-width: 0 !important; margin: 0 !important; }
+  .pp-cards .card{ max-width: 100% !important; overflow: hidden !important; }
+</style>
+
 </head>
 <body>
 <div id="supabaseOverlay" style="display:none">
@@ -7697,6 +7754,85 @@ function analyzeConfluence(pivots, pctLevels, currentPrice, extras){
           #pivotPanel .pivot-grid { grid-template-columns: repeat(3, 1fr); }
           #pivotPanel .pct-grid { grid-template-columns: repeat(2, 1fr); }
         }
+		/* === PIVOT POINTS - MOBILE RESPONSIVE === */
+#pivotPanel .pivot-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
+  gap: 10px; 
+  margin-bottom: 12px; 
+}
+
+/* Tablets e telas médias: 3 colunas */
+@media (max-width: 1024px) {
+  #pivotPanel .pivot-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px;
+  }
+}
+
+/* Mobile: 2 colunas para melhor legibilidade */
+@media (max-width: 640px) {
+  #pivotPanel .pivot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+  }
+  
+  #pivotPanel .level-card {
+    padding: 10px 8px;
+  }
+  
+  #pivotPanel .level-label {
+    font-size: 9px;
+  }
+  
+  #pivotPanel .level-value {
+    font-size: 14px;
+  }
+  
+  #pivotPanel .level-dist {
+    font-size: 8px;
+  }
+}
+
+/* Mobile muito pequeno: 1 coluna */
+@media (max-width: 420px) {
+  #pivotPanel .pivot-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Ajuste do painel inteiro em mobile */
+@media (max-width: 768px) {
+  #pivotPanel {
+    padding: 12px !important;
+  }
+  
+  #pivotPanel > div > div:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  
+  #pivotPanel .calc-info {
+    font-size: 9px;
+    padding: 6px 8px;
+  }
+}
+
+/* Níveis Percentuais - já está OK mas garantindo */
+#pivotPanel .pct-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 420px) {
+  #pivotPanel .pct-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+}
       </style>
 
       <div style="border: 2px solid ${borderColor}; border-radius: 16px; padding: 16px; background: ${gradientBg};">
@@ -7967,6 +8103,62 @@ function execute(){
   const mo = new MutationObserver(()=>sweep());
   mo.observe(document.body, {subtree:true, childList:true, characterData:true});
   sweep();
+})();
+</script>
+
+
+<script id="pp-like-percent-js">
+  (function(){
+    // procura a seção "PIVOT POINTS CLÁSSICOS" e marca o grid interno com .pp-cards
+    function markPivotGrid(){
+      const text = (el)=> (el && el.textContent || '').trim();
+      const candidates = Array.from(document.querySelectorAll('section,div,article'));
+      const pivotSection = candidates.find(el => /PIVOT POINTS CL[ÁA]SSICOS/i.test(text(el)));
+      if(!pivotSection) return;
+
+      // o grid com os cards geralmente tem várias crianças (PP, R1, R2, R3, S1, S2, S3...)
+      const grids = Array.from(pivotSection.querySelectorAll('.grid, [class*="grid"]'));
+      const grid = grids.find(g => g.children && g.children.length >= 6);
+      if(grid && !grid.classList.contains('pp-cards')){
+        grid.classList.add('pp-cards');
+      }
+    }
+
+    // roda agora e quando o DOM mudar (leve)
+    const mo = new MutationObserver(markPivotGrid);
+    mo.observe(document.body, {subtree:true, childList:true});
+    window.addEventListener('load', markPivotGrid, {once:true});
+    setTimeout(markPivotGrid, 400);
+  })();
+</script>
+
+
+<script id="pivots-mobile-fix-js">
+(function(){
+  function text(el){ return (el && el.textContent || '').trim(); }
+  function apply(){
+    // acha o título "PIVOT POINTS CLÁSSICOS"
+    var title = Array.from(document.querySelectorAll('h1,h2,h3,h4,div,strong'))
+      .find(n => /PIVOT\s*POINTS\s*CL[ÁA]SSICOS/i.test(text(n)));
+    if(!title) return;
+    var container = title.closest('section,div,article') || title.parentElement;
+    if(!container) return;
+    // pega grids possíveis dentro da seção
+    var grids = Array.from(container.querySelectorAll('.grid, [class*=grid-cols]'));
+    // escolhe o que tem bastante filhos (PP,R1,R2,R3,S1,S2,S3)
+    var grid = grids.find(g => (g.children && g.children.length >= 6)) || grids[0];
+    if(!grid) return;
+    grid.classList.add('pp-cards');
+  }
+  // Executa de forma leve (sem observer pesado)
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', apply);
+  } else {
+    apply();
+  }
+  // Pequenas garantias para cases dinâmicos (forçar recarga, etc.)
+  setTimeout(apply, 300);
+  setTimeout(apply, 900);
 })();
 </script>
 
